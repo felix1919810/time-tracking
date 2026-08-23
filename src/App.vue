@@ -137,7 +137,10 @@ import axios from 'axios'
 const urlParams = new URLSearchParams(window.location.search)
 const appToken = urlParams.get('app_token') || ''
 
-const http = axios.create({ baseURL: '/api', timeout: 15000 })
+const http = axios.create({
+  baseURL: 'https://1473537498-ejcp1i6ib6.ap-shanghai.tencentscf.com',
+  timeout: 15000,
+})
 // 请求拦截：自动带上 app_token（让 serverless 用对应的多维表格）
 http.interceptors.request.use((config) => {
   config.params = config.params || {}
