@@ -1,0 +1,14 @@
+{
+  "blockTypeID": "blk_6a84fcf29ed94bc238fb3a79",
+  "block_id": "time-tracking-block",
+  "block_name": "时间追踪",
+  "block_type": "MAIN_VIEW",
+  "url": "https://feishu.cn/base/VYF7btMbnaNkV1sTnYBc1ldjnqh",
+  "entry": "dist/main.js",
+  "permissions": [
+    "bitable:app:readonly",
+    "bitable:table:readonly",
+    "bitable:record:read",
+    "bitable:record:write"
+  ]
+}

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>飞书时间追踪 - Toggl 风格周视图</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #fff; color: #1f2329; font-size: 13px; }
+
+.topbar { height: 48px; background: #fff; border-bottom: 1px solid #e7e9e8; display: flex; align-items: center; padding: 0 16px; gap: 12px; }
+.topbar-logo { width: 24px; height: 24px; background: #e01b4f; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; }
+.topbar-title { font-size: 14px; font-weight: 600; }
+.topbar-tabs { display: flex; gap: 2px; margin-left: 16px; }
+.topbar-tab { padding: 6px 12px; font-size: 13px; color: #646a73; border-radius: 6px; cursor: pointer; }
+.topbar-tab.active { color: #1f2329; font-weight: 600; background: #f5f6f7; }
+.topbar-right { margin-left: auto; }
+.topbar-avatar { width: 28px; height: 28px; border-radius: 50%; background: #3370ff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+
+.layout { display: flex; min-height: calc(100vh - 48px); }
+.sidebar { width: 200px; background: #fafbfc; border-right: 1px solid #e7e9e8; padding: 12px 8px; flex-shrink: 0; }
+.sidebar-section { font-size: 11px; color: #8f959e; padding: 12px 12px 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.sidebar-item { padding: 8px 12px; font-size: 13px; color: #646a73; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.sidebar-item:hover { background: #f0f1f2; }
+.sidebar-item.active { background: #e8f0ff; color: #3370ff; font-weight: 600; }
+.sidebar-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+.main { flex: 1; overflow: auto; }
+
+.timer-bar { background: #fff; border-bottom: 1px solid #e7e9e8; padding: 12px 24px; display: flex; align-items: center; gap: 12px; }
+.timer-input { flex: 1; padding: 9px 12px; border: 1px solid #e7e9e8; border-radius: 8px; font-size: 13px; color: #1f2329; background: #fafbfc; }
+.timer-input:focus { outline: none; border-color: #3370ff; background: #fff; }
+.timer-project { padding: 9px 12px; border: 1px solid #e7e9e8; border-radius: 8px; font-size: 12px; color: #646a73; background: #fafbfc; cursor: pointer; display: flex; align-items: center; gap: 6px; min-width: 160px; }
+.timer-start-btn { padding: 9px 18px; background: #1f2329; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.timer-start-btn:hover { background: #000; }
+.timer-start-btn.running { background: #e01b4f; }
+.timer-start-btn.running:hover { background: #c4153f; }
+.timer-clock { font-size: 14px; font-variant-numeric: tabular-nums; font-weight: 600; color: #1f2329; min-width: 70px; text-align: right; }
+.timer-clock.running { color: #e01b4f; }
+
+.week-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px 12px; }
+.week-nav { display: flex; align-items: center; gap: 8px; }
+.week-btn { width: 28px; height: 28px; border: 1px solid #e7e9e8; background: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; color: #646a73; display: flex; align-items: center; justify-content: center; }
+.week-btn:hover { background: #f5f6f7; }
+.week-today { padding: 5px 12px; font-size: 12px; border: 1px solid #e7e9e8; background: #fff; border-radius: 6px; cursor: pointer; color: #646a73; }
+.week-today:hover { background: #f5f6f7; }
+.week-range { font-size: 16px; font-weight: 700; color: #1f2329; margin-left: 8px; }
+.week-total { font-size: 13px; color: #646a73; }
+.week-total strong { color: #e01b4f; font-weight: 700; font-size: 15px; }
+.view-switcher { display: flex; gap: 2px; background: #f5f6f7; padding: 3px; border-radius: 8px; }
+.view-option { padding: 5px 12px; font-size: 12px; color: #646a73; border-radius: 5px; cursor: pointer; }
+.view-option.active { background: #fff; color: #1f2329; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+.notice { background: #fef0f4; border-radius: 8px; padding: 8px 14px; font-size: 12px; color: #c4153f; margin: 0 24px 12px; display: flex; align-items: center; gap: 6px; }
+
+.calendar-wrap { padding: 0 24px 24px; }
+.calendar-table { display: grid; grid-template-columns: 48px repeat(7, 1fr); border: 1px solid #e7e9e8; border-radius: 8px; overflow: hidden; }
+
+.cal-header { padding: 10px 4px; text-align: center; border-bottom: 1px solid #e7e9e8; border-left: 1px solid #f0f1f2; background: #fafbfc; }
+.cal-header.today { background: #fef0f4; }
+.cal-dow { font-size: 11px; color: #8f959e; text-transform: uppercase; margin-bottom: 2px; }
+.cal-date { font-size: 18px; font-weight: 700; color: #1f2329; }
+.cal-header.today .cal-date { color: #e01b4f; }
+.cal-total { font-size: 10px; color: #8f959e; margin-top: 2px; }
+.cal-total.has { color: #646a73; font-weight: 600; }
+
+.time-col { border-right: 1px solid #f0f1f2; background: #fafbfc; }
+.time-label { height: 48px; padding: 2px 6px 0 0; font-size: 10px; color: #8f959e; text-align: right; border-bottom: 1px solid #f4f5f6; }
+
+.day-col { border-left: 1px solid #f0f1f2; position: relative; min-height: 576px; }
+.hour-line { height: 48px; border-bottom: 1px solid #f4f5f6; cursor: crosshair; }
+.hour-line:hover { background: #f9fafa; }
+.hour-line:hover::after { content: '+'; float: right; color: #c8ccd2; font-size: 16px; margin-right: 4px; }
+
+.entry { position: absolute; left: 2px; right: 2px; border-radius: 4px; padding: 4px 6px; color: #fff; font-size: 11px; cursor: pointer; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: transform 0.1s, box-shadow 0.1s; border-left: 3px solid rgba(0,0,0,0.2); }
+.entry:hover { transform: scale(1.03); z-index: 20; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.entry-title { font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.entry-meta { font-size: 10px; opacity: 0.92; margin-top: 1px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.entry.running { animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 1px 2px rgba(0,0,0,0.1), 0 0 0 0 rgba(224, 27, 79, 0.4); } 50% { box-shadow: 0 1px 2px rgba(0,0,0,0.1), 0 0 0 5px rgba(224, 27, 79, 0); } }
+
+.now-line { position: absolute; left: 0; right: 0; height: 2px; background: #e01b4f; z-index: 15; pointer-events: none; }
+.now-line::before { content: ''; position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; background: #e01b4f; border-radius: 50%; }
+
+.p1 { background: #e01b4f; } .p2 { background: #3370ff; } .p3 { background: #34c759; } .p4 { background: #ff9500; } .p5 { background: #af52de; }
+.d1 { background: #e01b4f; } .d2 { background: #3370ff; } .d3 { background: #34c759; } .d4 { background: #ff9500; } .d5 { background: #af52de; }
+
+/* 编辑面板 */
+.edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; display: none; align-items: center; justify-content: center; }
+.edit-overlay.show { display: flex; }
+.edit-panel { background: #fff; border-radius: 12px; padding: 24px; width: 420px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.edit-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+.edit-close { font-size: 20px; color: #8f959e; cursor: pointer; background: none; border: none; }
+.edit-close:hover { color: #1f2329; }
+.edit-row { margin-bottom: 14px; }
+.edit-label { font-size: 12px; color: #646a73; margin-bottom: 6px; }
+.edit-input { width: 100%; padding: 9px 12px; border: 1px solid #e7e9e8; border-radius: 8px; font-size: 13px; color: #1f2329; background: #fff; }
+.edit-input:focus { outline: none; border-color: #3370ff; }
+.edit-time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.edit-actions { display: flex; justify-content: space-between; margin-top: 24px; align-items: center; }
+.edit-delete { background: none; border: none; color: #ff453a; font-size: 13px; cursor: pointer; padding: 8px 12px; border-radius: 6px; }
+.edit-delete:hover { background: #fee2e2; }
+.edit-right { display: flex; gap: 8px; }
+.btn-cancel { padding: 9px 16px; background: #f5f6f7; color: #646a73; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
+.btn-cancel:hover { background: #e7e9e8; }
+.btn-save { padding: 9px 16px; background: #3370ff; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-save:hover { background: #2860e8; }
+.project-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+.project-pill { padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; border: 2px solid transparent; display: flex; align-items: center; gap: 6px; }
+.project-pill:hover { background: #f5f6f7; }
+.project-pill.selected { border-color: currentColor; background: #f0f5ff; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">时</div>
+  <div class="topbar-title">时间追踪</div>
+  <div class="topbar-tabs">
+    <div class="topbar-tab active">计时</div>
+    <div class="topbar-tab">报表</div>
+    <div class="topbar-tab">项目</div>
+  </div>
+  <div class="topbar-right"><div class="topbar-avatar">陈</div></div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-section">视图</div>
+    <div class="sidebar-item active">📅 本周</div>
+    <div class="sidebar-item">📈 今日</div>
+    <div class="sidebar-section">项目</div>
+    <div class="sidebar-item"><span class="sidebar-dot d1"></span>飞书集成开发</div>
+    <div class="sidebar-item"><span class="sidebar-dot d2"></span>多维表格插件</div>
+    <div class="sidebar-item"><span class="sidebar-dot d3"></span>前端重构</div>
+    <div class="sidebar-item"><span class="sidebar-dot d4"></span>文档撰写</div>
+    <div class="sidebar-item"><span class="sidebar-dot d5"></span>会议讨论</div>
+    <div class="sidebar-item" style="color: #8f959e;">+ 新建项目</div>
+    <div class="sidebar-section">标签</div>
+    <div class="sidebar-item"># 紧急</div>
+    <div class="sidebar-item"># 长期</div>
+    <div class="sidebar-item"># 学习</div>
+  </div>
+
+  <div class="main">
+    <div class="timer-bar">
+      <input class="timer-input" id="descInput" value="演示 - 飞书应用模式搭建">
+      <div class="timer-project" id="projSelect">
+        <span class="sidebar-dot d1"></span><span>飞书集成开发</span><span style="margin-left:auto;color:#8f959e;">▾</span>
+      </div>
+      <div class="timer-clock" id="clock">00:00:00</div>
+      <button class="timer-start-btn" id="startBtn" onclick="toggleTimer()">
+        <span id="btnIcon">▶</span><span id="btnText">开始</span>
+      </button>
+    </div>
+
+    <div class="notice">💡 点击条目可<strong>编辑/删除</strong>；点击空白时段可<strong>手动新增</strong>。忘记关计时器时打开条目调整结束时间或直接删除即可。</div>
+
+    <div class="week-header">
+      <div class="week-nav">
+        <button class="week-btn" onclick="alert('演示版不切换')">‹</button>
+        <button class="week-today" onclick="alert('已在本周')">本周</button>
+        <button class="week-btn" onclick="alert('演示版不切换')">›</button>
+        <div class="week-range">8 月 18 - 24 日，2026</div>
+      </div>
+      <div class="week-total">本周总计 <strong id="weekTotal">11:28</strong></div>
+      <div class="view-switcher">
+        <div class="view-option">列表</div>
+        <div class="view-option active">周视图</div>
+        <div class="view-option">日视图</div>
+      </div>
+    </div>
+
+    <div class="calendar-wrap">
+      <div class="calendar-table" id="calTable"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑/新增面板 -->
+<div class="edit-overlay" id="editOverlay">
+  <div class="edit-panel">
+    <div class="edit-title">
+      <span id="editMode">编辑条目</span>
+      <button class="edit-close" onclick="closeEdit()">×</button>
+    </div>
+    <div class="edit-row">
+      <div class="edit-label">描述</div>
+      <input class="edit-input" id="editDesc" placeholder="你在做什么？">
+    </div>
+    <div class="edit-row">
+      <div class="edit-label">项目</div>
+      <div class="project-picker" id="projPicker"></div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-label">时间</div>
+      <div class="edit-time-row">
+        <input class="edit-input" id="editStart" type="time">
+        <input class="edit-input" id="editEnd" type="time">
+      </div>
+    </div>
+    <div class="edit-actions">
+      <button class="edit-delete" id="deleteBtn" onclick="deleteEntry()">🗑 删除</button>
+      <div class="edit-right">
+        <button class="btn-cancel" onclick="closeEdit()">取消</button>
+        <button class="btn-save" onclick="saveEntry()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ 数据 ============
+let weekData = {
+  1: [
+    {id: 1, s: 9*60+30, d: 90,  p: 1, t: '需求评审 + 接口设计'},
+    {id: 2, s: 11*60+15, d: 45, p: 4, t: '会议纪要整理'},
+    {id: 3, s: 14*60, d: 120,    p: 2, t: '多维表格插件 - 入口配置'},
+    {id: 4, s: 16*60+30, d: 60,  p: 3, t: '前端重构 - 组件拆分'},
+  ],
+  2: [
+    {id: 5, s: 9*60, d: 180,     p: 2, t: '插件 webpack 调试'},
+    {id: 6, s: 13*60+30, d: 90,  p: 1, t: '飞书 SDK 联调'},
+    {id: 7, s: 15*60+30, d: 75,  p: 5, t: '产品同步会'},
+    {id: 8, s: 17*60, d: 45,     p: 4, t: '技术文档撰写'},
+  ],
+  3: [
+    {id: 9, s: 10*60, d: 150,    p: 1, t: '白名单配置 + opdev 排查'},
+    {id: 10, s: 13*60, d: 60,    p: 3, t: '前端构建优化'},
+    {id: 11, s: 14*60+30, d: 105, p: 2, t: 'bitable-plugin 编译'},
+  ],
+  4: [
+    {id: 12, s: 9*60+25, d: 83,  p: 1, t: '白名单配置'},
+    {id: 13, s: 11*60+2, d: 88,  p: 2, t: 'webpack 配置'},
+    {id: 14, s: 14*60, d: 22,    p: 4, t: '演示方案文档'},
+  ],
+  5: [], 6: [], 7: [],
+};
+
+const projectNames = {1:'飞书集成开发', 2:'多维表格插件', 3:'前端重构', 4:'文档撰写', 5:'会议讨论'};
+const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+const todayIdx = 4;
+const START_HOUR = 8, END_HOUR = 20, HOUR_PX = 48;
+const fmtTime = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+let nextId = 15;
+let editingEntry = null;  // {day, entry}
+let newEntrySlot = null;  // {day, startMin}
+
+// ============ 渲染 ============
+function renderWeek() {
+  const table = document.getElementById('calTable');
+  table.innerHTML = '';
+  table.style.gridTemplateColumns = '48px repeat(7, 1fr)';
+
+  // 时间列
+  const tc = document.createElement('div');
+  tc.style.borderRight = '1px solid #f0f1f2';
+  tc.style.background = '#fafbfc';
+  for (let h = START_HOUR; h <= END_HOUR; h++) {
+    const lab = document.createElement('div');
+    lab.style.height = HOUR_PX + 'px';
+    lab.style.padding = '2px 6px 0 0';
+    lab.style.fontSize = '10px';
+    lab.style.color = '#8f959e';
+    lab.style.textAlign = 'right';
+    lab.style.borderBottom = '1px solid #f4f5f6';
+    lab.textContent = `${String(h).padStart(2,'0')}:00`;
+    tc.appendChild(lab);
+  }
+  table.appendChild(tc);
+
+  // 7 天列
+  let weekTotalMin = 0;
+  for (let d = 1; d <= 7; d++) {
+    const dayWrap = document.createElement('div');
+    dayWrap.style.display = 'flex';
+    dayWrap.style.flexDirection = 'column';
+
+    const header = document.createElement('div');
+    const isToday = (d === todayIdx);
+    header.className = 'cal-header' + (isToday ? ' today' : '');
+    const dayDate = 17 + d;
+    const entries = weekData[d] || [];
+    const totalMin = entries.reduce((s, e) => s + e.d, 0);
+    weekTotalMin += totalMin;
+    const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
+    header.innerHTML = `
+      <div class="cal-dow">${weekdays[d-1]}</div>
+      <div class="cal-date">${dayDate}</div>
+      <div class="cal-total ${totalMin > 0 ? 'has' : ''}">${totalMin > 0 ? `${hh}:${String(mm).padStart(2,'0')}` : '—'}</div>
+    `;
+    dayWrap.appendChild(header);
+
+    const cells = document.createElement('div');
+    cells.style.position = 'relative';
+    cells.style.borderLeft = '1px solid #f0f1f2';
+    cells.style.flex = '1';
+    cells.dataset.day = d;
+
+    for (let h = START_HOUR; h < END_HOUR; h++) {
+      const line = document.createElement('div');
+      line.className = 'hour-line';
+      line.dataset.hour = h;
+      line.dataset.day = d;
+      line.onclick = (ev) => {
+        if (ev.target !== line) return;  // 避免条目点击触发
+        const rect = line.getBoundingClientRect();
+        const yInCell = ev.clientY - rect.top;
+        const startMin = (h * 60) + Math.round((yInCell / HOUR_PX) * 60 / 15) * 15;
+        openNewEntry(d, startMin);
+      };
+      cells.appendChild(line);
+    }
+
+    // 当前时间红线（仅今天）
+    if (isToday) {
+      const now = new Date();
+      const nowMin = now.getHours() * 60 + now.getMinutes();
+      const startMin = START_HOUR * 60;
+      if (nowMin >= startMin && nowMin <= END_HOUR * 60) {
+        const offset = ((nowMin - startMin) / 60) * HOUR_PX;
+        const line = document.createElement('div');
+        line.className = 'now-line';
+        line.style.top = offset + 'px';
+        cells.appendChild(line);
+      }
+    }
+
+    // 渲染条目
+    (weekData[d] || []).forEach(e => {
+      const entry = document.createElement('div');
+      entry.className = 'entry p' + e.p + (e.r ? ' running' : '');
+      const top = ((e.s - START_HOUR * 60) / 60) * HOUR_PX;
+      const height = Math.max(20, (e.d / 60) * HOUR_PX - 4);
+      entry.style.top = top + 'px';
+      entry.style.height = height + 'px';
+      const endMin = e.s + e.d;
+      entry.innerHTML = `
+        <div class="entry-title">${e.t}</div>
+        <div class="entry-meta">${fmtTime(e.s)} - ${fmtTime(endMin)} · ${projectNames[e.p]}</div>
+      `;
+      entry.onclick = (ev) => {
+        ev.stopPropagation();
+        openEdit(d, e);
+      };
+      cells.appendChild(entry);
+    });
+
+    dayWrap.appendChild(cells);
+    table.appendChild(dayWrap);
+  }
+
+  // 更新本周总计
+  const wtH = Math.floor(weekTotalMin / 60), wtM = weekTotalMin % 60;
+  document.getElementById('weekTotal').textContent = `${wtH}:${String(wtM).padStart(2,'0')}`;
+}
+
+// ============ 编辑面板 ============
+function openEdit(day, entry) {
+  editingEntry = {day, entry};
+  newEntrySlot = null;
+  document.getElementById('editMode').textContent = '编辑条目';
+  document.getElementById('editDesc').value = entry.t;
+  document.getElementById('editStart').value = fmtTime(entry.s);
+  document.getElementById('editEnd').value = fmtTime(entry.s + entry.d);
+  document.getElementById('deleteBtn').style.display = 'inline-block';
+  renderProjPicker(entry.p);
+  document.getElementById('editOverlay').classList.add('show');
+}
+
+function openNewEntry(day, startMin) {
+  editingEntry = null;
+  newEntrySlot = {day, startMin};
+  document.getElementById('editMode').textContent = '新增条目';
+  document.getElementById('editDesc').value = '';
+  document.getElementById('editStart').value = fmtTime(startMin);
+  // 默认 30 分钟
+  let endMin = startMin + 30;
+  if (endMin > END_HOUR * 60) endMin = END_HOUR * 60;
+  document.getElementById('editEnd').value = fmtTime(endMin);
+  document.getElementById('deleteBtn').style.display = 'none';
+  renderProjPicker(1);  // 默认第一个项目
+  document.getElementById('editOverlay').classList.add('show');
+}
+
+function renderProjPicker(selectedP) {
+  const picker = document.getElementById('projPicker');
+  picker.innerHTML = '';
+  picker.dataset.selected = selectedP;
+  for (let p = 1; p <= 5; p++) {
+    const pill = document.createElement('div');
+    pill.className = 'project-pill' + (p === selectedP ? ' selected' : '');
+    pill.style.color = ['#e01b4f','#3370ff','#34c759','#ff9500','#af52de'][p-1];
+    pill.innerHTML = `<span class="sidebar-dot d${p}"></span>${projectNames[p]}`;
+    pill.onclick = () => {
+      picker.dataset.selected = p;
+      document.querySelectorAll('.project-pill').forEach(el => el.classList.remove('selected'));
+      pill.classList.add('selected');
+    };
+    picker.appendChild(pill);
+  }
+}
+
+function closeEdit() {
+  document.getElementById('editOverlay').classList.remove('show');
+  editingEntry = null;
+  newEntrySlot = null;
+}
+
+function saveEntry() {
+  const desc = document.getElementById('editDesc').value.trim() || '未命名';
+  const startStr = document.getElementById('editStart').value;
+  const endStr = document.getElementById('editEnd').value;
+  const p = parseInt(document.getElementById('projPicker').dataset.selected);
+
+  if (!startStr || !endStr) { alert('请填写开始和结束时间'); return; }
+  const [sh, sm] = startStr.split(':').map(Number);
+  const [eh, em] = endStr.split(':').map(Number);
+  let startMin = sh * 60 + sm;
+  let endMin = eh * 60 + em;
+  if (endMin <= startMin) { alert('结束时间必须晚于开始时间'); return; }
+  const dur = endMin - startMin;
+
+  if (editingEntry) {
+    // 编辑现有
+    const e = editingEntry.entry;
+    e.t = desc; e.s = startMin; e.d = dur; e.p = p;
+  } else if (newEntrySlot) {
+    // 新增
+    const day = newEntrySlot.day;
+    if (!weekData[day]) weekData[day] = [];
+    weekData[day].push({id: nextId++, s: startMin, d: dur, p, t: desc});
+  }
+  closeEdit();
+  renderWeek();
+}
+
+function deleteEntry() {
+  if (!editingEntry) return;
+  if (!confirm('确定删除这条记录？')) return;
+  const {day, entry} = editingEntry;
+  weekData[day] = weekData[day].filter(e => e.id !== entry.id);
+  closeEdit();
+  renderWeek();
+}
+
+// ============ 计时器 ============
+let timerInterval = null;
+let timerRunning = false;
+let timerStart = 0;
+let timerElapsed = 0;
+
+function toggleTimer() {
+  const btn = document.getElementById('startBtn');
+  const icon = document.getElementById('btnIcon');
+  const text = document.getElementById('btnText');
+  const clock = document.getElementById('clock');
+
+  if (!timerRunning) {
+    timerRunning = true;
+    timerStart = Date.now() - timerElapsed;
+    btn.classList.add('running');
+    icon.textContent = '■';
+    text.textContent = '停止';
+    clock.classList.add('running');
+    timerInterval = setInterval(() => {
+      timerElapsed = Date.now() - timerStart;
+      const h = String(Math.floor(timerElapsed / 3600000)).padStart(2, '0');
+      const m = String(Math.floor((timerElapsed % 3600000) / 60000)).padStart(2, '0');
+      const s = String(Math.floor((timerElapsed % 60000) / 1000)).padStart(2, '0');
+      clock.textContent = `${h}:${m}:${s}`;
+    }, 1000);
+  } else {
+    timerRunning = false;
+    clearInterval(timerInterval);
+    btn.classList.remove('running');
+    icon.textContent = '▶';
+    text.textContent = '开始';
+    clock.classList.remove('running');
+    clock.textContent = '00:00:00';
+    timerElapsed = 0;
+    // 演示：保存到当天数据
+    const now = new Date();
+    const startMin = now.getHours() * 60 + now.getMinutes() - Math.floor(timerElapsed / 60000);
+    if (!weekData[todayIdx]) weekData[todayIdx] = [];
+    weekData[todayIdx].push({
+      id: nextId++, s: startMin, d: Math.floor(timerElapsed / 60000),
+      p: 1, t: document.getElementById('descInput').value
+    });
+    renderWeek();
+    alert('已停止计时，条目已写入 ✓');
+  }
+}
+
+// ============ 自动滚动到当前时间 ============
+function autoScrollToNow() {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const startMin = START_HOUR * 60;
+  const main = document.querySelector('.main');
+  if (nowMin >= startMin && nowMin <= END_HOUR * 60) {
+    const offset = Math.max(0, ((nowMin - startMin) / 60) * HOUR_PX - 100);
+    setTimeout(() => { main.scrollTop = offset; }, 50);
+  }
+}
+
+// ============ 初始化 ============
+renderWeek();
+autoScrollToNow();
+
+// 点击遮罩关闭
+document.getElementById('editOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'editOverlay') closeEdit();
+});
+</script>
+
+</body>
+</html>

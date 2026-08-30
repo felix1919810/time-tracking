@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>飞书时间追踪 - 应用模式演示</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f6f7; color: #1f2329; }
+
+/* 模拟飞书顶部栏 */
+.topbar { height: 48px; background: #fff; border-bottom: 1px solid #e7e9e8; display: flex; align-items: center; padding: 0 16px; gap: 16px; }
+.topbar-logo { width: 24px; height: 24px; background: #3370ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; }
+.topbar-title { font-size: 14px; font-weight: 600; }
+.topbar-tabs { display: flex; gap: 4px; margin-left: 24px; }
+.topbar-tab { padding: 6px 12px; font-size: 13px; color: #646a73; border-radius: 6px; cursor: pointer; }
+.topbar-tab.active { background: #e8f0ff; color: #3370ff; font-weight: 600; }
+.topbar-right { margin-left: auto; font-size: 12px; color: #8f959e; }
+
+/* 主体布局 */
+.layout { display: flex; min-height: calc(100vh - 48px); }
+.sidebar { width: 200px; background: #fff; border-right: 1px solid #e7e9e8; padding: 12px 8px; }
+.sidebar-item { padding: 10px 12px; font-size: 14px; color: #646a73; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.sidebar-item:hover { background: #f5f6f7; }
+.sidebar-item.active { background: #e8f0ff; color: #3370ff; font-weight: 600; }
+.sidebar-icon { width: 16px; height: 16px; display: inline-block; }
+.main { flex: 1; padding: 20px; overflow: auto; }
+
+/* 卡片 */
+.card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px; }
+.card-title { font-size: 14px; font-weight: 600; color: #1f2329; margin-bottom: 16px; }
+
+/* 仪表盘统计卡 */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.stat-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.stat-label { font-size: 12px; color: #8f959e; margin-bottom: 8px; }
+.stat-value { font-size: 24px; font-weight: 700; color: #1f2329; }
+.stat-trend { font-size: 11px; margin-top: 4px; }
+.stat-trend.up { color: #34c759; }
+.stat-trend.down { color: #ff453a; }
+
+/* 图表区域 */
+.chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.chart-container { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+
+/* 计时器区域（模拟嵌入的 Vue 前端） */
+.timer-section { background: linear-gradient(135deg, #fff8e6 0%, #fff 100%); border-radius: 12px; padding: 32px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px; border: 2px dashed #ffd75e; position: relative; }
+.timer-section::before { content: "嵌入区域：Vue 计时器前端"; position: absolute; top: 8px; left: 12px; font-size: 11px; color: #b57800; background: #fff3d6; padding: 2px 8px; border-radius: 4px; }
+.timer-display { font-size: 56px; font-weight: 700; font-variant-numeric: tabular-nums; color: #1f2329; margin-bottom: 8px; letter-spacing: 2px; }
+.timer-label { font-size: 14px; color: #646a73; margin-bottom: 24px; }
+.timer-btn { font-size: 15px; padding: 10px 32px; background: #34c759; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+.timer-btn:hover { background: #2bb24c; transform: translateY(-1px); }
+.timer-btn.stop { background: #ff453a; }
+.timer-btn.stop:hover { background: #e63d34; }
+
+/* 项目列表 */
+.project-list { display: flex; flex-direction: column; gap: 8px; }
+.project-item { display: flex; align-items: center; padding: 12px 16px; background: #f9fafa; border-radius: 8px; gap: 12px; }
+.project-color { width: 8px; height: 32px; border-radius: 4px; }
+.project-name { font-size: 14px; font-weight: 500; flex: 1; }
+.project-hours { font-size: 13px; color: #646a73; }
+.project-bar { width: 120px; height: 6px; background: #e7e9e8; border-radius: 3px; overflow: hidden; }
+.project-bar-fill { height: 100%; border-radius: 3px; }
+
+/* 页面切换 */
+.page { display: none; }
+.page.active { display: block; }
+
+/* 提示框 */
+.notice { background: #e8f0ff; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #3370ff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+</style>
+</head>
+<body>
+
+<!-- 顶部栏 -->
+<div class="topbar">
+  <div class="topbar-logo">时</div>
+  <div class="topbar-title">时间追踪</div>
+  <div class="topbar-tabs">
+    <div class="topbar-tab active">应用首页</div>
+    <div class="topbar-tab">多维表格</div>
+    <div class="topbar-tab">仪表盘</div>
+  </div>
+  <div class="topbar-right">陈彦喆 · 飞书企业版</div>
+</div>
+
+<div class="layout">
+  <!-- 侧边栏 -->
+  <div class="sidebar">
+    <div class="sidebar-item active" onclick="showPage('home')">🏠 首页</div>
+    <div class="sidebar-item" onclick="showPage('timer')">⏱️ 计时</div>
+    <div class="sidebar-item" onclick="showPage('projects')">📁 项目</div>
+    <div class="sidebar-item" onclick="showPage('reports')">📊 报表</div>
+    <div style="margin-top: 24px; padding: 12px; font-size: 11px; color: #8f959e; border-top: 1px solid #e7e9e8;">
+      <div style="margin-bottom: 4px;">📅 2026-08-21 周五</div>
+      <div>今日已计时 2小时13分</div>
+    </div>
+  </div>
+
+  <!-- 主内容区 -->
+  <div class="main">
+
+    <!-- 首页 -->
+    <div class="page active" id="page-home">
+      <div class="notice">💡 这是飞书多维表格「应用模式」搭建的界面，数据来自多维表格，UI 由应用模式组件渲染。</div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">今日工时</div>
+          <div class="stat-value">2:13</div>
+          <div class="stat-trend up">↑ 较昨日 +0:45</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">本周工时</div>
+          <div class="stat-value">11:28</div>
+          <div class="stat-trend up">↑ 较上周 +2:15</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">本月工时</div>
+          <div class="stat-value">42:36</div>
+          <div class="stat-trend down">↓ 较上月 -3:22</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">活跃项目</div>
+          <div class="stat-value">3</div>
+          <div class="stat-trend up">↑ 新增 1 个</div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-container">
+          <div class="chart-title">本周工时分布</div>
+          <div style="display: flex; align-items: flex-end; height: 160px; gap: 12px; padding: 0 8px;">
+            <div style="flex:1; text-align:center;">
+              <div style="background: #3370ff; height: 60%; border-radius: 4px 4px 0 0;"></div>
+              <div style="font-size: 11px; color: #8f959e; margin-top: 6px;">周一</div>
+            </div>
+            <div style="flex:1; text-align:center;">
+              <div style="background: #3370ff; height: 75%; border-radius: 4px 4px 0 0;"></div>
+              <div style="font-size: 11px; color: #8f959e; margin-top: 6px;">周二</div>
+            </div>
+            <div style="flex:1; text-align:center;">
+              <div style="background: #3370ff; height: 50%; border-radius: 4px 4px 0 0;"></div>
+              <div style="font-size: 11px; color: #8f959e; margin-top: 6px;">周三</div>
+            </div>
+            <div style="flex:1; text-align:center;">
+              <div style="background: #3370ff; height: 90%; border-radius: 4px 4px 0 0;"></div>
+              <div style="font-size: 11px; color: #8f959e; margin-top: 6px;">周四</div>
+            </div>
+            <div style="flex:1; text-align:center;">
+              <div style="background: #34c759; height: 35%; border-radius: 4px 4px 0 0;"></div>
+              <div style="font-size: 11px; color: #34c759; margin-top: 6px; font-weight: 600;">今天</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <div class="chart-title">项目工时占比</div>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span>飞书集成开发</span><span style="color: #8f959e;">18:30</span>
+              </div>
+              <div style="height: 6px; background: #f0f0f0; border-radius: 3px;"><div style="height: 100%; width: 43%; background: #3370ff; border-radius: 3px;"></div></div>
+            </div>
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span>多维表格插件</span><span style="color: #8f959e;">15:45</span>
+              </div>
+              <div style="height: 6px; background: #f0f0f0; border-radius: 3px;"><div style="height: 100%; width: 37%; background: #34c759; border-radius: 3px;"></div></div>
+            </div>
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span>文档撰写</span><span style="color: #8f959e;">8:21</span>
+              </div>
+              <div style="height: 6px; background: #f0f0f0; border-radius: 3px;"><div style="height: 100%; width: 20%; background: #ff9500; border-radius: 3px;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 计时页 -->
+    <div class="page" id="page-timer">
+      <div class="notice">💡 计时器区域是「嵌入的 Vue 前端」，通过 iframe 嵌入到应用模式页面中。点击开始即可计时，数据自动写入多维表格。</div>
+
+      <div class="timer-section">
+        <div class="timer-display" id="timerDisplay">00:00:00</div>
+        <div class="timer-label" id="timerLabel">未开始计时</div>
+        <button class="timer-btn" id="timerBtn" onclick="toggleTimer()">▶ 开始计时</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">今日时间条目</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="project-item">
+            <div class="project-color" style="background: #3370ff;"></div>
+            <div class="project-name">飞书集成开发 - 白名单配置</div>
+            <div class="project-hours">09:25 - 10:48 · 1:23</div>
+          </div>
+          <div class="project-item">
+            <div class="project-color" style="background: #34c759;"></div>
+            <div class="project-name">多维表格插件 - webpack 配置</div>
+            <div class="project-hours">11:02 - 12:30 · 1:28</div>
+          </div>
+          <div class="project-item">
+            <div class="project-color" style="background: #ff9500;"></div>
+            <div class="project-name">文档撰写 - 演示方案</div>
+            <div class="project-hours">14:00 - 14:22 · 0:22</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 项目页 -->
+    <div class="page" id="page-projects">
+      <div class="notice">💡 项目列表由多维表格「项目表」数据驱动，应用模式用「列表组件」渲染。</div>
+
+      <div class="card">
+        <div class="card-title">所有项目</div>
+        <div class="project-list">
+          <div class="project-item">
+            <div class="project-color" style="background: #3370ff;"></div>
+            <div class="project-name">飞书集成开发</div>
+            <div class="project-bar"><div class="project-bar-fill" style="width: 43%; background: #3370ff;"></div></div>
+            <div class="project-hours">18:30 本月</div>
+          </div>
+          <div class="project-item">
+            <div class="project-color" style="background: #34c759;"></div>
+            <div class="project-name">多维表格插件</div>
+            <div class="project-bar"><div class="project-bar-fill" style="width: 37%; background: #34c759;"></div></div>
+            <div class="project-hours">15:45 本月</div>
+          </div>
+          <div class="project-item">
+            <div class="project-color" style="background: #ff9500;"></div>
+            <div class="project-name">文档撰写</div>
+            <div class="project-bar"><div class="project-bar-fill" style="width: 20%; background: #ff9500;"></div></div>
+            <div class="project-hours">8:21 本月</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 报表页 -->
+    <div class="page" id="page-reports">
+      <div class="notice">💡 报表由应用模式「仪表盘组件」+ ECharts 渲染，数据来自多维表格「时间条目表」。</div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">本月总收入（计费工时）</div>
+          <div class="stat-value">¥8,420</div>
+          <div class="stat-trend up">↑ 较上月 +12%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">计费率</div>
+          <div class="stat-value">78%</div>
+          <div class="stat-trend up">↑ +3%</div>
+        </div>
+      </div>
+
+      <div class="chart-container" style="margin-top: 16px;">
+        <div class="chart-title">月度工时趋势</div>
+        <div style="display: flex; align-items: flex-end; height: 180px; gap: 8px; padding: 0 8px;">
+          <div style="flex:1; text-align:center;">
+            <div style="background: #94a3b8; height: 45%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #8f959e; margin-top: 6px;">3月</div>
+          </div>
+          <div style="flex:1; text-align:center;">
+            <div style="background: #94a3b8; height: 55%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #8f959e; margin-top: 6px;">4月</div>
+          </div>
+          <div style="flex:1; text-align:center;">
+            <div style="background: #94a3b8; height: 62%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #8f959e; margin-top: 6px;">5月</div>
+          </div>
+          <div style="flex:1; text-align:center;">
+            <div style="background: #94a3b8; height: 70%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #8f959e; margin-top: 6px;">6月</div>
+          </div>
+          <div style="flex:1; text-align:center;">
+            <div style="background: #94a3b8; height: 85%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #8f959e; margin-top: 6px;">7月</div>
+          </div>
+          <div style="flex:1; text-align:center;">
+            <div style="background: #3370ff; height: 92%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #3370ff; margin-top: 6px; font-weight: 600;">8月</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// 页面切换
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+// 计时器逻辑
+let timerInterval = null;
+let timerRunning = false;
+let timerStart = 0;
+let timerElapsed = 0;
+
+function toggleTimer() {
+  const btn = document.getElementById('timerBtn');
+  const display = document.getElementById('timerDisplay');
+  const label = document.getElementById('timerLabel');
+
+  if (!timerRunning) {
+    timerRunning = true;
+    timerStart = Date.now() - timerElapsed;
+    btn.textContent = '■ 停止';
+    btn.classList.add('stop');
+    label.textContent = '正在计时...';
+    timerInterval = setInterval(() => {
+      timerElapsed = Date.now() - timerStart;
+      const h = String(Math.floor(timerElapsed / 3600000)).padStart(2, '0');
+      const m = String(Math.floor((timerElapsed % 3600000) / 60000)).padStart(2, '0');
+      const s = String(Math.floor((timerElapsed % 60000) / 1000)).padStart(2, '0');
+      display.textContent = `${h}:${m}:${s}`;
+    }, 1000);
+  } else {
+    timerRunning = false;
+    clearInterval(timerInterval);
+    btn.textContent = '▶ 开始计时';
+    btn.classList.remove('stop');
+    label.textContent = `已停止 · 累计 ${display.textContent}`;
+    // 模拟写入多维表格
+    setTimeout(() => {
+      label.textContent = '已保存到多维表格 ✓ · 未开始计时';
+      timerElapsed = 0;
+      display.textContent = '00:00:00';
+    }, 1500);
+  }
+}
+</script>
+
+</body>
+</html>

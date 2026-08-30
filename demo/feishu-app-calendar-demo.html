@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>飞书时间追踪 - 日历视图演示</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f6f7; color: #1f2329; }
+
+/* 顶部栏 */
+.topbar { height: 48px; background: #fff; border-bottom: 1px solid #e7e9e8; display: flex; align-items: center; padding: 0 16px; gap: 16px; }
+.topbar-logo { width: 24px; height: 24px; background: #3370ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; }
+.topbar-title { font-size: 14px; font-weight: 600; }
+.topbar-right { margin-left: auto; font-size: 12px; color: #8f959e; }
+
+/* 布局 */
+.layout { display: flex; min-height: calc(100vh - 48px); }
+.sidebar { width: 200px; background: #fff; border-right: 1px solid #e7e9e8; padding: 12px 8px; flex-shrink: 0; }
+.sidebar-item { padding: 10px 12px; font-size: 14px; color: #646a73; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.sidebar-item:hover { background: #f5f6f7; }
+.sidebar-item.active { background: #e8f0ff; color: #3370ff; font-weight: 600; }
+.main { flex: 1; padding: 20px; overflow: auto; }
+
+/* 卡片 */
+.card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px; }
+.card-title { font-size: 14px; font-weight: 600; color: #1f2329; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+
+/* 顶部统计条 */
+.stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.stat-card { background: #fff; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.stat-label { font-size: 11px; color: #8f959e; margin-bottom: 6px; }
+.stat-value { font-size: 22px; font-weight: 700; color: #1f2329; }
+.stat-trend { font-size: 11px; margin-top: 4px; }
+.stat-trend.up { color: #34c759; }
+.stat-trend.down { color: #ff453a; }
+
+/* 日历视图 */
+.calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.calendar-month { font-size: 18px; font-weight: 700; color: #1f2329; }
+.calendar-nav { display: flex; gap: 8px; align-items: center; }
+.calendar-btn { width: 28px; height: 28px; border: 1px solid #e7e9e8; background: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; color: #646a73; display: flex; align-items: center; justify-content: center; }
+.calendar-btn:hover { background: #f5f6f7; }
+.calendar-today { padding: 4px 12px; font-size: 12px; border: 1px solid #e7e9e8; background: #fff; border-radius: 6px; cursor: pointer; color: #646a73; }
+.calendar-today:hover { background: #f5f6f7; }
+
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.calendar-weekday { text-align: center; font-size: 12px; color: #8f959e; padding: 8px 0; font-weight: 500; }
+.calendar-cell { min-height: 90px; background: #f9fafa; border-radius: 8px; padding: 8px; cursor: pointer; transition: all 0.15s; border: 2px solid transparent; }
+.calendar-cell:hover { background: #f0f1f2; }
+.calendar-cell.other-month { opacity: 0.4; }
+.calendar-cell.today { border-color: #3370ff; background: #e8f0ff; }
+.calendar-cell.selected { border-color: #34c759; background: #e8f9ee; }
+.calendar-date { font-size: 13px; font-weight: 600; color: #1f2329; margin-bottom: 4px; }
+.calendar-cell.today .calendar-date { color: #3370ff; }
+
+/* 日历单元格内的工时条 */
+.time-bar { background: #3370ff; border-radius: 3px; height: 4px; margin-bottom: 3px; opacity: 0.8; }
+.time-bar.project-a { background: #3370ff; }
+.time-bar.project-b { background: #34c759; }
+.time-bar.project-c { background: #ff9500; }
+.time-label { font-size: 10px; color: #646a73; margin-top: 2px; }
+.time-label.has-time { color: #1f2329; font-weight: 600; }
+
+/* 右侧详情面板 */
+.detail-panel { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.detail-date { font-size: 16px; font-weight: 700; color: #1f2329; margin-bottom: 4px; }
+.detail-total { font-size: 13px; color: #646a73; margin-bottom: 16px; }
+.detail-entry { display: flex; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #f0f1f2; gap: 10px; }
+.detail-entry:last-child { border-bottom: none; }
+.detail-color { width: 4px; align-self: stretch; border-radius: 2px; margin-top: 2px; }
+.detail-content { flex: 1; }
+.detail-title { font-size: 13px; font-weight: 500; color: #1f2329; margin-bottom: 2px; }
+.detail-time { font-size: 11px; color: #8f959e; }
+.detail-duration { font-size: 12px; color: #646a73; font-weight: 600; }
+
+/* 双栏布局：日历 + 详情 */
+.calendar-layout { display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
+
+/* 计时器区域 */
+.timer-section { background: linear-gradient(135deg, #fff8e6 0%, #fff 100%); border-radius: 12px; padding: 28px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px; border: 2px dashed #ffd75e; position: relative; }
+.timer-section::before { content: "嵌入区域：Vue 计时器前端"; position: absolute; top: 8px; left: 12px; font-size: 11px; color: #b57800; background: #fff3d6; padding: 2px 8px; border-radius: 4px; }
+.timer-display { font-size: 48px; font-weight: 700; font-variant-numeric: tabular-nums; color: #1f2329; margin-bottom: 6px; letter-spacing: 2px; }
+.timer-label { font-size: 13px; color: #646a73; margin-bottom: 20px; }
+.timer-btn { font-size: 14px; padding: 10px 28px; background: #34c759; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+.timer-btn:hover { background: #2bb24c; transform: translateY(-1px); }
+.timer-btn.stop { background: #ff453a; }
+.timer-btn.stop:hover { background: #e63d34; }
+
+/* 页面切换 */
+.page { display: none; }
+.page.active { display: block; }
+
+/* 提示 */
+.notice { background: #e8f0ff; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #3370ff; margin-bottom: 16px; }
+
+/* 项目颜色图例 */
+.legend { display: flex; gap: 12px; font-size: 11px; color: #646a73; margin-top: 8px; }
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">时</div>
+  <div class="topbar-title">时间追踪</div>
+  <div class="topbar-right">陈彦喆 · 飞书企业版</div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-item active" onclick="showPage('calendar', this)">📅 日历</div>
+    <div class="sidebar-item" onclick="showPage('timer', this)">⏱️ 计时</div>
+    <div class="sidebar-item" onclick="showPage('projects', this)">📁 项目</div>
+    <div class="sidebar-item" onclick="showPage('reports', this)">📊 报表</div>
+    <div style="margin-top: 24px; padding: 12px; font-size: 11px; color: #8f959e; border-top: 1px solid #e7e9e8;">
+      <div style="margin-bottom: 4px;">📅 2026-08-21 周五</div>
+      <div>今日已计时 2:13</div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- 日历页（主界面） -->
+    <div class="page active" id="page-calendar">
+      <div class="notice">💡 主界面采用日历视图，每天的格子内用彩色横条展示工时分布。点击某天可在右侧查看详细条目。</div>
+
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-label">今日工时</div>
+          <div class="stat-value">2:13</div>
+          <div class="stat-trend up">↑ +0:45</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">本周工时</div>
+          <div class="stat-value">11:28</div>
+          <div class="stat-trend up">↑ +2:15</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">本月工时</div>
+          <div class="stat-value">42:36</div>
+          <div class="stat-trend down">↓ -3:22</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">本月记录数</div>
+          <div class="stat-value">38</div>
+          <div class="stat-trend up">↑ +6</div>
+        </div>
+      </div>
+
+      <div class="calendar-layout">
+        <!-- 日历主体 -->
+        <div class="card">
+          <div class="calendar-header">
+            <div class="calendar-month" id="calMonth">2026 年 8 月</div>
+            <div class="calendar-nav">
+              <button class="calendar-btn" onclick="prevMonth()">‹</button>
+              <button class="calendar-today" onclick="goToday()">今天</button>
+              <button class="calendar-btn" onclick="nextMonth()">›</button>
+            </div>
+          </div>
+
+          <div class="calendar-grid" id="calendarGrid">
+            <!-- 周名 -->
+            <div class="calendar-weekday">一</div>
+            <div class="calendar-weekday">二</div>
+            <div class="calendar-weekday">三</div>
+            <div class="calendar-weekday">四</div>
+            <div class="calendar-weekday">五</div>
+            <div class="calendar-weekday" style="color:#ff453a">六</div>
+            <div class="calendar-weekday" style="color:#ff453a">日</div>
+            <!-- 日期格子由 JS 生成 -->
+          </div>
+
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#3370ff"></div>飞书集成开发</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#34c759"></div>多维表格插件</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#ff9500"></div>文档撰写</div>
+          </div>
+        </div>
+
+        <!-- 右侧详情面板 -->
+        <div class="detail-panel">
+          <div class="detail-date" id="detailDate">8 月 21 日 · 周五</div>
+          <div class="detail-total" id="detailTotal">总计 2:13 · 3 条记录</div>
+          <div id="detailEntries">
+            <div class="detail-entry">
+              <div class="detail-color" style="background:#3370ff"></div>
+              <div class="detail-content">
+                <div class="detail-title">飞书集成开发 - 白名单配置</div>
+                <div class="detail-time">09:25 - 10:48</div>
+              </div>
+              <div class="detail-duration">1:23</div>
+            </div>
+            <div class="detail-entry">
+              <div class="detail-color" style="background:#34c759"></div>
+              <div class="detail-content">
+                <div class="detail-title">多维表格插件 - webpack 配置</div>
+                <div class="detail-time">11:02 - 12:30</div>
+              </div>
+              <div class="detail-duration">1:28</div>
+            </div>
+            <div class="detail-entry">
+              <div class="detail-color" style="background:#ff9500"></div>
+              <div class="detail-content">
+                <div class="detail-title">文档撰写 - 演示方案</div>
+                <div class="detail-time">14:00 - 14:22</div>
+              </div>
+              <div class="detail-duration">0:22</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 计时页 -->
+    <div class="page" id="page-timer">
+      <div class="notice">💡 计时器区域是「嵌入的 Vue 前端」，通过 iframe 嵌入到应用模式页面中。点击开始即可计时，数据自动写入多维表格。</div>
+
+      <div class="timer-section">
+        <div class="timer-display" id="timerDisplay">00:00:00</div>
+        <div class="timer-label" id="timerLabel">未开始计时</div>
+        <button class="timer-btn" id="timerBtn" onclick="toggleTimer()">▶ 开始计时</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">今日时间条目</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="detail-entry" style="padding: 12px 16px; background: #f9fafa; border-radius: 8px; border: none;">
+            <div class="detail-color" style="background: #3370ff;"></div>
+            <div class="detail-content">
+              <div class="detail-title">飞书集成开发 - 白名单配置</div>
+              <div class="detail-time">09:25 - 10:48</div>
+            </div>
+            <div class="detail-duration">1:23</div>
+          </div>
+          <div class="detail-entry" style="padding: 12px 16px; background: #f9fafa; border-radius: 8px; border: none;">
+            <div class="detail-color" style="background: #34c759;"></div>
+            <div class="detail-content">
+              <div class="detail-title">多维表格插件 - webpack 配置</div>
+              <div class="detail-time">11:02 - 12:30</div>
+            </div>
+            <div class="detail-duration">1:28</div>
+          </div>
+          <div class="detail-entry" style="padding: 12px 16px; background: #f9fafa; border-radius: 8px; border: none;">
+            <div class="detail-color" style="background: #ff9500;"></div>
+            <div class="detail-content">
+              <div class="detail-title">文档撰写 - 演示方案</div>
+              <div class="detail-time">14:00 - 14:22</div>
+            </div>
+            <div class="detail-duration">0:22</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 项目页 -->
+    <div class="page" id="page-projects">
+      <div class="notice">💡 项目列表由多维表格「项目表」数据驱动，应用模式用「列表组件」渲染。</div>
+
+      <div class="card">
+        <div class="card-title">所有项目</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;" id="projectList">
+          <!-- 由 JS 生成 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 报表页（去掉计费） -->
+    <div class="page" id="page-reports">
+      <div class="notice">💡 报表由应用模式「仪表盘组件」+ ECharts 渲染，数据来自多维表格「时间条目表」。</div>
+
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-label">本月总工时</div>
+          <div class="stat-value">42:36</div>
+          <div class="stat-trend down">↓ -3:22</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">日均工时</div>
+          <div class="stat-value">2:08</div>
+          <div class="stat-trend up">↑ +0:15</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">最长单次计时</div>
+          <div class="stat-value">3:45</div>
+          <div class="stat-trend">8 月 15 日</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">本月活跃天数</div>
+          <div class="stat-value">20</div>
+          <div class="stat-trend up">↑ +2</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 16px;">
+        <div class="card-title">月度工时趋势</div>
+        <div style="display: flex; align-items: flex-end; height: 180px; gap: 8px; padding: 0 8px;">
+          <div style="flex:1; text-align:center;">
+            <div style="background: #94a3b8; height: 45%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #8f959e; margin-top: 6px;">3月</div>
+          </div>
+          <div style="flex:1; text-align:center;">
+            <div style="background: #94a3b8; height: 55%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #8f959e; margin-top: 6px;">4月</div>
+          </div>
+          <div style="flex:1; text-align:center;">
+            <div style="background: #94a3b8; height: 62%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #8f959e; margin-top: 6px;">5月</div>
+          </div>
+          <div style="flex:1; text-align:center;">
+            <div style="background: #94a3b8; height: 70%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #8f959e; margin-top: 6px;">6月</div>
+          </div>
+          <div style="flex:1; text-align:center;">
+            <div style="background: #94a3b8; height: 85%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #8f959e; margin-top: 6px;">7月</div>
+          </div>
+          <div style="flex:1; text-align:center;">
+            <div style="background: #3370ff; height: 92%; border-radius: 4px 4px 0 0;"></div>
+            <div style="font-size: 10px; color: #3370ff; margin-top: 6px; font-weight: 600;">8月</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============ 日历数据（模拟多维表格数据） ============
+// 每天的工时数据：{ 'YYYY-MM-DD': [{project, start, end, duration, title}] }
+const calendarData = {
+  '2026-08-01': [{p:'a', t:'需求评审', d:90}, {p:'b', t:'原型设计', d:120}],
+  '2026-08-04': [{p:'a', t:'接口联调', d:180}, {p:'c', t:'会议纪要', d:45}],
+  '2026-08-05': [{p:'b', t:'前端开发', d:240}, {p:'a', t:'bug修复', d:60}],
+  '2026-08-06': [{p:'a', t:'性能优化', d:150}, {p:'c', t:'文档整理', d:90}],
+  '2026-08-07': [{p:'b', t:'组件开发', d:200}],
+  '2026-08-08': [{p:'c', t:'周报撰写', d:60}],
+  '2026-08-11': [{p:'a', t:'架构设计', d:210}, {p:'b', t:'单元测试', d:90}],
+  '2026-08-12': [{p:'a', t:'代码review', d:120}, {p:'c', t:'技术文档', d:100}],
+  '2026-08-13': [{p:'b', t:'功能开发', d:280}, {p:'a', t:'问题排查', d:45}],
+  '2026-08-14': [{p:'a', t:'部署上线', d:180}, {p:'c', t:'发布说明', d:30}],
+  '2026-08-15': [{p:'b', t:'深度开发', d:225}, {p:'a', t:'调试', d:60}],
+  '2026-08-18': [{p:'a', t:'飞书集成', d:165}, {p:'c', t:'需求文档', d:75}],
+  '2026-08-19': [{p:'b', t:'插件开发', d:240}, {p:'a', t:'联调测试', d:60}],
+  '2026-08-20': [{p:'a', t:'白名单配置', d:83}, {p:'b', t:'webpack配置', d:88}, {p:'c', t:'演示方案', d:22}],
+  '2026-08-21': [{p:'a', t:'白名单配置', d:83}, {p:'b', t:'webpack配置', d:88}, {p:'c', t:'演示方案', d:22}],
+};
+
+const projectColors = { a: '#3370ff', b: '#34c759', c: '#ff9500' };
+const projectNames = { a: '飞书集成开发', b: '多维表格插件', c: '文档撰写' };
+
+// ============ 日历渲染 ============
+let currentYear = 2026;
+let currentMonth = 7; // 0-indexed, 7 = August
+let selectedDate = '2026-08-21';
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function fmtDate(y, m, d) { return `${y}-${pad(m+1)}-${pad(d)}`; }
+
+function renderCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  // 保留前 7 个 weekday 标题
+  while (grid.children.length > 7) grid.removeChild(grid.lastChild);
+
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const lastDay = new Date(currentYear, currentMonth + 1, 0);
+  // 周一=0
+  let startOffset = firstDay.getDay() - 1;
+  if (startOffset < 0) startOffset = 6;
+
+  // 上月末尾
+  const prevLast = new Date(currentYear, currentMonth, 0).getDate();
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const day = prevLast - i;
+    const prevMonth = currentMonth - 1;
+    const prevYear = prevMonth < 0 ? currentYear - 1 : currentYear;
+    const realMonth = prevMonth < 0 ? 11 : prevMonth;
+    grid.appendChild(makeCell(day, fmtDate(prevYear, realMonth, day), true));
+  }
+
+  // 本月
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const dateStr = fmtDate(currentYear, currentMonth, day);
+    const isToday = dateStr === '2026-08-21';
+    grid.appendChild(makeCell(day, dateStr, false, isToday));
+  }
+
+  // 下月开头补齐
+  const totalCells = grid.children.length - 7;
+  const remaining = (7 - (totalCells % 7)) % 7;
+  for (let day = 1; day <= remaining; day++) {
+    const nextMonth = currentMonth + 1;
+    const nextYear = nextMonth > 11 ? currentYear + 1 : currentYear;
+    const realMonth = nextMonth > 11 ? 0 : nextMonth;
+    grid.appendChild(makeCell(day, fmtDate(nextYear, realMonth, day), true));
+  }
+
+  document.getElementById('calMonth').textContent = `${currentYear} 年 ${currentMonth + 1} 月`;
+}
+
+function makeCell(day, dateStr, otherMonth, isToday) {
+  const cell = document.createElement('div');
+  cell.className = 'calendar-cell';
+  if (otherMonth) cell.classList.add('other-month');
+  if (isToday) cell.classList.add('today');
+  if (dateStr === selectedDate) cell.classList.add('selected');
+  cell.onclick = () => selectDate(dateStr);
+
+  const dateDiv = document.createElement('div');
+  dateDiv.className = 'calendar-date';
+  dateDiv.textContent = day;
+  cell.appendChild(dateDiv);
+
+  // 渲染工时条
+  const entries = calendarData[dateStr] || [];
+  const totalMin = entries.reduce((s, e) => s + e.d, 0);
+
+  entries.slice(0, 3).forEach(e => {
+    const bar = document.createElement('div');
+    bar.className = 'time-bar project-' + e.p;
+    // 用宽度表示时长占比
+    bar.style.width = Math.min(100, e.d / 480 * 100) + '%';
+    cell.appendChild(bar);
+  });
+
+  const label = document.createElement('div');
+  label.className = 'time-label' + (totalMin > 0 ? ' has-time' : '');
+  if (totalMin > 0) {
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    label.textContent = `${h}:${pad(m)}`;
+  } else {
+    label.textContent = '—';
+    label.style.opacity = '0.4';
+  }
+  cell.appendChild(label);
+
+  return cell;
+}
+
+function selectDate(dateStr) {
+  selectedDate = dateStr;
+  renderCalendar();
+  renderDetail();
+}
+
+function renderDetail() {
+  const [y, m, d] = selectedDate.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+  document.getElementById('detailDate').textContent = `${m} 月 ${d} 日 · ${weekdays[date.getDay()]}`;
+
+  const entries = calendarData[selectedDate] || [];
+  const totalMin = entries.reduce((s, e) => s + e.d, 0);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  document.getElementById('detailTotal').textContent =
+    `总计 ${h}:${pad(m)} · ${entries.length} 条记录`;
+
+  const container = document.getElementById('detailEntries');
+  container.innerHTML = '';
+  if (entries.length === 0) {
+    container.innerHTML = '<div style="text-align:center; color:#8f959e; padding:24px 0; font-size:13px;">当天无计时记录</div>';
+    return;
+  }
+  entries.forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'detail-entry';
+    const eh = Math.floor(e.d / 60);
+    const em = e.d % 60;
+    div.innerHTML = `
+      <div class="detail-color" style="background:${projectColors[e.p]}"></div>
+      <div class="detail-content">
+        <div class="detail-title">${e.t}</div>
+        <div class="detail-time">${projectNames[e.p]}</div>
+      </div>
+      <div class="detail-duration">${eh}:${pad(em)}</div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function prevMonth() {
+  currentMonth--;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  renderCalendar();
+}
+function nextMonth() {
+  currentMonth++;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  renderCalendar();
+}
+function goToday() {
+  currentYear = 2026; currentMonth = 7;
+  selectedDate = '2026-08-21';
+  renderCalendar();
+  renderDetail();
+}
+
+// ============ 页面切换 ============
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ============ 计时器 ============
+let timerInterval = null;
+let timerRunning = false;
+let timerStart = 0;
+let timerElapsed = 0;
+
+function toggleTimer() {
+  const btn = document.getElementById('timerBtn');
+  const display = document.getElementById('timerDisplay');
+  const label = document.getElementById('timerLabel');
+
+  if (!timerRunning) {
+    timerRunning = true;
+    timerStart = Date.now() - timerElapsed;
+    btn.textContent = '■ 停止';
+    btn.classList.add('stop');
+    label.textContent = '正在计时...';
+    timerInterval = setInterval(() => {
+      timerElapsed = Date.now() - timerStart;
+      const h = String(Math.floor(timerElapsed / 3600000)).padStart(2, '0');
+      const m = String(Math.floor((timerElapsed % 3600000) / 60000)).padStart(2, '0');
+      const s = String(Math.floor((timerElapsed % 60000) / 1000)).padStart(2, '0');
+      display.textContent = `${h}:${m}:${s}`;
+    }, 1000);
+  } else {
+    timerRunning = false;
+    clearInterval(timerInterval);
+    btn.textContent = '▶ 开始计时';
+    btn.classList.remove('stop');
+    label.textContent = `已停止 · 累计 ${display.textContent}`;
+    setTimeout(() => {
+      label.textContent = '已保存到多维表格 ✓ · 未开始计时';
+      timerElapsed = 0;
+      display.textContent = '00:00:00';
+    }, 1500);
+  }
+}
+
+// ============ 项目列表 ============
+function renderProjects() {
+  const projects = [
+    { name: '飞书集成开发', color: '#3370ff', hours: '18:30', percent: 43 },
+    { name: '多维表格插件', color: '#34c759', hours: '15:45', percent: 37 },
+    { name: '文档撰写', color: '#ff9500', hours: '8:21', percent: 20 },
+  ];
+  const container = document.getElementById('projectList');
+  container.innerHTML = '';
+  projects.forEach(p => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;padding:12px 16px;background:#f9fafa;border-radius:8px;gap:12px;';
+    div.innerHTML = `
+      <div style="width:8px;height:32px;border-radius:4px;background:${p.color};"></div>
+      <div style="font-size:14px;font-weight:500;flex:1;">${p.name}</div>
+      <div style="width:120px;height:6px;background:#e7e9e8;border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${p.percent}%;background:${p.color};border-radius:3px;"></div>
+      </div>
+      <div style="font-size:13px;color:#646a73;width:80px;text-align:right;">${p.hours} 本月</div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ============ 初始化 ============
+renderCalendar();
+renderDetail();
+renderProjects();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,2 @@
+#!/var/lang/node16/bin/node
+require("./index.js")

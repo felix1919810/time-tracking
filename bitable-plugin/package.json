@@ -1,0 +1,36 @@
+{
+  "name": "time-tracking-bitable-plugin",
+  "version": "1.0.0",
+  "description": "飞书多维表格插件 - 时间追踪（Toggl Track 复刻）",
+  "scripts": {
+    "dev": "webpack serve --mode development",
+    "build": "webpack --mode production",
+    "upload": "opdev upload ./dist"
+  },
+  "dependencies": {
+    "@lark-opdev/block-bitable-api": "latest",
+    "echarts": "^5.4.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/preset-env": "^8.0.2",
+    "@babel/preset-react": "^8.0.1",
+    "@babel/preset-typescript": "^8.0.1",
+    "@lark-opdev/block-bitable-webpack-utils": "latest",
+    "@vue/compiler-sfc": "^3.4.0",
+    "babel-loader": "^10.1.1",
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.8.0",
+    "html-webpack-plugin": "^5.5.0",
+    "style-loader": "^3.3.0",
+    "vue-loader": "^17.4.0",
+    "vue-template-compiler": "^2.7.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.0",
+    "webpack-dev-server": "^4.15.0"
+  }
+}

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>飞书时间追踪 - 报表 & 项目页演示</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #fff; color: #1f2329; font-size: 13px; }
+
+.topbar { height: 48px; background: #fff; border-bottom: 1px solid #e7e9e8; display: flex; align-items: center; padding: 0 16px; gap: 12px; }
+.topbar-logo { width: 24px; height: 24px; background: #e01b4f; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; }
+.topbar-title { font-size: 14px; font-weight: 600; }
+.topbar-tabs { display: flex; gap: 2px; margin-left: 16px; }
+.topbar-tab { padding: 6px 12px; font-size: 13px; color: #646a73; border-radius: 6px; cursor: pointer; }
+.topbar-tab.active { color: #1f2329; font-weight: 600; background: #f5f6f7; }
+.topbar-right { margin-left: auto; }
+.topbar-avatar { width: 28px; height: 28px; border-radius: 50%; background: #3370ff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+
+.layout { display: flex; min-height: calc(100vh - 48px); }
+.sidebar { width: 200px; background: #fafbfc; border-right: 1px solid #e7e9e8; padding: 12px 8px; flex-shrink: 0; }
+.sidebar-section { font-size: 11px; color: #8f959e; padding: 12px 12px 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.sidebar-item { padding: 8px 12px; font-size: 13px; color: #646a73; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.sidebar-item:hover { background: #f0f1f2; }
+.sidebar-item.active { background: #e8f0ff; color: #3370ff; font-weight: 600; }
+.sidebar-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+.main { flex: 1; overflow: auto; padding: 24px; }
+
+/* 页面切换 */
+.page { display: none; }
+.page.active { display: block; }
+
+/* 报表页 */
+.report-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.report-title { font-size: 22px; font-weight: 700; }
+.report-controls { display: flex; gap: 8px; align-items: center; }
+.date-range { padding: 8px 12px; border: 1px solid #e7e9e8; border-radius: 8px; font-size: 13px; color: #1f2329; background: #fafbfc; cursor: pointer; }
+.export-btn { padding: 8px 16px; background: #1f2329; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: #fff; border: 1px solid #f0f1f2; border-radius: 12px; padding: 18px; }
+.stat-label { font-size: 12px; color: #8f959e; margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: 700; color: #1f2329; }
+.stat-trend { font-size: 11px; margin-top: 6px; }
+.stat-trend.up { color: #34c759; }
+.stat-trend.down { color: #ff453a; }
+
+.chart-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-bottom: 24px; }
+.chart-card { background: #fff; border: 1px solid #f0f1f2; border-radius: 12px; padding: 20px; }
+.chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: #1f2329; }
+
+/* 按项目分布 - 横向柱状图 */
+.proj-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.proj-bar-label { width: 120px; font-size: 12px; color: #1f2329; }
+.proj-bar-track { flex: 1; height: 22px; background: #f5f6f7; border-radius: 4px; overflow: hidden; position: relative; }
+.proj-bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: #fff; font-size: 11px; font-weight: 600; }
+.proj-bar-hours { width: 60px; font-size: 12px; color: #646a73; text-align: right; }
+
+/* 按天分布 - 纵向柱状图 */
+.day-chart { display: flex; align-items: flex-end; height: 200px; gap: 12px; padding: 0 8px; }
+.day-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.day-bar { width: 100%; background: #3370ff; border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s; }
+.day-bar.weekend { background: #94a3b8; }
+.day-bar.today { background: #e01b4f; }
+.day-label { font-size: 11px; color: #8f959e; }
+.day-hours { font-size: 11px; color: #646a73; font-weight: 600; }
+
+/* 按时段热力图 */
+.heatmap { display: grid; grid-template-columns: 40px repeat(7, 1fr); gap: 2px; font-size: 10px; }
+.heatmap-time { color: #8f959e; text-align: right; padding-right: 4px; line-height: 24px; }
+.heatmap-cell { height: 24px; border-radius: 3px; background: #f5f6f7; }
+.heatmap-dow { text-align: center; color: #8f959e; padding: 4px 0; font-size: 11px; }
+
+/* 详细列表 */
+.detail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.detail-table th { text-align: left; padding: 10px 12px; background: #fafbfc; color: #646a73; font-weight: 600; font-size: 12px; border-bottom: 1px solid #e7e9e8; }
+.detail-table td { padding: 10px 12px; border-bottom: 1px solid #f0f1f2; color: #1f2329; }
+.detail-table tr:hover { background: #fafbfc; }
+.detail-table .proj-tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 12px; font-size: 11px; color: #fff; }
+
+/* 项目页 */
+.projects-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.project-card { background: #fff; border: 1px solid #f0f1f2; border-radius: 12px; padding: 20px; }
+.project-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.project-card-dot { width: 12px; height: 12px; border-radius: 3px; }
+.project-card-name { font-size: 15px; font-weight: 600; flex: 1; }
+.project-card-menu { color: #8f959e; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+.project-card-menu:hover { background: #f5f6f7; }
+.project-stat-row { display: flex; justify-content: space-between; font-size: 12px; color: #646a73; margin-bottom: 6px; }
+.project-progress-track { height: 6px; background: #f5f6f7; border-radius: 3px; overflow: hidden; margin-bottom: 16px; }
+.project-progress-fill { height: 100%; border-radius: 3px; }
+.project-hours-this-month { font-size: 24px; font-weight: 700; color: #1f2329; margin-bottom: 4px; }
+.project-hours-label { font-size: 11px; color: #8f959e; margin-bottom: 16px; }
+.project-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.project-tag { padding: 3px 10px; border-radius: 12px; font-size: 11px; background: #f5f6f7; color: #646a73; }
+
+.new-project-btn { width: 100%; padding: 28px; border: 2px dashed #e7e9e8; background: #fafbfc; border-radius: 12px; cursor: pointer; font-size: 14px; color: #8f959e; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.new-project-btn:hover { border-color: #3370ff; color: #3370ff; background: #f5f8ff; }
+
+/* 颜色 */
+.p1 { background: #e01b4f; } .p2 { background: #3370ff; } .p3 { background: #34c759; } .p4 { background: #ff9500; } .p5 { background: #af52de; }
+.d1 { background: #e01b4f; } .d2 { background: #3370ff; } .d3 { background: #34c759; } .d4 { background: #ff9500; } .d5 { background: #af52de; }
+.heat-1 { background: #fef0f4; }
+.heat-2 { background: #fdd6e0; }
+.heat-3 { background: #f9adc0; }
+.heat-4 { background: #f27998; }
+.heat-5 { background: #e01b4f; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">时</div>
+  <div class="topbar-title">时间追踪</div>
+  <div class="topbar-tabs">
+    <div class="topbar-tab">计时</div>
+    <div class="topbar-tab active" id="tabReports" onclick="showPage('reports')">报表</div>
+    <div class="topbar-tab" id="tabProjects" onclick="showPage('projects')">项目</div>
+  </div>
+  <div class="topbar-right"><div class="topbar-avatar">陈</div></div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-section">视图</div>
+    <div class="sidebar-item">📅 本周</div>
+    <div class="sidebar-item">📈 今日</div>
+    <div class="sidebar-section">项目</div>
+    <div class="sidebar-item"><span class="sidebar-dot d1"></span>飞书集成开发</div>
+    <div class="sidebar-item"><span class="sidebar-dot d2"></span>多维表格插件</div>
+    <div class="sidebar-item"><span class="sidebar-dot d3"></span>前端重构</div>
+    <div class="sidebar-item"><span class="sidebar-dot d4"></span>文档撰写</div>
+    <div class="sidebar-item"><span class="sidebar-dot d5"></span>会议讨论</div>
+    <div class="sidebar-item" style="color: #8f959e;">+ 新建项目</div>
+    <div class="sidebar-section">标签</div>
+    <div class="sidebar-item"># 紧急</div>
+    <div class="sidebar-item"># 长期</div>
+    <div class="sidebar-item"># 学习</div>
+  </div>
+
+  <div class="main">
+    <!-- 报表页 -->
+    <div class="page active" id="page-reports">
+      <div class="report-header">
+        <div class="report-title">报表</div>
+        <div class="report-controls">
+          <div class="date-range">📅 2026-08-01 至 2026-08-21 ▾</div>
+          <button class="export-btn">导出 CSV</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">总工时</div>
+          <div class="stat-value">42:36</div>
+          <div class="stat-trend down">↓ 较上月 -3:22</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">日均工时</div>
+          <div class="stat-value">2:08</div>
+          <div class="stat-trend up">↑ +0:15</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">活跃天数</div>
+          <div class="stat-value">20</div>
+          <div class="stat-trend up">↑ +2</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">最长单次</div>
+          <div class="stat-value">3:45</div>
+          <div class="stat-trend">8 月 15 日</div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">按项目工时分布</div>
+          <div id="projBars"></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title">按天工时分布（本周）</div>
+          <div class="day-chart" id="dayChart"></div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom: 24px;">
+        <div class="chart-title">按时段热力图（什么时间最常计时）</div>
+        <div class="heatmap" id="heatmap"></div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:11px; color:#8f959e; margin-top:12px;">
+          <span>少</span>
+          <div style="width:16px;height:16px;background:#fef0f4;border-radius:3px;"></div>
+          <div style="width:16px;height:16px;background:#fdd6e0;border-radius:3px;"></div>
+          <div style="width:16px;height:16px;background:#f9adc0;border-radius:3px;"></div>
+          <div style="width:16px;height:16px;background:#f27998;border-radius:3px;"></div>
+          <div style="width:16px;height:16px;background:#e01b4f;border-radius:3px;"></div>
+          <span>多</span>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">详细条目（最近 5 条）</div>
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>描述</th>
+              <th>项目</th>
+              <th>时长</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>08-21</td>
+              <td>演示方案文档</td>
+              <td><span class="proj-tag p4">文档撰写</span></td>
+              <td>0:22</td>
+            </tr>
+            <tr>
+              <td>08-21</td>
+              <td>webpack 配置</td>
+              <td><span class="proj-tag p2">多维表格插件</span></td>
+              <td>1:28</td>
+            </tr>
+            <tr>
+              <td>08-21</td>
+              <td>白名单配置</td>
+              <td><span class="proj-tag p1">飞书集成开发</span></td>
+              <td>1:23</td>
+            </tr>
+            <tr>
+              <td>08-20</td>
+              <td>bitable-plugin 编译</td>
+              <td><span class="proj-tag p2">多维表格插件</span></td>
+              <td>1:45</td>
+            </tr>
+            <tr>
+              <td>08-20</td>
+              <td>前端构建优化</td>
+              <td><span class="proj-tag p3">前端重构</span></td>
+              <td>1:00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 项目页 -->
+    <div class="page" id="page-projects">
+      <div class="report-header">
+        <div class="report-title">项目</div>
+        <div class="report-controls">
+          <div class="date-range">📋 5 个项目 ▾</div>
+        </div>
+      </div>
+
+      <div class="projects-grid" id="projectsGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ 数据 ============
+const projects = [
+  {id: 1, name: '飞书集成开发', color: 'p1', thisMonth: '18:30', lastMonth: '15:20', entries: 24, tags: ['紧急', '长期']},
+  {id: 2, name: '多维表格插件', color: 'p2', thisMonth: '15:45', lastMonth: '22:10', entries: 18, tags: ['长期']},
+  {id: 3, name: '前端重构', color: 'p3', thisMonth: '8:21', lastMonth: '10:45', entries: 12, tags: ['长期']},
+  {id: 4, name: '文档撰写', color: 'p4', thisMonth: '6:15', lastMonth: '4:30', entries: 8, tags: []},
+  {id: 5, name: '会议讨论', color: 'p5', thisMonth: '3:45', lastMonth: '5:15', entries: 6, tags: ['紧急']},
+];
+
+const projectNames = {1:'飞书集成开发', 2:'多维表格插件', 3:'前端重构', 4:'文档撰写', 5:'会议讨论'};
+
+// 按项目工时（横向柱状图）
+const projHours = [
+  {p: 1, hours: 18.5, color: '#e01b4f'},  // 18:30
+  {p: 2, hours: 15.75, color: '#3370ff'}, // 15:45
+  {p: 3, hours: 8.35, color: '#34c759'},  // 8:21
+  {p: 4, hours: 6.25, color: '#ff9500'},  // 6:15
+  {p: 5, hours: 3.75, color: '#af52de'},  // 3:45
+];
+const maxProjHour = Math.max(...projHours.map(p => p.hours));
+
+// 按天工时（本周）
+const dayHours = [
+  {day: '周一', hours: 5.25, isWeekend: false, isToday: false},  // 5:15
+  {day: '周二', hours: 6.5, isWeekend: false, isToday: false},   // 6:30
+  {day: '周三', hours: 5.25, isWeekend: false, isToday: false},  // 5:15
+  {day: '周四', hours: 3.38, isWeekend: false, isToday: true},   // 3:23 (今天)
+  {day: '周五', hours: 0, isWeekend: false, isToday: false},
+  {day: '周六', hours: 0, isWeekend: true, isToday: false},
+  {day: '周日', hours: 0, isWeekend: true, isToday: false},
+];
+const maxDayHour = Math.max(...dayHours.map(d => d.hours), 8);
+
+// 时段热力图（7 天 × 12 小时，8:00-20:00）
+// 值 0-5 表示热度
+const heatmapData = [
+  // 周一-周日，每列 12 个值（对应 8:00-20:00 每小时）
+  [0,3,4,2,0,1,4,3,2,0,0,0], // 周一
+  [0,5,4,3,1,2,3,4,2,0,0,0], // 周二
+  [0,2,4,5,3,1,2,3,1,0,0,0], // 周三
+  [0,4,3,2,0,1,3,2,1,0,0,0], // 周四（今天）
+  [0,0,0,0,0,0,0,0,0,0,0,0], // 周五
+  [0,0,0,0,0,0,0,0,0,0,0,0], // 周六
+  [0,0,0,0,0,0,0,0,0,0,0,0], // 周日
+];
+
+// ============ 渲染按项目柱状图 ============
+function renderProjBars() {
+  const container = document.getElementById('projBars');
+  container.innerHTML = '';
+  projHours.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'proj-bar-row';
+    const percent = (p.hours / maxProjHour) * 100;
+    const h = Math.floor(p.hours);
+    const m = Math.round((p.hours - h) * 60);
+    row.innerHTML = `
+      <div class="proj-bar-label">${projectNames[p.p]}</div>
+      <div class="proj-bar-track">
+        <div class="proj-bar-fill" style="width:${percent}%; background:${p.color};">${percent > 25 ? h+':'+String(m).padStart(2,'0') : ''}</div>
+      </div>
+      <div class="proj-bar-hours">${h}:${String(m).padStart(2,'0')}</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// ============ 渲染按天柱状图 ============
+function renderDayChart() {
+  const container = document.getElementById('dayChart');
+  container.innerHTML = '';
+  dayHours.forEach(d => {
+    const col = document.createElement('div');
+    col.className = 'day-bar-col';
+    const height = (d.hours / maxDayHour) * 160;
+    const h = Math.floor(d.hours);
+    const m = Math.round((d.hours - h) * 60);
+    col.innerHTML = `
+      <div class="day-hours">${d.hours > 0 ? h+':'+String(m).padStart(2,'0') : ''}</div>
+      <div class="day-bar ${d.isWeekend ? 'weekend' : ''} ${d.isToday ? 'today' : ''}" style="height:${height}px;"></div>
+      <div class="day-label">${d.day}</div>
+    `;
+    container.appendChild(col);
+  });
+}
+
+// ============ 渲染热力图 ============
+function renderHeatmap() {
+  const container = document.getElementById('heatmap');
+  container.innerHTML = '';
+
+  // 左上角空
+  const corner = document.createElement('div');
+  container.appendChild(corner);
+
+  // 顶部星期
+  ['周一','周二','周三','周四','周五','周六','周日'].forEach(dow => {
+    const d = document.createElement('div');
+    d.className = 'heatmap-dow';
+    d.textContent = dow;
+    container.appendChild(d);
+  });
+
+  // 每行一个小时
+  for (let h = 0; h < 12; h++) {
+    const hour = 8 + h;
+    // 时间标签
+    const t = document.createElement('div');
+    t.className = 'heatmap-time';
+    t.textContent = `${String(hour).padStart(2,'0')}:00`;
+    container.appendChild(t);
+
+    // 7 天
+    for (let dow = 0; dow < 7; dow++) {
+      const val = heatmapData[dow][h];
+      const cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      if (val > 0) cell.classList.add('heat-' + val);
+      cell.title = `周${'一二三四五六日'[dow]} ${String(hour).padStart(2,'0')}:00 - 热度 ${val}`;
+      container.appendChild(cell);
+    }
+  }
+}
+
+// ============ 渲染项目页 ============
+function renderProjects() {
+  const container = document.getElementById('projectsGrid');
+  container.innerHTML = '';
+
+  projects.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'project-card';
+
+    // 计算上月对比百分比
+    const thisH = parseFloat(p.thisMonth.replace(':', '.'));
+    const lastH = parseFloat(p.lastMonth.replace(':', '.'));
+    const diff = thisH - lastH;
+    const diffText = diff > 0 ? `↑ ${Math.abs(diff).toFixed(1)}h` : (diff < 0 ? `↓ ${Math.abs(diff).toFixed(1)}h` : '持平');
+    const diffColor = diff > 0 ? '#34c759' : (diff < 0 ? '#ff453a' : '#8f959e');
+
+    // 进度条（占本月总工时的比例）
+    const totalMonth = 42.6; // 42:36
+    const percent = Math.min(100, (thisH / totalMonth) * 100);
+
+    card.innerHTML = `
+      <div class="project-card-header">
+        <div class="project-card-dot ${p.color}"></div>
+        <div class="project-card-name">${p.name}</div>
+        <div class="project-card-menu">⋯</div>
+      </div>
+      <div class="project-hours-this-month">${p.thisMonth}</div>
+      <div class="project-hours-label">本月工时 · ${p.entries} 条记录</div>
+      <div class="project-stat-row">
+        <span>占本月总工时</span>
+        <span>${percent.toFixed(1)}%</span>
+      </div>
+      <div class="project-progress-track">
+        <div class="project-progress-fill ${p.color}" style="width:${percent}%;"></div>
+      </div>
+      <div class="project-stat-row">
+        <span>较上月</span>
+        <span style="color:${diffColor};">${diffText}</span>
+      </div>
+      ${p.tags.length > 0 ? `
+        <div class="project-tags" style="margin-top: 12px;">
+          ${p.tags.map(t => `<span class="project-tag">#${t}</span>`).join('')}
+        </div>
+      ` : ''}
+    `;
+    container.appendChild(card);
+  });
+
+  // 新建项目按钮
+  const newBtn = document.createElement('div');
+  newBtn.className = 'new-project-btn';
+  newBtn.innerHTML = '＋ 新建项目';
+  newBtn.onclick = () => alert('新建项目（演示）');
+  // 把按钮放在 grid 里
+  const grid = document.getElementById('projectsGrid');
+  grid.appendChild(newBtn);
+}
+
+// ============ 页面切换 ============
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.topbar-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+}
+
+// ============ 初始化 ============
+renderProjBars();
+renderDayChart();
+renderHeatmap();
+renderProjects();
+</script>
+
+</body>
+</html>

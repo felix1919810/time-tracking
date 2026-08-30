@@ -1,0 +1,30 @@
+{
+  "app_id": "cli_aa0e40ef3fe19bcd",
+  "app_name": "时间追踪",
+  "app_type": "bitable",
+  "version": "1.0.0",
+  "description": "飞书时间追踪插件，复刻 Toggl Track 的计时/项目管理/报表功能",
+  "developer": {
+    "name": "felix",
+    "email": "felix@local"
+  },
+  "extensions": [
+    {
+      "type": "main_view",
+      "name": "时间追踪",
+      "entry": "dist/main.js",
+      "permissions": [
+        "bitable:app:readonly",
+        "bitable:table:readonly",
+        "bitable:record:read",
+        "bitable:record:write"
+      ]
+    }
+  ],
+  "permissions": [
+    "bitable:app:readonly",
+    "bitable:table:readonly",
+    "bitable:record:read",
+    "bitable:record:write"
+  ]
+}
