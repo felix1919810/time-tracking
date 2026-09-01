@@ -375,6 +375,176 @@ app.post('/entries', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 
+// POST /entries/batch → 批量导入 { rows: [{ 日期, 成员, 任务名称, 任务分类, 国家, 任务开始时间, 任务结束时间, 工时, 备注 }] }
+// 权限: admin 可导入所有人; team_admin 只能导入本团队; member 只能导入自己
+app.post('/entries/batch', async (req, res) => {
+  try {
+    const { appToken, tableId } = getCtx(req)
+    const { rows, username, role } = req.body || {}
+    if (!Array.isArray(rows)) return res.status(400).json({ error: 'rows 必填且为数组' })
+
+    // ── 权限校验 ──
+    // admin: 允许所有成员
+    // team_admin: 只允许本团队的成员 (查用户表拿团队, 再校验每行成员是否在本团队)
+    // member: 只允许 username 自己
+    const allowedMembers = new Set()  // 空集合 = 允许所有 (admin)
+    let permError = null
+
+    if (role === 'admin') {
+      // 允许所有人
+    } else if (role === 'team_admin') {
+      // 查用户表, 拿本团队成员列表
+      try {
+        const userData = await lark(`/bitable/v1/apps/${appToken}/tables/${DEFAULT_USER_TABLE}/records?page_size=200`)
+        const userItems = userData.data.items || []
+        // 找当前用户的团队
+        let myTeam = ''
+        for (const u of userItems) {
+          if (u.fields['用户名'] === username) {
+            const t = u.fields['团队']
+            myTeam = typeof t === 'string' ? t : (Array.isArray(t) ? (t[0]?.text || t[0] || '') : '')
+            break
+          }
+        }
+        if (!myTeam) {
+          permError = '无法确定你的团队, 导入失败'
+        } else {
+          // 收集本团队所有成员的 username
+          for (const u of userItems) {
+            const t = u.fields['团队']
+            const teamVal = typeof t === 'string' ? t : (Array.isArray(t) ? (t[0]?.text || t[0] || '') : '')
+            if (teamVal === myTeam) {
+              const un = u.fields['用户名']
+              if (un) allowedMembers.add(un)
+            }
+          }
+        }
+      } catch (e) {
+        permError = '权限校验失败: ' + e.message
+      }
+    } else if (role === 'member' || !role) {
+      // 只允许导入自己
+      if (!username) {
+        permError = '未登录, 导入失败'
+      } else {
+        allowedMembers.add(username)
+      }
+    }
+
+    if (permError) {
+      return res.status(403).json({ error: permError, success: 0, failed: rows.length })
+    }
+
+    // 校验每行数据的"成员"是否在权限范围内
+    if (allowedMembers.size > 0) {
+      for (const r of rows) {
+        const member = r['成员'] || r['用户'] || r['user'] || r['username'] || ''
+        if (!allowedMembers.has(member)) {
+          return res.status(403).json({
+            error: `身份不合规: 你没有权限导入成员 "${member}" 的数据`,
+            success: 0,
+            failed: rows.length,
+          })
+        }
+      }
+    }
+
+    const BATCH = 100
+    let success = 0
+    let failed = 0
+    const errors = []
+
+    const buildFields = (r) => {
+      // parseTime: 把各种格式的时间字符串解析成飞书 UTC 毫秒时间戳
+      // 支持格式: "2026-08-31 14:00:00", "2026/8/31 9:00", "2026-08-31", "2026/8/31"
+      // 飞书 start_time/end_time (type=5) 存 UTC 毫秒时间戳, 显示时自动转北京时间
+      // 用户输入的是北京时间, 所以 UTC = 北京时间 - 8h
+      const parseTime = (v) => {
+        if (!v && v !== 0) return null
+        if (typeof v === 'number') return v
+        const s = String(v).trim()
+        if (!s) return null
+        if (/^\d+$/.test(s)) return parseInt(s, 10)
+        // 支持 - 或 / 分隔, 月/日/时/分/秒可选前导零
+        const m = s.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/)
+        if (!m) {
+          // 兜底: 尝试 new Date 解析
+          const d = new Date(s.replace(' ', 'T'))
+          return isNaN(d.getTime()) ? null : d.getTime()
+        }
+        const [, yy, mm, dd, hh = '0', mi = '0', ss = '0'] = m
+        const utcMs = Date.UTC(+yy, +mm - 1, +dd, +hh, +mi, +ss)
+        return utcMs - 8 * 3600 * 1000
+      }
+      // 支持中文 key (CSV 表头) 和英文 key (前端映射)
+      let startTime = parseTime(r['任务开始时间'] ?? r['开始时间'] ?? r['startTime'])
+      let endTime = parseTime(r['任务结束时间'] ?? r['结束时间'] ?? r['endTime'])
+      // startTime 为空时, 用 date 字段作为开始时间
+      if (startTime === null) {
+        const dateStr = r['日期'] ?? r['date'] ?? ''
+        startTime = parseTime(dateStr)
+      }
+      // endTime 为空时, 用 startTime + 工时推算
+      if (endTime === null && startTime !== null) {
+        const hoursRaw = r['工时'] ?? r['hours']
+        if (hoursRaw !== undefined && hoursRaw !== '' && !isNaN(parseFloat(hoursRaw))) {
+          endTime = startTime + Math.round(parseFloat(hoursRaw) * 3600 * 1000)
+        } else {
+          endTime = startTime
+        }
+      }
+      let durSec = null
+      const hoursRaw = r['工时'] ?? r['hours']
+      if (hoursRaw !== undefined && hoursRaw !== '' && !isNaN(parseFloat(hoursRaw))) {
+        durSec = Math.round(parseFloat(hoursRaw) * 3600)
+      } else if (startTime && endTime) {
+        durSec = Math.max(0, Math.round((endTime - startTime) / 1000))
+      }
+      const fields = {
+        'user': r['成员'] || r['用户'] || r['user'] || '',
+        'description': r['任务名称'] || r['描述'] || r['description'] || '',
+        'category': r['任务分类'] || r['分类'] || r['category'] || '',
+        'country': r['国家'] || r['country'] || '',
+        'notes': r['备注'] || r['remark'] || r['notes'] || '',
+      }
+      if (startTime) fields['start_time'] = startTime
+      if (endTime) fields['end_time'] = endTime
+      // 用中文字段名写入时长字段, lark 函数会用 UTF-8 Buffer 发送
+      if (durSec !== null) {
+        fields['时长(秒)'] = durSec
+        fields['时长（小时）'] = durSec / 3600
+      }
+      return fields
+    }
+
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const slice = rows.slice(i, i + BATCH)
+      // 过滤掉关键字段 (user/description) 为空的行, 避免创建空白条目
+      const records = slice
+        .map(r => ({ fields: buildFields(r), raw: r }))
+        .filter(item => item.fields.user && item.fields.description)
+        .map(item => ({ fields: item.fields }))
+      const skipped = slice.length - records.length
+      if (records.length === 0) {
+        failed += slice.length
+        continue
+      }
+      try {
+        const data = await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records/batch_create`, 'POST', { records })
+        const created = data.data?.records?.length || 0
+        success += created
+        const batchFailed = (records.length - created) + skipped
+        if (batchFailed > 0) failed += batchFailed
+      } catch (e) {
+        failed += records.length
+        errors.push(`批次 ${Math.floor(i / BATCH) + 1}: ${e.message}`)
+      }
+    }
+
+    res.json({ success, failed, errors: errors.slice(0, 10) })
+  } catch (e) { res.status(500).json({ error: e.message }) }
+})
+
 // PATCH /api/entry?id=xxx → 编辑条目
 app.patch('/entry', async (req, res) => {
   try {

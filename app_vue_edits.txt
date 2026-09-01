@@ -1,0 +1,5770 @@
+=== Edit #1 (turn 289) ===
+--- OLD ---
+const HOUR_PX = 28
+--- NEW ---
+const HOUR_PX = 48
+
+=== Edit #2 (turn 289) ===
+--- OLD ---
+.day-body { position: relative; height: 672px; } /* 24h * 28px */
+--- NEW ---
+.day-body { position: relative; height: 1152px; } /* 24h * 48px */
+
+=== Edit #3 (turn 291) ===
+--- OLD ---
+.time-cell {
+  height: 28px; padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+--- NEW ---
+.time-cell {
+  height: 48px; padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+
+=== Edit #4 (turn 292) ===
+--- OLD ---
+// ───── 常量 ─────
+const HOUR_PX = 48
+--- NEW ---
+// ───── 常量 ─────
+const HOUR_PX = 64
+
+=== Edit #5 (turn 292) ===
+--- OLD ---
+.time-cell {
+  height: 48px; padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+--- NEW ---
+.time-cell {
+  height: 64px; padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+
+=== Edit #6 (turn 292) ===
+--- OLD ---
+.day-body { position: relative; height: 1152px; } /* 24h * 48px */
+--- NEW ---
+.day-body { position: relative; height: 1536px; } /* 24h * 64px */
+
+=== Edit #7 (turn 293) ===
+--- OLD ---
+// ───── 常量 ─────
+const HOUR_PX = 64
+--- NEW ---
+// ───── 常量 ─────
+const HOUR_PX = 192
+
+=== Edit #8 (turn 293) ===
+--- OLD ---
+.time-cell {
+  height: 64px; padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+--- NEW ---
+.time-cell {
+  height: 192px; padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+
+=== Edit #9 (turn 293) ===
+--- OLD ---
+.day-body { position: relative; height: 1536px; } /* 24h * 64px */
+--- NEW ---
+.day-body { position: relative; height: 4608px; } /* 24h * 192px */
+
+=== Edit #10 (turn 296) ===
+--- OLD ---
+function extractMs(v) {
+  if (v == null) return null
+  if (typeof v === 'number') return v
+  if (typeof v === 'object') return v.value || v.timestamp || null
+  return null
+}
+--- NEW ---
+function extractMs(v) {
+  if (v == null) return null
+  if (typeof v === 'number') return v
+  if (typeof v === 'object') return v.value || v.timestamp || null
+  return null
+}
+
+// 飞书可能返回数字或字符串，统一转成秒数
+function durSec(e) {
+  const v = e.fields['时长(秒)']
+  if (typeof v === 'number') return v
+  if (typeof v === 'string') return Number(v) || 0
+  return 0
+}
+
+=== Edit #11 (turn 296) ===
+--- OLD ---
+// 飞书可能返回数字或字符串，统一转成秒数
+function durSec(e) {
+  const v = e.fields['时长(秒)']
+  if (typeof v === 'number') return v
+  if (typeof v === 'string') return Number(v) || 0
+  return 0
+}
+--- NEW ---
+// 飞书可能返回数字或字符串，统一转成秒数
+function durSecOf(e) {
+  const v = e.fields['时长(秒)']
+  if (typeof v === 'number') return v
+  if (typeof v === 'string') return Number(v) || 0
+  return 0
+}
+
+=== Edit #12 (turn 296) ===
+--- OLD ---
+function entryStyle(e) {
+  const startMs = extractMs(e.fields['开始时间'])
+  const durSec = typeof e.fields['时长(秒)'] === 'number' ? e.fields['时长(秒)'] : 0
+  if (startMs == null) return { display: 'none' }
+  const startDate = new Date(startMs)
+  const startMin = startDate.getHours() * 60 + startDate.getMinutes()
+  const durMin = durSec / 60
+  const top = (startMin / 60) * HOUR_PX
+  const height = Math.max(18, (durMin / 60) * HOUR_PX - 2)
+  return { top: top + 'px', height: height + 'px' }
+}
+--- NEW ---
+function entryStyle(e) {
+  const startMs = extractMs(e.fields['开始时间'])
+  const durSec = durSecOf(e)
+  if (startMs == null) return { display: 'none' }
+  const startDate = new Date(startMs)
+  const startMin = startDate.getHours() * 60 + startDate.getMinutes()
+  const durMin = durSec / 60
+  const top = (startMin / 60) * HOUR_PX
+  const height = Math.max(18, (durMin / 60) * HOUR_PX - 2)
+  return { top: top + 'px', height: height + 'px' }
+}
+
+=== Edit #13 (turn 296) ===
+--- OLD ---
+function dayTotalMin(d) {
+  return dayEntries(d).reduce((sum, e) => {
+    const dur = e.fields['时长(秒)']
+    return sum + (typeof dur === 'number' ? dur : 0)
+  }, 0) / 60
+}
+--- NEW ---
+function dayTotalMin(d) {
+  return dayEntries(d).reduce((sum, e) => sum + durSecOf(e), 0) / 60
+}
+
+=== Edit #14 (turn 297) ===
+--- OLD ---
+// ───── 常量 ─────
+const HOUR_PX = 192
+const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const catList = ['工签', 'Payroll', '入职', '其他']
+const catColors = ['#e01b4f', '#3370ff', '#34c759', '#ff9500']
+const hourList = Array.from({ length: 24 }, (_, i) => i)  // 0-23
+const dayList = [1, 2, 3, 4, 5, 6, 7]
+--- NEW ---
+// ───── 常量 ─────
+const HOUR_PX_MIN = 32
+const HOUR_PX_MAX = 240
+const HOUR_PX_DEFAULT = 192
+const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const catList = ['工签', 'Payroll', '入职', '其他']
+const catColors = ['#e01b4f', '#3370ff', '#34c759', '#ff9500']
+const hourList = Array.from({ length: 24 }, (_, i) => i)  // 0-23
+const dayList = [1, 2, 3, 4, 5, 6, 7]
+
+// 拉伸条：用 ref 让 HOUR_PX 可响应式变化
+const HOUR_PX = ref(Number(localStorage.getItem('hour_px')) || HOUR_PX_DEFAULT)
+function setHourPx(v) {
+  HOUR_PX.value = v
+  localStorage.setItem('hour_px', String(v))
+}
+
+=== Edit #15 (turn 297) ===
+--- OLD ---
+  const top = (startMin / 60) * HOUR_PX
+  const height = Math.max(18, (durMin / 60) * HOUR_PX - 2)
+--- NEW ---
+  const top = (startMin / 60) * HOUR_PX.value
+  const height = Math.max(18, (durMin / 60) * HOUR_PX.value - 2)
+
+=== Edit #16 (turn 297) ===
+--- OLD ---
+  return (nowMin / 60) * HOUR_PX
+--- NEW ---
+  return (nowMin / 60) * HOUR_PX.value
+
+=== Edit #17 (turn 297) ===
+--- OLD ---
+          <div class="time-cell" v-for="h in hourList" :key="h">
+            {{ String(h).padStart(2, '0') }}:00
+          </div>
+--- NEW ---
+          <div class="time-cell" v-for="h in hourList" :key="h" :style="{height: HOUR_PX + 'px'}">
+            {{ String(h).padStart(2, '0') }}:00
+          </div>
+
+=== Edit #18 (turn 297) ===
+--- OLD ---
+          <div class="day-body">
+--- NEW ---
+          <div class="day-body" :style="{height: (24 * HOUR_PX) + 'px'}">
+
+=== Edit #19 (turn 297) ===
+--- OLD ---
+.time-cell {
+  height: 192px; padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+--- NEW ---
+.time-cell {
+  padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+
+=== Edit #20 (turn 297) ===
+--- OLD ---
+.day-body { position: relative; height: 4608px; } /* 24h * 192px */
+--- NEW ---
+.day-body { position: relative; }
+
+=== Edit #21 (turn 297) ===
+--- OLD ---
+        <div class="week-sum">本周总计 <strong :class="{zero: weekTotalMin === 0}">{{ fmtHM(weekTotalMin) }}</strong></div>
+      </div>
+
+--- NEW ---
+        <div class="week-sum">本周总计 <strong :class="{zero: weekTotalMin === 0}">{{ fmtHM(weekTotalMin) }}</strong></div>
+      </div>
+
+      <!-- 拉伸条：调整时间轴密度 -->
+      <div class="zoom-bar">
+        <span class="zoom-label">密度</span>
+        <input
+          type="range"
+          class="zoom-slider"
+          :min="HOUR_PX_MIN"
+          :max="HOUR_PX_MAX"
+          step="16"
+          :value="HOUR_PX"
+          @input="setHourPx(Number($event.target.value))"
+        />
+        <span class="zoom-value">{{ HOUR_PX }}px/h</span>
+      </div>
+
+
+=== Edit #22 (turn 297) ===
+--- OLD ---
+/* 周视图 */
+.week-main { padding: 16px 24px 24px; }
+.week-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+--- NEW ---
+/* 周视图 */
+.week-main { padding: 16px 24px 24px; }
+.week-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+/* 拉伸条 */
+.zoom-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; margin-bottom: 12px;
+  background: #fff; border: 1px solid #e7e9e8; border-radius: 6px;
+}
+.zoom-label { font-size: 12px; color: #646a73; }
+.zoom-slider {
+  flex: 1; max-width: 300px; height: 4px;
+  -webkit-appearance: none; appearance: none;
+  background: #e7e9e8; border-radius: 2px; outline: none;
+}
+.zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #3370ff; cursor: pointer; border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.zoom-slider::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #3370ff; cursor: pointer; border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.zoom-value { font-size: 12px; color: #646a73; min-width: 60px; }
+
+
+=== Edit #23 (turn 299) ===
+--- OLD ---
+// ───── HTTP ─────
+const http = axios.create({ baseURL: '/api', timeout: 15000 })
+http.interceptors.response.use(
+  (r) => r.data,
+  (err) => {
+    const msg = err.response?.data?.error || err.response?.data?.detail || err.message
+    return Promise.reject(new Error(msg))
+  },
+)
+--- NEW ---
+// ───── HTTP ─────
+// 从当前页面 URL 读 app_token（多人方案：每人一个多维表格）
+const urlParams = new URLSearchParams(window.location.search)
+const appToken = urlParams.get('app_token') || ''
+
+const http = axios.create({ baseURL: '/api', timeout: 15000 })
+// 请求拦截：自动带上 app_token（让 serverless 用对应的多维表格）
+http.interceptors.request.use((config) => {
+  config.params = config.params || {}
+  if (appToken) config.params.app_token = appToken
+  // POST/PATCH body 也带上，供 timer-stop 等读 body 的函数用
+  if (config.data && typeof config.data === 'object') {
+    config.data.app_token = appToken
+  }
+  return config
+})
+http.interceptors.response.use(
+  (r) => r.data,
+  (err) => {
+    const msg = err.response?.data?.error || err.response?.data?.detail || err.message
+    return Promise.reject(new Error(msg))
+  },
+)
+
+=== Edit #24 (turn 299) ===
+--- OLD ---
+const http = axios.create({ baseURL: '/api', timeout: 15000 })
+// 请求拦截：自动带上 app_token（让 serverless 用对应的多维表格）
+http.interceptors.request.use((config) => {
+  config.params = config.params || {}
+  if (appToken) config.params.app_token = appToken
+  // POST/PATCH body 也带上，供 timer-stop 等读 body 的函数用
+  if (config.data && typeof config.data === 'object') {
+    config.data.app_token = appToken
+  }
+  return config
+})
+--- NEW ---
+const http = axios.create({ baseURL: '/api', timeout: 15000 })
+// 请求拦截：自动带上 app_token（让 serverless 用对应的多维表格）
+http.interceptors.request.use((config) => {
+  config.params = config.params || {}
+  if (appToken) config.params.app_token = appToken
+  return config
+})
+
+=== Edit #25 (turn 381) ===
+--- OLD ---
+const http = axios.create({ baseURL: '/api', timeout: 15000 })
+--- NEW ---
+const http = axios.create({
+  baseURL: 'https://1473537498-ejcp1i6ib6.ap-shanghai.tencentscf.com',
+  timeout: 15000,
+})
+
+=== Edit #26 (turn 388) ===
+--- OLD ---
+<template>
+  <div class="page">
+    <!-- 顶部计时器 -->
+    <header class="topbar">
+      <input class="desc-input" v-model="descInput" placeholder="你在做什么？" />
+      <div class="proj-tag">
+        <span class="dot" :style="{background: projColor}"></span>
+        <span>{{ projName }}</span>
+      </div>
+      <div class="clock" :class="{running: timerRunning}">{{ clockText }}</div>
+      <button class="start-btn" :class="{running: timerRunning}" @click="toggleTimer">
+        {{ timerRunning ? '■ 停止' : '▶ 开始' }}
+      </button>
+    </header>
+
+    <!-- 提示 -->
+    <div v-if="errorMsg" class="alert err">{{ errorMsg }}</div>
+    <div v-if="okMsg" class="alert ok">{{ okMsg }}</div>
+
+    <!-- 周视图 -->
+    <main class="week-main">
+      <div class="week-head">
+        <div class="nav">
+          <button class="nav-btn" @click="shiftWeek(-1)">‹</button>
+          <button class="today-btn" @click="goToday">本周</button>
+          <button class="nav-btn" @click="shiftWeek(1)">›</button>
+          <div class="range-text">{{ rangeText }}</div>
+        </div>
+        <div class="week-sum">本周总计 <strong :class="{zero: weekTotalMin === 0}">{{ fmtHM(weekTotalMin) }}</strong></div>
+      </div>
+--- NEW ---
+<template>
+  <div class="page">
+    <!-- 用户名弹窗（首次访问） -->
+    <div v-if="showLogin" class="mask" @click.self="confirmLogin">
+      <div class="panel" style="max-width: 360px;">
+        <div class="panel-head">
+          <span>欢迎使用时间追踪</span>
+        </div>
+        <div class="row">
+          <div class="row-label">请输入您的用户名</div>
+          <input class="row-input" v-model="loginInput" placeholder="例如：Jenny Chee" @keyup.enter="confirmLogin" autofocus />
+        </div>
+        <div class="panel-foot">
+          <div class="foot-spacer"></div>
+          <button class="save-btn" @click="confirmLogin">确定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顶部计时器 -->
+    <header class="topbar">
+      <button class="menu-btn" @click="settingsOpen = true">☰</button>
+      <input class="desc-input" v-model="descInput" placeholder="你在做什么？" />
+      <div class="proj-tag">
+        <span class="dot" :style="{background: projColor}"></span>
+        <span>{{ projName }}</span>
+      </div>
+      <div class="clock" :class="{running: timerRunning}">{{ clockText }}</div>
+      <button class="start-btn" :class="{running: timerRunning}" @click="toggleTimer">
+        {{ timerRunning ? '■ 停止' : '▶ 开始' }}
+      </button>
+    </header>
+
+    <!-- 提示 -->
+    <div v-if="errorMsg" class="alert err">{{ errorMsg }}</div>
+    <div v-if="okMsg" class="alert ok">{{ okMsg }}</div>
+
+    <!-- 周视图 -->
+    <main class="week-main">
+      <div class="week-head">
+        <div class="nav">
+          <button class="nav-btn" @click="shiftWeek(-1)">‹</button>
+          <button class="today-btn" @click="goToday">本周</button>
+          <button class="nav-btn" @click="shiftWeek(1)">›</button>
+          <div class="range-text">{{ rangeText }}</div>
+          <div v-if="isAdmin" class="admin-badge">管理员</div>
+        </div>
+        <div class="week-sum">本周总计 <strong :class="{zero: weekTotalMin === 0}">{{ fmtHM(weekTotalMin) }}</strong></div>
+      </div>
+
+=== Edit #27 (turn 388) ===
+--- OLD ---
+          <button class="save-btn" @click="saveEntry">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+--- NEW ---
+          <button class="save-btn" @click="saveEntry">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 设置侧边栏 -->
+    <transition name="slide">
+      <div v-if="settingsOpen" class="sidebar-mask" @click.self="settingsOpen = false">
+        <aside class="sidebar">
+          <div class="sb-head">
+            <span>设置</span>
+            <button class="x-btn" @click="settingsOpen = false">×</button>
+          </div>
+
+          <div class="sb-section">
+            <div class="sb-label">用户名</div>
+            <input class="sb-input" v-model="userName" @change="saveSettings" />
+            <div class="sb-hint">您创建的条目会标记此用户名</div>
+          </div>
+
+          <div class="sb-section">
+            <div class="sb-label">管理员密码</div>
+            <input class="sb-input" type="password" v-model="adminPasswordInput" placeholder="输入密码解锁管理员" />
+            <button class="sb-btn" @click="tryAdmin">解锁管理员模式</button>
+            <div v-if="isAdmin" class="sb-hint ok">✓ 管理员模式已开启（可看全部数据）</div>
+            <div v-else-if="adminError" class="sb-hint err">{{ adminError }}</div>
+          </div>
+
+          <div class="sb-section">
+            <div class="sb-label">默认任务分类</div>
+            <div class="cat-picker">
+              <div
+                v-for="(c, i) in catList"
+                :key="c"
+                class="cat-pill"
+                :class="{sel: defaultCat === c}"
+                :style="{color: catColors[i], borderColor: defaultCat === c ? catColors[i] : 'transparent'}"
+                @click="defaultCat = c; saveSettings()"
+              >
+                <span class="dot" :style="{background: catColors[i]}"></span>
+                {{ c }}
+              </div>
+            </div>
+          </div>
+
+          <div class="sb-section">
+            <div class="sb-label">时区</div>
+            <select class="sb-input" v-model="timezone" @change="saveSettings">
+              <option value="Asia/Shanghai">UTC+8 上海</option>
+              <option value="Asia/Tokyo">UTC+9 东京</option>
+              <option value="America/Los_Angeles">UTC-8 洛杉矶</option>
+              <option value="America/New_York">UTC-5 纽约</option>
+              <option value="Europe/London">UTC+0 伦敦</option>
+              <option value="Australia/Sydney">UTC+10 悉尼</option>
+            </select>
+          </div>
+
+          <div class="sb-section">
+            <button class="sb-btn danger" @click="logout">退出登录</button>
+          </div>
+        </aside>
+      </div>
+    </transition>
+  </div>
+</template>
+
+=== Edit #28 (turn 388) ===
+--- OLD ---
+// ───── 常量 ─────
+const HOUR_PX_MIN = 32
+const HOUR_PX_MAX = 240
+const HOUR_PX_DEFAULT = 192
+const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const catList = ['工签', 'Payroll', '入职', '其他']
+const catColors = ['#e01b4f', '#3370ff', '#34c759', '#ff9500']
+const hourList = Array.from({ length: 24 }, (_, i) => i)  // 0-23
+const dayList = [1, 2, 3, 4, 5, 6, 7]
+
+// 拉伸条：用 ref 让 HOUR_PX 可响应式变化
+const HOUR_PX = ref(Number(localStorage.getItem('hour_px')) || HOUR_PX_DEFAULT)
+function setHourPx(v) {
+  HOUR_PX.value = v
+  localStorage.setItem('hour_px', String(v))
+}
+--- NEW ---
+// ───── 常量 ─────
+const HOUR_PX_MIN = 32
+const HOUR_PX_MAX = 240
+const HOUR_PX_DEFAULT = 192
+const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const catList = ['工签', 'Payroll', '入职', '其他']
+const catColors = ['#e01b4f', '#3370ff', '#34c759', '#ff9500']
+const hourList = Array.from({ length: 24 }, (_, i) => i)  // 0-23
+const dayList = [1, 2, 3, 4, 5, 6, 7]
+
+// 管理员密码（写死在前端代码里，安全无所谓）
+const ADMIN_PASSWORD = 'Felix2026!'
+
+// ───── 用户登录状态 ─────
+const userName = ref(localStorage.getItem('tt_user') || '')
+const showLogin = ref(!userName.value)
+const loginInput = ref(userName.value)
+function confirmLogin() {
+  const v = loginInput.value.trim()
+  if (!v) return
+  userName.value = v
+  localStorage.setItem('tt_user', v)
+  showLogin.value = false
+  loadEntries()
+}
+
+// ───── 管理员状态 ─────
+const isAdmin = ref(localStorage.getItem('tt_admin') === '1')
+const adminPasswordInput = ref('')
+const adminError = ref('')
+function tryAdmin() {
+  if (adminPasswordInput.value === ADMIN_PASSWORD) {
+    isAdmin.value = true
+    localStorage.setItem('tt_admin', '1')
+    adminError.value = ''
+    adminPasswordInput.value = ''
+    loadEntries()
+  } else {
+    adminError.value = '密码错误'
+  }
+}
+
+// ───── 设置侧边栏 ─────
+const settingsOpen = ref(false)
+const defaultCat = ref(localStorage.getItem('tt_default_cat') || '工签')
+const timezone = ref(localStorage.getItem('tt_timezone') || 'Asia/Shanghai')
+function saveSettings() {
+  localStorage.setItem('tt_default_cat', defaultCat.value)
+  localStorage.setItem('tt_timezone', timezone.value)
+  localStorage.setItem('tt_user', userName.value)
+}
+
+function logout() {
+  if (!confirm('确定退出登录？')) return
+  localStorage.removeItem('tt_user')
+  localStorage.removeItem('tt_admin')
+  userName.value = ''
+  loginInput.value = ''
+  isAdmin.value = false
+  showLogin.value = true
+  settingsOpen.value = false
+}
+
+// 拉伸条：用 ref 让 HOUR_PX 可响应式变化
+const HOUR_PX = ref(Number(localStorage.getItem('hour_px')) || HOUR_PX_DEFAULT)
+function setHourPx(v) {
+  HOUR_PX.value = v
+  localStorage.setItem('hour_px', String(v))
+}
+
+=== Edit #29 (turn 388) ===
+--- OLD ---
+// ───── 加载数据 ─────
+async function loadEntries() {
+  try {
+    const res = await http.get('/entries', { params: { page_size: 100 } })
+    entries.value = res.items || []
+--- NEW ---
+// ───── 加载数据 ─────
+async function loadEntries() {
+  try {
+    const params = { page_size: 100 }
+    // 管理员看全部，普通用户只看自己的
+    if (!isAdmin.value && userName.value) {
+      params.user = userName.value
+    }
+    const res = await http.get('/entries', { params })
+    entries.value = res.items || []
+
+=== Edit #30 (turn 396) ===
+--- OLD ---
+    <!-- 用户名弹窗（首次访问） -->
+    <div v-if="showLogin" class="mask" @click.self="confirmLogin">
+      <div class="panel" style="max-width: 360px;">
+        <div class="panel-head">
+          <span>欢迎使用时间追踪</span>
+        </div>
+        <div class="row">
+          <div class="row-label">请输入您的用户名</div>
+          <input class="row-input" v-model="loginInput" placeholder="例如：Jenny Chee" @keyup.enter="confirmLogin" autofocus />
+        </div>
+        <div class="panel-foot">
+          <div class="foot-spacer"></div>
+          <button class="save-btn" @click="confirmLogin">确定</button>
+        </div>
+      </div>
+    </div>
+--- NEW ---
+    <!-- 登录弹窗（首次访问） -->
+    <div v-if="showLogin" class="mask">
+      <div class="panel" style="max-width: 360px;">
+        <div class="panel-head">
+          <span>欢迎使用时间追踪</span>
+        </div>
+        <div class="row">
+          <div class="row-label">用户名</div>
+          <input class="row-input" v-model="loginUser" placeholder="您的用户名" autofocus />
+        </div>
+        <div class="row">
+          <div class="row-label">密码</div>
+          <input class="row-input" type="password" v-model="loginPass" placeholder="您的密码" @keyup.enter="confirmLogin" />
+        </div>
+        <div v-if="loginError" class="alert err" style="margin: 8px 0;">{{ loginError }}</div>
+        <div class="panel-foot">
+          <div class="foot-spacer"></div>
+          <button class="save-btn" @click="confirmLogin">登录</button>
+        </div>
+      </div>
+    </div>
+
+=== Edit #31 (turn 396) ===
+--- OLD ---
+// ───── 用户登录状态 ─────
+const userName = ref(localStorage.getItem('tt_user') || '')
+const showLogin = ref(!userName.value)
+const loginInput = ref(userName.value)
+function confirmLogin() {
+  const v = loginInput.value.trim()
+  if (!v) return
+  userName.value = v
+  localStorage.setItem('tt_user', v)
+  showLogin.value = false
+  loadEntries()
+}
+--- NEW ---
+// ───── 用户登录状态 ─────
+const userName = ref(localStorage.getItem('tt_user') || '')
+const userRole = ref(localStorage.getItem('tt_role') || '')
+const showLogin = ref(!userName.value)
+const loginUser = ref('')
+const loginPass = ref('')
+const loginError = ref('')
+
+async function confirmLogin() {
+  loginError.value = ''
+  const u = loginUser.value.trim()
+  const p = loginPass.value.trim()
+  if (!u || !p) {
+    loginError.value = '用户名和密码必填'
+    return
+  }
+  try {
+    const res = await http.post('/login', { username: u, password: p })
+    if (!res.ok) {
+      loginError.value = res.error || '登录失败'
+      return
+    }
+    userName.value = res.user
+    userRole.value = res.role
+    localStorage.setItem('tt_user', res.user)
+    localStorage.setItem('tt_role', res.role)
+    showLogin.value = false
+    loginUser.value = ''
+    loginPass.value = ''
+    await loadEntries()
+  } catch (e) {
+    loginError.value = e.message
+  }
+}
+
+=== Edit #32 (turn 396) ===
+--- OLD ---
+// ───── 管理员状态 ─────
+const isAdmin = ref(localStorage.getItem('tt_admin') === '1')
+const adminPasswordInput = ref('')
+const adminError = ref('')
+function tryAdmin() {
+  if (adminPasswordInput.value === ADMIN_PASSWORD) {
+    isAdmin.value = true
+    localStorage.setItem('tt_admin', '1')
+    adminError.value = ''
+    adminPasswordInput.value = ''
+    loadEntries()
+  } else {
+    adminError.value = '密码错误'
+  }
+}
+--- NEW ---
+// ───── 管理员状态（根据 /login 返回的 role 判断）─────
+const isAdmin = computed(() => userRole.value === 'admin')
+
+=== Edit #33 (turn 396) ===
+--- OLD ---
+          <div class="sb-section">
+            <div class="sb-label">管理员密码</div>
+            <input class="sb-input" type="password" v-model="adminPasswordInput" placeholder="输入密码解锁管理员" />
+            <button class="sb-btn" @click="tryAdmin">解锁管理员模式</button>
+            <div v-if="isAdmin" class="sb-hint ok">✓ 管理员模式已开启（可看全部数据）</div>
+            <div v-else-if="adminError" class="sb-hint err">{{ adminError }}</div>
+          </div>
+--- NEW ---
+          <div class="sb-section" v-if="isAdmin">
+            <div class="sb-hint ok">✓ 管理员模式（可看全部数据）</div>
+          </div>
+
+=== Edit #34 (turn 401) ===
+--- OLD ---
+    <!-- 登录弹窗（首次访问） -->
+    <div v-if="showLogin" class="mask">
+      <div class="panel" style="max-width: 360px;">
+        <div class="panel-head">
+          <span>欢迎使用时间追踪</span>
+        </div>
+        <div class="row">
+          <div class="row-label">用户名</div>
+          <input class="row-input" v-model="loginUser" placeholder="您的用户名" autofocus />
+        </div>
+        <div class="row">
+          <div class="row-label">密码</div>
+          <input class="row-input" type="password" v-model="loginPass" placeholder="您的密码" @keyup.enter="confirmLogin" />
+        </div>
+        <div v-if="loginError" class="alert err" style="margin: 8px 0;">{{ loginError }}</div>
+        <div class="panel-foot">
+          <div class="foot-spacer"></div>
+          <button class="save-btn" @click="confirmLogin">登录</button>
+        </div>
+      </div>
+    </div>
+--- NEW ---
+    <!-- 登录/注册弹窗（首次访问） -->
+    <div v-if="showLogin" class="mask">
+      <div class="panel" style="max-width: 360px;">
+        <div class="panel-head">
+          <span>{{ showRegister ? '注册新账号' : '欢迎使用时间追踪' }}</span>
+          <button class="x-btn" @click="toggleRegister">{{ showRegister ? '← 返回登录' : '注册' }}</button>
+        </div>
+
+        <!-- 注册表单 -->
+        <template v-if="showRegister">
+          <div class="row">
+            <div class="row-label">邀请码</div>
+            <input class="row-input" v-model="regInvite" placeholder="管理员发给您的邀请码" autofocus />
+          </div>
+          <div class="row">
+            <div class="row-label">用户名</div>
+            <input class="row-input" v-model="regUser" placeholder="您的用户名" />
+          </div>
+          <div class="row">
+            <div class="row-label">密码</div>
+            <input class="row-input" type="password" v-model="regPass" placeholder="设置您的密码" />
+          </div>
+          <div class="row">
+            <div class="row-label">确认密码</div>
+            <input class="row-input" type="password" v-model="regPass2" placeholder="再输入一遍密码" @keyup.enter="doRegister" />
+          </div>
+          <div v-if="regError" class="alert err" style="margin: 8px 0;">{{ regError }}</div>
+          <div class="panel-foot">
+            <div class="foot-spacer"></div>
+            <button class="save-btn" @click="doRegister">注册</button>
+          </div>
+        </template>
+
+        <!-- 登录表单 -->
+        <template v-else>
+          <div class="row">
+            <div class="row-label">用户名</div>
+            <input class="row-input" v-model="loginUser" placeholder="您的用户名" autofocus />
+          </div>
+          <div class="row">
+            <div class="row-label">密码</div>
+            <input class="row-input" type="password" v-model="loginPass" placeholder="您的密码" @keyup.enter="confirmLogin" />
+          </div>
+          <div v-if="loginError" class="alert err" style="margin: 8px 0;">{{ loginError }}</div>
+          <div class="panel-foot">
+            <div class="foot-spacer"></div>
+            <button class="save-btn" @click="confirmLogin">登录</button>
+          </div>
+        </template>
+      </div>
+    </div>
+
+=== Edit #35 (turn 401) ===
+--- OLD ---
+const showLogin = ref(!userName.value)
+const loginUser = ref('')
+const loginPass = ref('')
+const loginError = ref('')
+--- NEW ---
+const showLogin = ref(!userName.value)
+const loginUser = ref('')
+const loginPass = ref('')
+const loginError = ref('')
+
+// 注册相关状态
+const showRegister = ref(false)
+const regInvite = ref('')
+const regUser = ref('')
+const regPass = ref('')
+const regPass2 = ref('')
+const regError = ref('')
+
+function toggleRegister() {
+  showRegister.value = !showRegister.value
+  regError.value = ''
+  loginError.value = ''
+}
+
+async function doRegister() {
+  regError.value = ''
+  const invite = regInvite.value.trim()
+  const u = regUser.value.trim()
+  const p = regPass.value.trim()
+  const p2 = regPass2.value.trim()
+  if (!invite || !u || !p || !p2) {
+    regError.value = '所有字段都必填'
+    return
+  }
+  if (p !== p2) {
+    regError.value = '两次密码不一致'
+    return
+  }
+  try {
+    const res = await http.post('/register', { invite_code: invite, username: u, password: p })
+    if (!res.ok) {
+      regError.value = res.error || '注册失败'
+      return
+    }
+    // 注册成功，直接登录
+    userName.value = res.user
+    userRole.value = res.role
+    localStorage.setItem('tt_user', res.user)
+    localStorage.setItem('tt_role', res.role)
+    showLogin.value = false
+    showRegister.value = false
+    regInvite.value = ''
+    regUser.value = ''
+    regPass.value = ''
+    regPass2.value = ''
+    await loadEntries()
+  } catch (e) {
+    regError.value = e.message
+  }
+}
+
+=== Edit #36 (turn 403) ===
+--- OLD ---
+// ───── 生命周期 ─────
+onMounted(() => {
+  loadEntries()
+})
+--- NEW ---
+// ───── 生命周期 ─────
+onMounted(() => {
+  // 只有已登录用户才加载数据，未登录弹窗里不调用
+  if (userName.value && userRole.value) {
+    loadEntries()
+  }
+})
+
+=== Edit #37 (turn 403) ===
+--- OLD ---
+// ───── 当前时间红线 ─────
+const nowOffsetPx = computed(() => {
+  const now = new Date()
+  const nowMin = now.getHours() * 60 + now.getMinutes()
+  return (nowMin / 60) * HOUR_PX.value
+})
+--- NEW ---
+// ───── 当前时间红线 ─────
+const nowOffsetPx = computed(() => {
+  const now = new Date()
+  const nowMin = now.getHours() * 60 + now.getMinutes()
+  // 限制在 24 小时内，防止超出 day-body 上限
+  const cappedMin = Math.min(nowMin, 24 * 60 - 1)
+  return (cappedMin / 60) * HOUR_PX.value
+})
+
+=== Edit #38 (turn 404) ===
+--- OLD ---
+// ───── 当前时间红线 ─────
+const nowOffsetPx = computed(() => {
+  const now = new Date()
+  const nowMin = now.getHours() * 60 + now.getMinutes()
+  // 限制在 24 小时内，防止超出 day-body 上限
+  const cappedMin = Math.min(nowMin, 24 * 60 - 1)
+  return (cappedMin / 60) * HOUR_PX.value
+})
+--- NEW ---
+// ───── 当前时间红线 ─────
+// 每分钟更新一次，让红线随时间移动
+const nowTick = ref(0)
+let nowInterval = null
+const nowOffsetPx = computed(() => {
+  nowTick.value  // 依赖 nowTick 触发重算
+  const now = new Date()
+  const nowMin = now.getHours() * 60 + now.getMinutes()
+  // 限制在 24 小时内，防止超出 day-body 上限
+  const cappedMin = Math.min(nowMin, 24 * 60 - 1)
+  return (cappedMin / 60) * HOUR_PX.value
+})
+
+=== Edit #39 (turn 404) ===
+--- OLD ---
+// ───── 生命周期 ─────
+onMounted(() => {
+  // 只有已登录用户才加载数据，未登录弹窗里不调用
+  if (userName.value && userRole.value) {
+    loadEntries()
+  }
+})
+onUnmounted(() => {
+  if (tickInterval) clearInterval(tickInterval)
+})
+--- NEW ---
+// ───── 生命周期 ─────
+onMounted(() => {
+  // 每分钟更新红线位置
+  nowInterval = setInterval(() => { nowTick.value++ }, 60000)
+  // 只有已登录用户才加载数据，未登录弹窗里不调用
+  if (userName.value && userRole.value) {
+    loadEntries()
+  }
+})
+onUnmounted(() => {
+  if (tickInterval) clearInterval(tickInterval)
+  if (nowInterval) clearInterval(nowInterval)
+})
+
+=== Edit #40 (turn 405) ===
+--- OLD ---
+        <!-- 时间列 -->
+        <div class="time-col">
+          <div class="time-cell" v-for="h in hourList" :key="h" :style="{height: HOUR_PX + 'px'}">
+            {{ String(h).padStart(2, '0') }}:00
+          </div>
+        </div>
+--- NEW ---
+        <!-- 时间列 -->
+        <div class="time-col">
+          <div class="time-head"></div>
+          <div class="time-cell" v-for="h in hourList" :key="h" :style="{height: HOUR_PX + 'px'}">
+            {{ String(h).padStart(2, '0') }}:00
+          </div>
+        </div>
+
+=== Edit #41 (turn 405) ===
+--- OLD ---
+.day-col { display: flex; flex-direction: column; border-left: 1px solid #f0f1f2; }
+.day-head {
+  padding: 8px 4px; text-align: center; border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+}
+--- NEW ---
+.day-col { display: flex; flex-direction: column; border-left: 1px solid #f0f1f2; }
+.day-head {
+  padding: 8px 4px; text-align: center; border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+}
+.time-head {
+  padding: 8px 4px; border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+  min-height: 50px;
+}
+
+=== Edit #42 (turn 406) ===
+--- OLD ---
+.day-col { display: flex; flex-direction: column; border-left: 1px solid #f0f1f2; }
+.day-head {
+  padding: 8px 4px; text-align: center; border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+}
+.time-head {
+  padding: 8px 4px; border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+  min-height: 50px;
+}
+--- NEW ---
+.day-col { display: flex; flex-direction: column; border-left: 1px solid #f0f1f2; }
+.day-head {
+  padding: 8px 4px; text-align: center; border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+  height: 56px; flex-shrink: 0; box-sizing: border-box;
+}
+.time-head {
+  padding: 8px 4px; border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+  height: 56px; flex-shrink: 0; box-sizing: border-box;
+}
+
+=== Edit #43 (turn 408) ===
+--- OLD ---
+.day-col { display: flex; flex-direction: column; border-left: 1px solid #f0f1f2; }
+.day-head {
+  padding: 8px 4px; text-align: center; border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+  height: 56px; flex-shrink: 0; box-sizing: border-box;
+}
+.time-head {
+  padding: 8px 4px; border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+  height: 56px; flex-shrink: 0; box-sizing: border-box;
+}
+--- NEW ---
+.day-col { display: flex; flex-direction: column; border-left: 1px solid #f0f1f2; }
+.day-head {
+  padding: 8px 4px; text-align: center; border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+  height: 57px; flex-shrink: 0; box-sizing: border-box; overflow: hidden;
+}
+.time-head {
+  border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+  height: 57px; flex-shrink: 0; box-sizing: border-box;
+}
+
+=== Edit #44 (turn 408) ===
+--- OLD ---
+/* 日历表 */
+.cal {
+  display: grid; grid-template-columns: 50px repeat(7, 1fr);
+  border: 1px solid #e7e9e8; border-radius: 6px; overflow: hidden;
+  background: #fff;
+}
+.time-col { border-right: 1px solid #f0f1f2; background: #fafbfc; }
+.time-cell {
+  padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+.day-col { display: flex; flex-direction: column; border-left: 1px solid #f0f1f2; }
+.day-head {
+  padding: 8px 4px; text-align: center; border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+  height: 57px; flex-shrink: 0; box-sizing: border-box; overflow: hidden;
+}
+.time-head {
+  border-bottom: 1px solid #e7e9e8;
+  background: #fafbfc;
+  height: 57px; flex-shrink: 0; box-sizing: border-box;
+}
+--- NEW ---
+/* 日历表 */
+.cal {
+  --head-h: 58px;
+  display: grid; grid-template-columns: 50px repeat(7, 1fr);
+  border: 1px solid #e7e9e8; border-radius: 6px; overflow: hidden;
+  background: #fff;
+}
+.time-col { border-right: 1px solid #f0f1f2; background: #fafbfc; }
+.time-cell {
+  padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+.day-col { display: flex; flex-direction: column; border-left: 1px solid #f0f1f2; }
+.day-head, .time-head {
+  height: var(--head-h); flex-shrink: 0; box-sizing: border-box;
+  border-bottom: 1px solid #e7e9e8; background: #fafbfc;
+  display: flex; flex-direction: column; justify-content: center;
+  overflow: hidden;
+}
+.day-head { padding: 4px; text-align: center; }
+.time-head { padding: 0; }
+
+=== Edit #45 (turn 412) ===
+--- OLD ---
+/* 日历表 */
+.cal {
+  --head-h: 58px;
+  display: grid; grid-template-columns: 50px repeat(7, 1fr);
+  border: 1px solid #e7e9e8; border-radius: 6px; overflow: hidden;
+  background: #fff;
+}
+.time-col { border-right: 1px solid #f0f1f2; background: #fafbfc; }
+.time-cell {
+  padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+.day-col { display: flex; flex-direction: column; border-left: 1px solid #f0f1f2; }
+.day-head, .time-head {
+  height: var(--head-h); flex-shrink: 0; box-sizing: border-box;
+  border-bottom: 1px solid #e7e9e8; background: #fafbfc;
+  display: flex; flex-direction: column; justify-content: center;
+  overflow: hidden;
+}
+.day-head { padding: 4px; text-align: center; }
+.time-head { padding: 0; }
+--- NEW ---
+/* 日历表 */
+.cal {
+  --head-h: 73px;
+  display: grid; grid-template-columns: 50px repeat(7, 1fr);
+  border: 1px solid #e7e9e8; border-radius: 6px; overflow: hidden;
+  background: #fff;
+}
+.time-col { border-right: 1px solid #f0f1f2; background: #fafbfc; }
+.time-cell {
+  padding: 2px 6px 0 0;
+  font-size: 10px; color: #8f959e; text-align: right;
+}
+.day-col { display: flex; flex-direction: column; border-left: 1px solid #f0f1f2; }
+.day-head, .time-head {
+  height: var(--head-h); flex-shrink: 0; box-sizing: border-box;
+  border-bottom: 1px solid #e7e9e8; background: #fafbfc;
+  display: flex; flex-direction: column; justify-content: center;
+  overflow: hidden;
+}
+.day-head { padding: 4px; text-align: center; }
+.time-head { padding: 0; }
+
+=== Edit #46 (turn 458) ===
+--- OLD ---
+        <div class="sidebar-footer">
+          <div v-if="!sidebarCollapsed" class="user-info">
+            <div class="user-avatar">{{ (displayName || userName).charAt(0).toUpperCase() }}</div>
+            <div class="user-details">
+              <div class="user-name">{{ displayName || userName }}</div>
+              <div class="user-role">{{ isAdmin ? '管理员' : '员工' }}</div>
+            </div>
+          </div>
+          <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+            {{ sidebarCollapsed ? '▶' : '◀ 收起' }}
+          </button>
+          <button v-if="!sidebarCollapsed" class="logout-btn" @click="logout">退出登录</button>
+        </div>
+--- NEW ---
+        <div class="sidebar-footer">
+          <!-- 实时计时器 -->
+          <div v-if="activeTimer && !sidebarCollapsed" class="active-timer">
+            <div class="timer-cat-dot" :style="{ background: activeTimer.color }"></div>
+            <div class="timer-info">
+              <div class="timer-desc">{{ activeTimer.description || '(无描述)' }}</div>
+              <div class="timer-elapsed">{{ timerElapsedText }}</div>
+            </div>
+            <button class="timer-stop" @click="stopActiveTimer" title="停止">⏹</button>
+          </div>
+          <div v-if="activeTimer && sidebarCollapsed" class="active-timer-collapsed" @click="stopActiveTimer" title="停止">
+            <span class="timer-dot" :style="{ background: activeTimer.color }"></span>
+            <span class="timer-mini">{{ timerElapsedText }}</span>
+          </div>
+
+          <div v-if="!sidebarCollapsed" class="user-info">
+            <div class="user-avatar">{{ (displayName || userName).charAt(0).toUpperCase() }}</div>
+            <div class="user-details">
+              <div class="user-name">{{ displayName || userName }}</div>
+              <div class="user-role">{{ isAdmin ? '管理员' : '员工' }}</div>
+            </div>
+          </div>
+          <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+            {{ sidebarCollapsed ? '▶' : '◀ 收起' }}
+          </button>
+          <button v-if="!sidebarCollapsed" class="logout-btn" @click="logout">退出登录</button>
+        </div>
+
+=== Edit #47 (turn 458) ===
+--- OLD ---
+// ───── provide 给子组件 ─────
+provide('http', http)
+provide('userName', userName)
+provide('userRole', userRole)
+provide('displayName', displayName)
+provide('isAdmin', isAdmin)
+provide('categories', categories)
+provide('addCategory', addCategory)
+provide('removeCategory', removeCategory)
+provide('getCategoryColor', getCategoryColor)
+provide('saveCategories', saveCategories)
+provide('countries', countries)
+provide('saveCountries', saveCountries)
+provide('timezones', timezones)
+provide('logout', logout)
+--- NEW ---
+// ───── 实时计时器（全局状态）─────
+const activeTimer = ref(null) // { description, category, color, country, user, notes, startTime }
+const timerTick = ref(0)
+let timerInterval = null
+
+const timerElapsedMs = computed(() => {
+  timerTick.value // 依赖触发重算
+  if (!activeTimer.value) return 0
+  return Date.now() - activeTimer.value.startTime
+})
+
+const timerElapsedText = computed(() => {
+  const ms = timerElapsedMs.value
+  const totalSec = Math.floor(ms / 1000)
+  const h = Math.floor(totalSec / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  const s = totalSec % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return `${m}:${String(s).padStart(2, '0')}`
+})
+
+function startActiveTimer(payload) {
+  // payload: { description, category, color, country, user, notes }
+  activeTimer.value = {
+    ...payload,
+    startTime: Date.now(),
+  }
+  // 保存到 localStorage 以防刷新
+  localStorage.setItem('tt_active_timer', JSON.stringify(activeTimer.value))
+  // 启动跳动
+  if (timerInterval) clearInterval(timerInterval)
+  timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+}
+
+async function stopActiveTimer() {
+  if (!activeTimer.value) return
+  const t = activeTimer.value
+  const endTime = Date.now()
+  try {
+    const fields = {
+      'description': t.description || '',
+      'category': t.category || '其他',
+      'start_time': new Date(t.startTime).toISOString(),
+      'end_time': new Date(endTime).toISOString(),
+      'user': t.user || '',
+      'country': t.country || '国内',
+      'notes': t.notes || '',
+    }
+    await http('/entries', { method: 'POST', body: { fields } })
+  } catch (e) {
+    alert('保存计时记录失败: ' + e.message)
+  }
+  // 清理
+  activeTimer.value = null
+  localStorage.removeItem('tt_active_timer')
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+  // 触发刷新（通过自定义事件让 WeekView 重新加载）
+  window.dispatchEvent(new CustomEvent('timer-stopped'))
+}
+
+// 恢复未完成的计时器（页面刷新后）
+function restoreActiveTimer() {
+  const saved = localStorage.getItem('tt_active_timer')
+  if (saved) {
+    try {
+      activeTimer.value = JSON.parse(saved)
+      if (timerInterval) clearInterval(timerInterval)
+      timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+    } catch (e) { localStorage.removeItem('tt_active_timer') }
+  }
+}
+
+// ───── provide 给子组件 ─────
+provide('http', http)
+provide('userName', userName)
+provide('userRole', userRole)
+provide('displayName', displayName)
+provide('isAdmin', isAdmin)
+provide('categories', categories)
+provide('addCategory', addCategory)
+provide('removeCategory', removeCategory)
+provide('getCategoryColor', getCategoryColor)
+provide('saveCategories', saveCategories)
+provide('countries', countries)
+provide('saveCountries', saveCountries)
+provide('timezones', timezones)
+provide('logout', logout)
+provide('activeTimer', activeTimer)
+provide('startActiveTimer', startActiveTimer)
+provide('stopActiveTimer', stopActiveTimer)
+
+=== Edit #48 (turn 461) ===
+--- OLD ---
+        <div class="sidebar-footer">
+          <!-- 实时计时器 -->
+          <div v-if="activeTimer && !sidebarCollapsed" class="active-timer">
+            <div class="timer-cat-dot" :style="{ background: activeTimer.color }"></div>
+            <div class="timer-info">
+              <div class="timer-desc">{{ activeTimer.description || '(无描述)' }}</div>
+              <div class="timer-elapsed">{{ timerElapsedText }}</div>
+            </div>
+            <button class="timer-stop" @click="stopActiveTimer" title="停止">⏹</button>
+          </div>
+          <div v-if="activeTimer && sidebarCollapsed" class="active-timer-collapsed" @click="stopActiveTimer" title="停止">
+            <span class="timer-dot" :style="{ background: activeTimer.color }"></span>
+            <span class="timer-mini">{{ timerElapsedText }}</span>
+          </div>
+
+          <div v-if="!sidebarCollapsed" class="user-info">
+            <div class="user-avatar">{{ (displayName || userName).charAt(0).toUpperCase() }}</div>
+            <div class="user-details">
+              <div class="user-name">{{ displayName || userName }}</div>
+              <div class="user-role">{{ isAdmin ? '管理员' : '员工' }}</div>
+            </div>
+          </div>
+          <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+            {{ sidebarCollapsed ? '▶' : '◀ 收起' }}
+          </button>
+          <button v-if="!sidebarCollapsed" class="logout-btn" @click="logout">退出登录</button>
+        </div>
+--- NEW ---
+        <div class="sidebar-footer">
+          <div v-if="!sidebarCollapsed" class="user-info">
+            <div class="user-avatar">{{ (displayName || userName).charAt(0).toUpperCase() }}</div>
+            <div class="user-details">
+              <div class="user-name">{{ displayName || userName }}</div>
+              <div class="user-role">{{ isAdmin ? '管理员' : '员工' }}</div>
+            </div>
+          </div>
+          <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+            {{ sidebarCollapsed ? '▶' : '◀ 收起' }}
+          </button>
+          <button v-if="!sidebarCollapsed" class="logout-btn" @click="logout">退出登录</button>
+        </div>
+
+=== Edit #49 (turn 461) ===
+--- OLD ---
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+--- NEW ---
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <!-- 顶部固定计时器横条 -->
+        <div v-if="activeTimer" class="timer-bar" :style="{ background: activeTimer.color + '22', borderLeftColor: activeTimer.color }">
+          <div class="timer-bar-left">
+            <span class="timer-pulse" :style="{ background: activeTimer.color }"></span>
+            <span class="timer-bar-desc">{{ activeTimer.description || '(无描述)' }}</span>
+            <span class="timer-bar-cat" :style="{ color: activeTimer.color }">{{ activeTimer.category }}</span>
+          </div>
+          <div class="timer-bar-right">
+            <span class="timer-bar-elapsed">{{ timerElapsedText }}</span>
+            <button class="timer-bar-stop" @click="stopActiveTimer" title="停止计时">⏹ 停止</button>
+          </div>
+        </div>
+
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+
+=== Edit #50 (turn 461) ===
+--- OLD ---
+/* ───── 主内容区 ───── */
+.main-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+--- NEW ---
+/* ───── 主内容区 ───── */
+.main-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* ───── 顶部固定计时器横条 ───── */
+.timer-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  margin: -24px -24px 16px -24px;
+  border-left: 4px solid;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.timer-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.timer-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+.timer-bar-desc {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.timer-bar-cat {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.timer-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.timer-bar-elapsed {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.timer-bar-stop {
+  padding: 6px 14px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.timer-bar-stop:hover {
+  background: #dc2626;
+}
+
+=== Edit #51 (turn 462) ===
+--- OLD ---
+provide('stopActiveTimer', stopActiveTimer)
+</script>
+--- NEW ---
+provide('stopActiveTimer', stopActiveTimer)
+provide('timerElapsedText', timerElapsedText)
+</script>
+
+=== Edit #52 (turn 462) ===
+--- OLD ---
+/* ───── 顶部固定计时器横条 ───── */
+.timer-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  margin: -24px -24px 16px -24px;
+  border-left: 4px solid;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(8px);
+}
+--- NEW ---
+/* ───── 顶部固定计时器横条 ───── */
+.timer-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-left: 4px solid;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+=== Edit #53 (turn 462) ===
+--- OLD ---
+        <!-- 顶部固定计时器横条 -->
+        <div v-if="activeTimer" class="timer-bar" :style="{ background: activeTimer.color + '22', borderLeftColor: activeTimer.color }">
+          <div class="timer-bar-left">
+            <span class="timer-pulse" :style="{ background: activeTimer.color }"></span>
+            <span class="timer-bar-desc">{{ activeTimer.description || '(无描述)' }}</span>
+            <span class="timer-bar-cat" :style="{ color: activeTimer.color }">{{ activeTimer.category }}</span>
+          </div>
+          <div class="timer-bar-right">
+            <span class="timer-bar-elapsed">{{ timerElapsedText }}</span>
+            <button class="timer-bar-stop" @click="stopActiveTimer" title="停止计时">⏹ 停止</button>
+          </div>
+        </div>
+--- NEW ---
+        <!-- 顶部固定计时器横条 -->
+        <div v-if="activeTimer" class="timer-bar" :style="{ background: activeTimer.color + '22', borderLeftColor: activeTimer.color, left: sidebarCollapsed ? '60px' : 'var(--sidebar-width)' }">
+          <div class="timer-bar-left">
+            <span class="timer-pulse" :style="{ background: activeTimer.color }"></span>
+            <span class="timer-bar-desc">{{ activeTimer.description || '(无描述)' }}</span>
+            <span class="timer-bar-cat" :style="{ color: activeTimer.color }">{{ activeTimer.category }}</span>
+          </div>
+          <div class="timer-bar-right">
+            <span class="timer-bar-elapsed">{{ timerElapsedText }}</span>
+            <button class="timer-bar-stop" @click="stopActiveTimer" title="停止计时">⏹ 停止</button>
+          </div>
+        </div>
+
+=== Edit #54 (turn 462) ===
+--- OLD ---
+/* ───── 顶部固定计时器横条 ───── */
+.timer-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-left: 4px solid;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+}
+--- NEW ---
+/* ───── 顶部固定计时器横条 ───── */
+.timer-bar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-left: 4px solid;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+  transition: left 0.2s ease;
+}
+
+=== Edit #55 (turn 462) ===
+--- OLD ---
+      <!-- 主内容区 -->
+      <main class="main-content">
+--- NEW ---
+      <!-- 主内容区 -->
+      <main class="main-content" :class="{ 'has-timer': activeTimer }">
+
+=== Edit #56 (turn 462) ===
+--- OLD ---
+/* ───── 主内容区 ───── */
+.main-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  position: relative;
+}
+--- NEW ---
+/* ───── 主内容区 ───── */
+.main-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.main-content.has-timer {
+  padding-top: 70px;
+}
+
+=== Edit #57 (turn 463) ===
+--- OLD ---
+          <div class="timer-bar-right">
+            <span class="timer-bar-elapsed">{{ timerElapsedText }}</span>
+            <button class="timer-bar-stop" @click="stopActiveTimer" title="停止计时">⏹ 停止</button>
+          </div>
+--- NEW ---
+          <div class="timer-bar-right">
+            <span class="timer-bar-elapsed">{{ timerElapsedText }}</span>
+          </div>
+
+=== Edit #58 (turn 464) ===
+--- OLD ---
+      <!-- 主内容区 -->
+      <main class="main-content" :class="{ 'has-timer': activeTimer }">
+        <!-- 顶部固定计时器横条 -->
+        <div v-if="activeTimer" class="timer-bar" :style="{ background: activeTimer.color + '22', borderLeftColor: activeTimer.color, left: sidebarCollapsed ? '60px' : 'var(--sidebar-width)' }">
+          <div class="timer-bar-left">
+            <span class="timer-pulse" :style="{ background: activeTimer.color }"></span>
+            <span class="timer-bar-desc">{{ activeTimer.description || '(无描述)' }}</span>
+            <span class="timer-bar-cat" :style="{ color: activeTimer.color }">{{ activeTimer.category }}</span>
+          </div>
+          <div class="timer-bar-right">
+            <span class="timer-bar-elapsed">{{ timerElapsedText }}</span>
+          </div>
+        </div>
+--- NEW ---
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <!-- 顶部固定计时器横条（常驻）-->
+        <div class="timer-bar" :class="{ 'is-running': activeTimer }" :style="activeTimer ? { background: activeTimer.color + '22', borderLeftColor: activeTimer.color } : {}">
+          <template v-if="activeTimer">
+            <div class="timer-bar-left">
+              <span class="timer-pulse" :style="{ background: activeTimer.color }"></span>
+              <span class="timer-bar-desc">{{ activeTimer.description || '(无描述)' }}</span>
+              <span class="timer-bar-cat" :style="{ color: activeTimer.color }">{{ activeTimer.category }}</span>
+            </div>
+            <div class="timer-bar-right">
+              <span class="timer-bar-elapsed">{{ timerElapsedText }}</span>
+              <button class="timer-bar-stop" @click="stopActiveTimer" title="完成计时">⏹ 完成</button>
+            </div>
+          </template>
+          <template v-else>
+            <div class="timer-bar-left">
+              <span class="timer-idle">⏱</span>
+              <span class="timer-bar-idle-text">未计时</span>
+            </div>
+            <div class="timer-bar-right">
+              <button class="timer-bar-start" @click="openStartFromBar" title="开始计时">▶ 开始计时</button>
+            </div>
+          </template>
+        </div>
+
+=== Edit #59 (turn 464) ===
+--- OLD ---
+// ───── 侧边栏 ─────
+const sidebarCollapsed = ref(false)
+const currentPage = ref('week')
+--- NEW ---
+// ───── 侧边栏 ─────
+const sidebarCollapsed = ref(false)
+const currentPage = ref('week')
+
+// 横条"开始计时"按钮：跳到周视图并触发弹窗
+const pendingStartTimer = ref(false)
+function openStartFromBar() {
+  currentPage.value = 'week'
+  pendingStartTimer.value = true
+}
+provide('pendingStartTimer', pendingStartTimer)
+
+=== Edit #60 (turn 464) ===
+--- OLD ---
+/* ───── 主内容区 ───── */
+.main-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.main-content.has-timer {
+  padding-top: 70px;
+}
+
+/* ───── 顶部固定计时器横条 ───── */
+.timer-bar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-left: 4px solid;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+  transition: left 0.2s ease;
+}
+
+.timer-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.timer-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+.timer-bar-desc {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.timer-bar-cat {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.timer-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.timer-bar-elapsed {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.timer-bar-stop {
+  padding: 6px 14px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.timer-bar-stop:hover {
+  background: #dc2626;
+}
+--- NEW ---
+/* ───── 主内容区 ───── */
+.main-content {
+  flex: 1;
+  padding: 24px;
+  padding-top: 70px;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* ───── 顶部固定计时器横条（常驻）───── */
+.timer-bar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-left: 4px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+  height: 46px;
+}
+
+.timer-bar.is-running {
+  border-left-color: transparent;
+}
+
+.timer-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.timer-idle {
+  font-size: 18px;
+  opacity: 0.5;
+}
+
+.timer-bar-idle-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.timer-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+.timer-bar-desc {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.timer-bar-cat {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.timer-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.timer-bar-elapsed {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.timer-bar-start {
+  padding: 6px 14px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.timer-bar-start:hover {
+  background: var(--primary-dark);
+}
+
+.timer-bar-stop {
+  padding: 6px 14px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.timer-bar-stop:hover {
+  background: #dc2626;
+}
+
+=== Edit #61 (turn 465) ===
+--- OLD ---
+/* ───── 顶部固定计时器横条（常驻）───── */
+.timer-bar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-left: 4px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+  height: 46px;
+}
+
+.timer-bar.is-running {
+  border-left-color: transparent;
+}
+
+.timer-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.timer-idle {
+  font-size: 18px;
+  opacity: 0.5;
+}
+
+.timer-bar-idle-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.timer-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+.timer-bar-desc {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.timer-bar-cat {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.timer-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.timer-bar-elapsed {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.timer-bar-start {
+  padding: 6px 14px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.timer-bar-start:hover {
+  background: var(--primary-dark);
+}
+
+.timer-bar-stop {
+  padding: 6px 14px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.timer-bar-stop:hover {
+  background: #dc2626;
+}
+--- NEW ---
+/* ───── 顶部固定计时器横条（常驻，居中胶囊式）───── */
+.timer-bar {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  min-width: 420px;
+  max-width: 720px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.timer-bar.is-running {
+  border: 1px solid transparent;
+}
+
+.timer-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.timer-idle {
+  font-size: 22px;
+  opacity: 0.4;
+}
+
+.timer-bar-idle-text {
+  font-size: 15px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.timer-pulse {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 0 0 currentColor;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+.timer-bar-desc {
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.timer-bar-cat {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.timer-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+
+.timer-bar-elapsed {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.timer-bar-start {
+  padding: 8px 18px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+}
+
+.timer-bar-start:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
+}
+
+.timer-bar-stop {
+  padding: 8px 18px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+.timer-bar-stop:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+}
+
+=== Edit #62 (turn 479) ===
+--- OLD ---
+// ───── 实时计时器（全局状态）─────
+const activeTimer = ref(null) // { description, category, color, country, user, notes, startTime }
+const timerTick = ref(0)
+let timerInterval = null
+
+const timerElapsedMs = computed(() => {
+  timerTick.value // 依赖触发重算
+  if (!activeTimer.value) return 0
+  return Date.now() - activeTimer.value.startTime
+})
+
+const timerElapsedText = computed(() => {
+  const ms = timerElapsedMs.value
+  const totalSec = Math.floor(ms / 1000)
+  const h = Math.floor(totalSec / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  const s = totalSec % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return `${m}:${String(s).padStart(2, '0')}`
+})
+
+function startActiveTimer(payload) {
+  // payload: { description, category, color, country, user, notes }
+  activeTimer.value = {
+    ...payload,
+    startTime: Date.now(),
+  }
+  // 保存到 localStorage 以防刷新
+  localStorage.setItem('tt_active_timer', JSON.stringify(activeTimer.value))
+  // 启动跳动
+  if (timerInterval) clearInterval(timerInterval)
+  timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+}
+
+async function stopActiveTimer() {
+  if (!activeTimer.value) return
+  const t = activeTimer.value
+  const endTime = Date.now()
+  try {
+    const fields = {
+      'description': t.description || '',
+      'category': t.category || '其他',
+      'start_time': new Date(t.startTime).toISOString(),
+      'end_time': new Date(endTime).toISOString(),
+      'user': t.user || '',
+      'country': t.country || '国内',
+      'notes': t.notes || '',
+    }
+    await http('/entries', { method: 'POST', body: { fields } })
+  } catch (e) {
+    alert('保存计时记录失败: ' + e.message)
+  }
+  // 清理
+  activeTimer.value = null
+  localStorage.removeItem('tt_active_timer')
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+  // 触发刷新（通过自定义事件让 WeekView 重新加载）
+  window.dispatchEvent(new CustomEvent('timer-stopped'))
+}
+
+// 恢复未完成的计时器（页面刷新后）
+function restoreActiveTimer() {
+  const saved = localStorage.getItem('tt_active_timer')
+  if (saved) {
+    try {
+      activeTimer.value = JSON.parse(saved)
+      if (timerInterval) clearInterval(timerInterval)
+      timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+    } catch (e) { localStorage.removeItem('tt_active_timer') }
+  }
+}
+--- NEW ---
+// ───── 实时计时器（全局状态）─────
+// activeTimer 结构: { record_id, description, category, color, country, user, notes, startTime }
+const activeTimer = ref(null)
+const timerTick = ref(0)
+let timerInterval = null
+
+const timerElapsedMs = computed(() => {
+  timerTick.value // 依赖触发重算
+  if (!activeTimer.value) return 0
+  return Date.now() - activeTimer.value.startTime
+})
+
+const timerElapsedText = computed(() => {
+  const ms = timerElapsedMs.value
+  const totalSec = Math.floor(ms / 1000)
+  const h = Math.floor(totalSec / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  const s = totalSec % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return `${m}:${String(s).padStart(2, '0')}`
+})
+
+// 把计时状态存到 localStorage + cookie（cookie 防清缓存，localStorage 主存）
+function persistTimer() {
+  if (activeTimer.value) {
+    const data = {
+      record_id: activeTimer.value.record_id,
+      startTime: activeTimer.value.startTime,
+      description: activeTimer.value.description,
+      category: activeTimer.value.category,
+      color: activeTimer.value.color,
+      country: activeTimer.value.country,
+      user: activeTimer.value.user,
+      notes: activeTimer.value.notes,
+    }
+    localStorage.setItem('tt_active_timer', JSON.stringify(data))
+    // cookie 备份（有效期 7 天），格式: record_id|start_time
+    const cookieVal = `${data.record_id}|${data.startTime}`
+    document.cookie = `tt_timer=${cookieVal}; max-age=604800; path=/`
+  } else {
+    localStorage.removeItem('tt_active_timer')
+    document.cookie = 'tt_timer=; max-age=0; path=/'
+  }
+}
+
+// 开始计时：调 /timer/start 立即写库，拿到 record_id
+async function startActiveTimer(payload) {
+  // payload: { description, category, color, country, user, notes }
+  try {
+    const res = await http('/timer/start', {
+      method: 'POST',
+      body: {
+        user: payload.user || '',
+        description: payload.description || '',
+        category: payload.category || '其他',
+        country: payload.country || '国内',
+        notes: payload.notes || '',
+      },
+    })
+    activeTimer.value = {
+      ...payload,
+      record_id: res.record_id,
+      startTime: res.start_time,
+    }
+    persistTimer()
+    if (timerInterval) clearInterval(timerInterval)
+    timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+  } catch (e) {
+    alert('开始计时失败: ' + e.message)
+  }
+}
+
+// 完成计时：调 /timer/stop 补全 end_time
+async function stopActiveTimer() {
+  if (!activeTimer.value) return
+  const t = activeTimer.value
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: t.record_id },
+    })
+  } catch (e) {
+    alert('完成计时失败: ' + e.message)
+  }
+  // 清理
+  activeTimer.value = null
+  persistTimer()
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+  window.dispatchEvent(new CustomEvent('timer-stopped'))
+}
+
+// 从服务端恢复正在进行的计时器（刷新/重启后）
+// 优先用 localStorage 里的 record_id 调 /timer/active 验证；fallback 到 cookie
+async function restoreActiveTimer() {
+  // 1. 先尝试从 localStorage 恢复
+  let saved = localStorage.getItem('tt_active_timer')
+  // 2. localStorage 没有就从 cookie 读
+  if (!saved) {
+    const m = document.cookie.match(/tt_timer=([^;]+)/)
+    if (m) {
+      // cookie 格式: record_id|start_time，缺其他字段，调 /timer/active 补全
+      const [recordId, startTime] = m[1].split('|')
+      if (recordId && userName.value) {
+        try {
+          const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+          if (res.active && res.record_id === recordId) {
+            activeTimer.value = {
+              record_id: res.record_id,
+              startTime: Number(startTime),
+              description: res.description,
+              category: res.category,
+              color: '#6366f1',
+              user: userName.value,
+              country: '国内',
+              notes: '',
+            }
+            persistTimer()
+            if (timerInterval) clearInterval(timerInterval)
+            timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          }
+        } catch (e) { /* 忽略，可能 record 已不存在 */ }
+      }
+      return
+    }
+  }
+  // 3. localStorage 有数据，验证 record 是否还活着
+  if (saved) {
+    try {
+      const data = JSON.parse(saved)
+      if (data.record_id && userName.value) {
+        const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+        if (res.active && res.record_id === data.record_id) {
+          activeTimer.value = {
+            record_id: data.record_id,
+            startTime: data.startTime,
+            description: data.description,
+            category: data.category,
+            color: data.color || '#6366f1',
+            user: data.user,
+            country: data.country || '国内',
+            notes: data.notes || '',
+          }
+          if (timerInterval) clearInterval(timerInterval)
+          timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          return
+        }
+      }
+      // record 已不存在或已完成，清理
+      localStorage.removeItem('tt_active_timer')
+      document.cookie = 'tt_timer=; max-age=0; path=/'
+    } catch (e) {
+      localStorage.removeItem('tt_active_timer')
+    }
+  }
+}
+
+=== Edit #63 (turn 479) ===
+--- OLD ---
+    localStorage.setItem('tt_display_name', displayName.value)
+    showLogin.value = false
+    loginUser.value = ''
+    loginPass.value = ''
+  } catch (e) {
+    loginError.value = e.message
+  } finally {
+    authLoading.value = false
+  }
+}
+--- NEW ---
+    localStorage.setItem('tt_display_name', displayName.value)
+    showLogin.value = false
+    loginUser.value = ''
+    loginPass.value = ''
+    // 登录成功后恢复未完成的计时器
+    await restoreActiveTimer()
+  } catch (e) {
+    loginError.value = e.message
+  } finally {
+    authLoading.value = false
+  }
+}
+
+=== Edit #64 (turn 483) ===
+--- OLD ---
+// ───── 登录状态 ─────
+const userName = ref(localStorage.getItem('tt_user') || '')
+const userRole = ref(localStorage.getItem('tt_role') || '')
+const displayName = ref(localStorage.getItem('tt_display_name') || '')
+const showLogin = ref(!userName.value)
+const authLoading = ref(false)
+
+const isAdmin = computed(() => userRole.value === 'admin')
+--- NEW ---
+// ───── 登录状态 ─────
+const userName = ref(localStorage.getItem('tt_user') || '')
+const userRole = ref(localStorage.getItem('tt_role') || '')
+const displayName = ref(localStorage.getItem('tt_display_name') || '')
+const userTeam = ref(localStorage.getItem('tt_team') || '')
+const feishuUserId = ref(localStorage.getItem('tt_feishu_id') || '')
+const showLogin = ref(!userName.value)
+const authLoading = ref(false)
+
+const isAdmin = computed(() => userRole.value === 'admin')
+
+// ───── 飞书 H5 免登 ─────
+// 飞书企业自建应用 App ID
+const FEISHU_APP_ID = 'cli_aa07f5b29ef89bd1'
+
+// 检测 URL 是否有 code 参数(飞书重定向回来), 自动登录
+async function tryFeishuAuth() {
+  const url = new URL(window.location.href)
+  const code = url.searchParams.get('code')
+  if (!code) return false
+
+  try {
+    const res = await http('/feishu-auth?code=' + encodeURIComponent(code))
+    if (res.ok) {
+      // 飞书免登成功
+      userName.value = res.user
+      userRole.value = res.role
+      displayName.value = res.display_name
+      userTeam.value = res.team || ''
+      feishuUserId.value = res.feishu_user_id || ''
+      localStorage.setItem('tt_user', res.user)
+      localStorage.setItem('tt_role', res.role)
+      localStorage.setItem('tt_display_name', res.display_name)
+      localStorage.setItem('tt_team', res.team || '')
+      localStorage.setItem('tt_feishu_id', res.feishu_user_id || '')
+      showLogin.value = false
+      // 清掉 URL 里的 code 参数
+      url.searchParams.delete('code')
+      window.history.replaceState({}, '', url.toString())
+      return true
+    } else {
+      // 飞书账号未绑定, 提示用户去网页端绑定
+      console.warn('飞书免登失败:', res.error)
+    }
+  } catch (e) {
+    console.warn('飞书免登异常:', e.message)
+  }
+  return false
+}
+
+// 跳转到飞书授权页(用户点"飞书登录"时调用)
+function redirectToFeishuAuth() {
+  const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname)
+  const authUrl = `https://open.feishu.cn/open-apis/authen/v1/index?app_id=${FEISHU_APP_ID}&redirect_uri=${redirectUri}`
+  window.location.href = authUrl
+}
+
+=== Edit #65 (turn 483) ===
+--- OLD ---
+provide('stopActiveTimer', stopActiveTimer)
+provide('timerElapsedText', timerElapsedText)
+--- NEW ---
+provide('stopActiveTimer', stopActiveTimer)
+provide('timerElapsedText', timerElapsedText)
+provide('redirectToFeishuAuth', redirectToFeishuAuth)
+provide('feishuUserId', feishuUserId)
+provide('userTeam', userTeam)
+
+// ───── onMounted: 检测飞书免登 ─────
+onMounted(async () => {
+  await tryFeishuAuth()
+})
+
+=== Edit #66 (turn 483) ===
+--- OLD ---
+const navItems = [
+  { key: 'week', icon: '📅', label: '周视图' },
+  { key: 'dashboard', icon: '📊', label: '仪表盘' },
+  { key: 'report', icon: '📈', label: '报表' },
+  { key: 'settings', icon: '⚙', label: '设置' },
+]
+--- NEW ---
+// 侧边栏导航项按角色过滤
+// admin: 仪表盘(全员)→报表→周视图→设置
+// team_admin: 仪表盘(本团队)→报表→周视图→设置
+// member: 周视图→仪表盘(自己)→报表→设置
+const navItems = computed(() => {
+  const r = userRole.value
+  const base = [
+    { key: 'week', icon: '📅', label: '周视图' },
+    { key: 'dashboard', icon: '📊', label: '仪表盘' },
+    { key: 'report', icon: '📈', label: '报表' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+  // 管理员默认进仪表盘, 其他角色默认进周视图
+  if (r === 'admin' && currentPage.value === 'week') {
+    currentPage.value = 'dashboard'
+  }
+  return base
+})
+
+=== Edit #67 (turn 483) ===
+--- OLD ---
+          <div v-if="loginError" class="auth-err">{{ loginError }}</div>
+          <button class="auth-btn" @click="confirmLogin" :disabled="authLoading">
+            {{ authLoading ? '登录中...' : '登录' }}
+          </button>
+          <div class="auth-switch">
+            没有账号？<a @click="toggleRegister">立即注册</a>
+          </div>
+--- NEW ---
+          <div v-if="loginError" class="auth-err">{{ loginError }}</div>
+          <button class="auth-btn" @click="confirmLogin" :disabled="authLoading">
+            {{ authLoading ? '登录中...' : '登录' }}
+          </button>
+          <div class="auth-divider"><span>或</span></div>
+          <button class="auth-btn feishu-btn" @click="redirectToFeishuAuth">
+            🚀 飞书一键登录
+          </button>
+          <div class="auth-switch">
+            没有账号？<a @click="toggleRegister">立即注册</a>
+          </div>
+
+=== Edit #68 (turn 486) ===
+--- OLD ---
+  // 3. localStorage 有数据，验证 record 是否还活着
+  if (saved) {
+    try {
+      const data = JSON.parse(saved)
+      if (data.record_id && userName.value) {
+        const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+        if (res.active && res.record_id === data.record_id) {
+          activeTimer.value = {
+            record_id: data.record_id,
+            startTime: data.startTime,
+            description: data.description,
+            category: data.category,
+            color: data.color || '#6366f1',
+            user: data.user,
+            country: data.country || '国内',
+            notes: data.notes || '',
+          }
+          if (timerInterval) clearInterval(timerInterval)
+          timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          return
+        }
+      }
+      // record 已不存在或已完成，清理
+      localStorage.removeItem('tt_active_timer')
+      document.cookie = 'tt_timer=; max-age=0; path=/'
+    } catch (e) {
+      localStorage.removeItem('tt_active_timer')
+    }
+  }
+}
+--- NEW ---
+  // 3. localStorage 有数据，验证 record 是否还活着
+  if (saved) {
+    try {
+      const data = JSON.parse(saved)
+      if (data.record_id && userName.value) {
+        // 优先信任服务端的 start_time (毫秒时间戳), 避免 localStorage 里存的格式不一致
+        const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+        if (res.active && res.record_id === data.record_id) {
+          // res.start_time 可能是数字(毫秒)或字符串, 强制转数字
+          const startTime = Number(res.start_time) || Number(data.startTime) || Date.now()
+          activeTimer.value = {
+            record_id: data.record_id,
+            startTime: startTime,
+            description: res.description || data.description || '',
+            category: res.category || data.category || '其他',
+            color: data.color || '#6366f1',
+            user: data.user || userName.value,
+            country: data.country || '国内',
+            notes: data.notes || '',
+          }
+          persistTimer()
+          if (timerInterval) clearInterval(timerInterval)
+          timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          return
+        }
+      }
+      // record 已不存在或已完成，清理
+      localStorage.removeItem('tt_active_timer')
+      document.cookie = 'tt_timer=; max-age=0; path=/'
+    } catch (e) {
+      localStorage.removeItem('tt_active_timer')
+    }
+  }
+}
+
+=== Edit #69 (turn 486) ===
+--- OLD ---
+      if (recordId && userName.value) {
+        try {
+          const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+          if (res.active && res.record_id === recordId) {
+            activeTimer.value = {
+              record_id: res.record_id,
+              startTime: Number(startTime),
+              description: res.description,
+              category: res.category,
+              color: '#6366f1',
+              user: userName.value,
+              country: '国内',
+              notes: '',
+            }
+            persistTimer()
+            if (timerInterval) clearInterval(timerInterval)
+            timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          }
+        } catch (e) { /* 忽略，可能 record 已不存在 */ }
+      }
+--- NEW ---
+      if (recordId && userName.value) {
+        try {
+          const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+          if (res.active && res.record_id === recordId) {
+            // res.start_time 是毫秒时间戳, 强制转数字; fallback 到 cookie 里的值
+            const startTime = Number(res.start_time) || Number(startTime) || Date.now()
+            activeTimer.value = {
+              record_id: res.record_id,
+              startTime: startTime,
+              description: res.description || '',
+              category: res.category || '其他',
+              color: '#6366f1',
+              user: userName.value,
+              country: '国内',
+              notes: '',
+            }
+            persistTimer()
+            if (timerInterval) clearInterval(timerInterval)
+            timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          }
+        } catch (e) { /* 忽略，可能 record 已不存在 */ }
+      }
+
+=== Edit #70 (turn 495) ===
+--- OLD ---
+// 跳转到飞书授权页(用户点"飞书登录"时调用)
+function redirectToFeishuAuth() {
+  const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname)
+  const authUrl = `https://open.feishu.cn/open-apis/authen/v1/index?app_id=${FEISHU_APP_ID}&redirect_uri=${redirectUri}`
+  window.location.href = authUrl
+}
+--- NEW ---
+// 跳转到飞书授权页(用户点"飞书登录"时调用)
+// 统一用飞书 v2 oauth2 全流程:
+//   授权端点: https://accounts.feishu.cn/open-apis/authen/v1/authorize
+//   换token:  https://open.feishu.cn/open-apis/authen/v2/oauth/token (SCF后端)
+function redirectToFeishuAuth() {
+  const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname)
+  const authUrl = `https://accounts.feishu.cn/open-apis/authen/v1/authorize?client_id=${FEISHU_APP_ID}&response_type=code&redirect_uri=${redirectUri}`
+  window.location.href = authUrl
+}
+
+=== Edit #71 (turn 496) ===
+--- OLD ---
+// ───── onMounted: 检测飞书免登 ─────
+onMounted(async () => {
+  await tryFeishuAuth()
+})
+--- NEW ---
+// ───── onMounted: 检测飞书免登 ─────
+// 临时禁用自动免登, 避免 code 被 SCF 旧代码浪费
+// 改为: 用户点"飞书一键登录"后, 手动复制 URL 给我测
+onMounted(async () => {
+  // await tryFeishuAuth()
+})
+
+=== Edit #72 (turn 498) ===
+--- OLD ---
+// 侧边栏导航项按角色过滤
+// admin: 仪表盘(全员)→报表→周视图→设置
+// team_admin: 仪表盘(本团队)→报表→周视图→设置
+// member: 周视图→仪表盘(自己)→报表→设置
+const navItems = computed(() => {
+  const r = userRole.value
+  const base = [
+    { key: 'week', icon: '📅', label: '周视图' },
+    { key: 'dashboard', icon: '📊', label: '仪表盘' },
+    { key: 'report', icon: '📈', label: '报表' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+  // 管理员默认进仪表盘, 其他角色默认进周视图
+  if (r === 'admin' && currentPage.value === 'week') {
+    currentPage.value = 'dashboard'
+  }
+  return base
+})
+--- NEW ---
+// 网页端只保留周视图+设置 (仪表盘/报表在多维表格应用模式做)
+const navItems = computed(() => {
+  return [
+    { key: 'week', icon: '📅', label: '周视图' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+})
+
+=== Edit #73 (turn 498) ===
+--- OLD ---
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+
+        <!-- 仪表盘页 -->
+        <Dashboard v-else-if="currentPage === 'dashboard'" />
+
+        <!-- 报表页 -->
+        <Report v-else-if="currentPage === 'report'" />
+
+        <!-- 设置页 -->
+        <Settings v-else-if="currentPage === 'settings'" />
+--- NEW ---
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+
+        <!-- 设置页 -->
+        <Settings v-else-if="currentPage === 'settings'" />
+
+=== Edit #74 (turn 498) ===
+--- OLD ---
+import WeekView from './views/WeekView.vue'
+import Dashboard from './views/Dashboard.vue'
+import Report from './views/Report.vue'
+import Settings from './views/Settings.vue'
+--- NEW ---
+import WeekView from './views/WeekView.vue'
+import Settings from './views/Settings.vue'
+
+=== Edit #75 (turn 498) ===
+--- OLD ---
+        <!-- 顶部固定计时器横条（常驻）-->
+        <div class="timer-bar" :class="{ 'is-running': activeTimer }" :style="activeTimer ? { background: activeTimer.color + '22', borderLeftColor: activeTimer.color } : {}">
+--- NEW ---
+        <!-- 顶部固定计时器横条（只在周视图显示）-->
+        <div v-if="currentPage === 'week'" class="timer-bar" :class="{ 'is-running': activeTimer }" :style="activeTimer ? { background: activeTimer.color + '22', borderLeftColor: activeTimer.color } : {}">
+
+=== Edit #76 (turn 498) ===
+--- OLD ---
+// ───── onMounted: 检测飞书免登 ─────
+// 临时禁用自动免登, 避免 code 被 SCF 旧代码浪费
+// 改为: 用户点"飞书一键登录"后, 手动复制 URL 给我测
+onMounted(async () => {
+  // await tryFeishuAuth()
+})
+--- NEW ---
+// ───── onMounted: 自动恢复计时器 ─────
+// 刷新页面时, 如果 localStorage 有 tt_user, 会跳过登录直接进主界面
+// 但 restoreActiveTimer 只在 confirmLogin 里调用, 刷新时不会触发
+// 所以这里要在 onMounted 里主动恢复
+onMounted(async () => {
+  // 如果已登录(从 localStorage 恢复), 但计时器没恢复, 主动调 restoreActiveTimer
+  if (userName.value && !activeTimer.value) {
+    await restoreActiveTimer()
+  }
+})
+
+=== Edit #77 (turn 500) ===
+--- OLD ---
+// 从服务端恢复正在进行的计时器（刷新/重启后）
+// 优先用 localStorage 里的 record_id 调 /timer/active 验证；fallback 到 cookie
+async function restoreActiveTimer() {
+  // 1. 先尝试从 localStorage 恢复
+  let saved = localStorage.getItem('tt_active_timer')
+  // 2. localStorage 没有就从 cookie 读
+  if (!saved) {
+    const m = document.cookie.match(/tt_timer=([^;]+)/)
+    if (m) {
+      // cookie 格式: record_id|start_time，缺其他字段，调 /timer/active 补全
+      const [recordId, startTime] = m[1].split('|')
+      if (recordId && userName.value) {
+        try {
+          const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+          if (res.active && res.record_id === recordId) {
+            // res.start_time 是毫秒时间戳, 强制转数字; fallback 到 cookie 里的值
+            const startTime = Number(res.start_time) || Number(startTime) || Date.now()
+            activeTimer.value = {
+              record_id: res.record_id,
+              startTime: startTime,
+              description: res.description || '',
+              category: res.category || '其他',
+              color: '#6366f1',
+              user: userName.value,
+              country: '国内',
+              notes: '',
+            }
+            persistTimer()
+            if (timerInterval) clearInterval(timerInterval)
+            timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          }
+        } catch (e) { /* 忽略，可能 record 已不存在 */ }
+      }
+      return
+  }
+  // 3. localStorage 有数据，验证 record 是否还活着
+  if (saved) {
+    try {
+      const data = JSON.parse(saved)
+      if (data.record_id && userName.value) {
+        // 优先信任服务端的 start_time (毫秒时间戳), 避免 localStorage 里存的格式不一致
+        const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+        if (res.active && res.record_id === data.record_id) {
+          // res.start_time 可能是数字(毫秒)或字符串, 强制转数字
+          const startTime = Number(res.start_time) || Number(data.startTime) || Date.now()
+          activeTimer.value = {
+            record_id: data.record_id,
+            startTime: startTime,
+            description: res.description || data.description || '',
+            category: res.category || data.category || '其他',
+            color: data.color || '#6366f1',
+            user: data.user || userName.value,
+            country: data.country || '国内',
+            notes: data.notes || '',
+          }
+          persistTimer()
+          if (timerInterval) clearInterval(timerInterval)
+          timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          return
+        }
+      }
+      // record 已不存在或已完成，清理
+      localStorage.removeItem('tt_active_timer')
+      document.cookie = 'tt_timer=; max-age=0; path=/'
+    } catch (e) {
+      localStorage.removeItem('tt_active_timer')
+    }
+  }
+}
+--- NEW ---
+// 从服务端恢复正在进行的计时器（刷新/重启后）
+// 核心逻辑: 直接信任 localStorage 里的 record_id 和 startTime
+// 用 /timer/active 只是为了拿服务端的 start_time (毫秒) 覆盖 localStorage 里可能过期的值
+// 不做 record_id 匹配 (因为 /timer/active 返回最早的, 不是最新的)
+async function restoreActiveTimer() {
+  // 1. 先尝试从 localStorage 恢复
+  let saved = localStorage.getItem('tt_active_timer')
+
+  // 2. localStorage 没有就从 cookie 读
+  if (!saved) {
+    const m = document.cookie.match(/tt_timer=([^;]+)/)
+    if (m) {
+      const [cookieRecordId, cookieStartTime] = m[1].split('|')
+      if (cookieRecordId && userName.value) {
+        try {
+          const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+          if (res.active) {
+            // 用服务端的 start_time (毫秒), fallback 到 cookie 里的值
+            const startTime = Number(res.start_time) || Number(cookieStartTime) || Date.now()
+            activeTimer.value = {
+              record_id: cookieRecordId,
+              startTime: startTime,
+              description: res.description || '',
+              category: res.category || '其他',
+              color: '#6366f1',
+              user: userName.value,
+              country: '国内',
+              notes: '',
+            }
+            persistTimer()
+            if (timerInterval) clearInterval(timerInterval)
+            timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          }
+        } catch (e) { /* 忽略 */ }
+      }
+      return
+  }
+
+  // 3. localStorage 有数据, 直接恢复 (不依赖 /timer/active 的 record_id 匹配)
+  if (saved) {
+    try {
+      const data = JSON.parse(saved)
+      if (data.record_id && data.startTime) {
+        // 强制转数字, 避免 localStorage 存的是字符串
+        const startTime = Number(data.startTime)
+        if (!isNaN(startTime) && startTime > 0) {
+          activeTimer.value = {
+            record_id: data.record_id,
+            startTime: startTime,
+            description: data.description || '',
+            category: data.category || '其他',
+            color: data.color || '#6366f1',
+            user: data.user || userName.value,
+            country: data.country || '国内',
+            notes: data.notes || '',
+          }
+          persistTimer()
+          if (timerInterval) clearInterval(timerInterval)
+          timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          return
+        }
+      }
+      // localStorage 数据无效, 清理
+      localStorage.removeItem('tt_active_timer')
+      document.cookie = 'tt_timer=; max-age=0; path=/'
+    } catch (e) {
+      localStorage.removeItem('tt_active_timer')
+    }
+  }
+}
+
+=== Edit #78 (turn 500) ===
+--- OLD ---
+// 从服务端恢复正在进行的计时器（刷新/重启后）
+// 优先用 localStorage 里的 record_id 调 /timer/active 验证；fallback 到 cookie
+async function restoreActiveTimer() {
+  // 1. 先尝试从 localStorage 恢复
+  let saved = localStorage.getItem('tt_active_timer')
+  // 2. localStorage 没有就从 cookie 读
+  if (!saved) {
+    const m = document.cookie.match(/tt_timer=([^;]+)/)
+    if (m) {
+      // cookie 格式: record_id|start_time，缺其他字段，调 /timer/active 补全
+      const [recordId, startTime] = m[1].split('|')
+      if (recordId && userName.value) {
+        try {
+          const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+          if (res.active && res.record_id === recordId) {
+            // res.start_time 是毫秒时间戳, 强制转数字; fallback 到 cookie 里的值
+            const startTime = Number(res.start_time) || Number(startTime) || Date.now()
+            activeTimer.value = {
+              record_id: res.record_id,
+              startTime: startTime,
+              description: res.description || '',
+              category: res.category || '其他',
+              color: '#6366f1',
+              user: userName.value,
+              country: '国内',
+              notes: '',
+            }
+            persistTimer()
+            if (timerInterval) clearInterval(timerInterval)
+            timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          }
+        } catch (e) { /* 忽略，可能 record 已不存在 */ }
+      }
+      return
+    }
+  }
+  // 3. localStorage 有数据，验证 record 是否还活着
+  if (saved) {
+    try {
+      const data = JSON.parse(saved)
+      if (data.record_id && userName.value) {
+        // 优先信任服务端的 start_time (毫秒时间戳), 避免 localStorage 里存的格式不一致
+        const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+        if (res.active && res.record_id === data.record_id) {
+          // res.start_time 可能是数字(毫秒)或字符串, 强制转数字
+          const startTime = Number(res.start_time) || Number(data.startTime) || Date.now()
+          activeTimer.value = {
+            record_id: data.record_id,
+            startTime: startTime,
+            description: res.description || data.description || '',
+            category: res.category || data.category || '其他',
+            color: data.color || '#6366f1',
+            user: data.user || userName.value,
+            country: data.country || '国内',
+            notes: data.notes || '',
+          }
+          persistTimer()
+          if (timerInterval) clearInterval(timerInterval)
+          timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          return
+        }
+      }
+      // record 已不存在或已完成，清理
+      localStorage.removeItem('tt_active_timer')
+      document.cookie = 'tt_timer=; max-age=0; path=/'
+    } catch (e) {
+      localStorage.removeItem('tt_active_timer')
+    }
+  }
+}
+--- NEW ---
+// 从服务端恢复正在进行的计时器（刷新/重启后）
+// 核心逻辑: 直接信任 localStorage 里的 record_id 和 startTime
+// 用 /timer/active 只是为了拿服务端的 start_time (毫秒) 覆盖 localStorage 里可能过期的值
+// 不做 record_id 匹配 (因为 /timer/active 返回最早的, 不是最新的)
+async function restoreActiveTimer() {
+  // 1. 先尝试从 localStorage 恢复
+  let saved = localStorage.getItem('tt_active_timer')
+  // 2. localStorage 没有就从 cookie 读
+  if (!saved) {
+    const m = document.cookie.match(/tt_timer=([^;]+)/)
+    if (m) {
+      const [cookieRecordId, cookieStartTime] = m[1].split('|')
+      if (cookieRecordId && userName.value) {
+        try {
+          const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
+          if (res.active) {
+            // 用服务端的 start_time (毫秒), fallback 到 cookie 里的值
+            const startTime = Number(res.start_time) || Number(cookieStartTime) || Date.now()
+            activeTimer.value = {
+              record_id: cookieRecordId,
+              startTime: startTime,
+              description: res.description || '',
+              category: res.category || '其他',
+              color: '#6366f1',
+              user: userName.value,
+              country: '国内',
+              notes: '',
+            }
+            persistTimer()
+            if (timerInterval) clearInterval(timerInterval)
+            timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          }
+        } catch (e) { /* 忽略 */ }
+      }
+      return
+  }
+
+  // 3. localStorage 有数据, 直接恢复 (不依赖 /timer/active 的 record_id 匹配)
+  if (saved) {
+    try {
+      const data = JSON.parse(saved)
+      if (data.record_id && data.startTime) {
+        // 强制转数字, 避免 localStorage 存的是字符串
+        const startTime = Number(data.startTime)
+        if (!isNaN(startTime) && startTime > 0) {
+          activeTimer.value = {
+            record_id: data.record_id,
+            startTime: startTime,
+            description: data.description || '',
+            category: data.category || '其他',
+            color: data.color || '#6366f1',
+            user: data.user || userName.value,
+            country: data.country || '国内',
+            notes: data.notes || '',
+          }
+          persistTimer()
+          if (timerInterval) clearInterval(timerInterval)
+          timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+          return
+        }
+      }
+      // localStorage 数据无效, 清理
+      localStorage.removeItem('tt_active_timer')
+      document.cookie = 'tt_timer=; max-age=0; path=/'
+    } catch (e) {
+      localStorage.removeItem('tt_active_timer')
+    }
+  }
+}
+
+=== Edit #79 (turn 500) ===
+--- OLD ---
+      return
+  }
+
+  // 3. localStorage 有数据, 直接恢复 (不依赖 /timer/active 的 record_id 匹配)
+--- NEW ---
+      return
+    }
+  }
+
+  // 3. localStorage 有数据, 直接恢复 (不依赖 /timer/active 的 record_id 匹配)
+
+=== Edit #80 (turn 503) ===
+--- OLD ---
+// 完成计时：调 /timer/stop 补全 end_time
+async function stopActiveTimer() {
+  if (!activeTimer.value) return
+  const t = activeTimer.value
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: t.record_id },
+    })
+  } catch (e) {
+    alert('完成计时失败: ' + e.message)
+  }
+  // 清理
+  activeTimer.value = null
+  persistTimer()
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+  window.dispatchEvent(new CustomEvent('timer-stopped'))
+}
+--- NEW ---
+// 完成计时：调 /timer/stop 补全 end_time
+async function stopActiveTimer() {
+  if (!activeTimer.value) return
+  const t = activeTimer.value
+  const endTime = Date.now()
+  // 1. 乐观更新: 立即通知 WeekView 更新本地 entries
+  window.dispatchEvent(new CustomEvent('timer-stopped', {
+    detail: { record_id: t.record_id, end_time: endTime }
+  }))
+  // 2. 后台异步同步
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: t.record_id },
+    })
+  } catch (e) {
+    alert('完成计时失败: ' + e.message)
+  }
+  // 清理
+  activeTimer.value = null
+  persistTimer()
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+}
+
+=== Edit #81 (turn 504) ===
+--- OLD ---
+// 开始计时：调 /timer/start 立即写库，拿到 record_id
+async function startActiveTimer(payload) {
+  // payload: { description, category, color, country, user, notes }
+  try {
+    const res = await http('/timer/start', {
+      method: 'POST',
+      body: {
+        user: payload.user || '',
+        description: payload.description || '',
+        category: payload.category || '其他',
+        country: payload.country || '国内',
+        notes: payload.notes || '',
+      },
+    })
+    activeTimer.value = {
+      ...payload,
+      record_id: res.record_id,
+      startTime: res.start_time,
+    }
+    persistTimer()
+    if (timerInterval) clearInterval(timerInterval)
+    timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+  } catch (e) {
+    alert('开始计时失败: ' + e.message)
+  }
+}
+--- NEW ---
+// 开始计时：乐观插入本地条目立即显示, 后台异步拿真 record_id
+async function startActiveTimer(payload) {
+  // payload: { description, category, color, country, user, notes }
+  const startTime = Date.now()
+  const tempId = 'temp_' + startTime
+  // 1. 乐观更新: 立即设置 activeTimer, 横条马上显示
+  activeTimer.value = {
+    ...payload,
+    record_id: tempId,
+    startTime: startTime,
+  }
+  persistTimer()
+  if (timerInterval) clearInterval(timerInterval)
+  timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+  // 2. 乐观插入本地 entries, 周视图马上看到这条
+  window.dispatchEvent(new CustomEvent('timer-started', {
+    detail: {
+      record_id: tempId,
+      description: payload.description || '',
+      category: payload.category || '其他',
+      user: payload.user || '',
+      country: payload.country || '国内',
+      start_time: startTime,
+      end_time: null,  // 计时中
+    }
+  }))
+  // 3. 后台异步调 /timer/start 拿真 record_id
+  try {
+    const res = await http('/timer/start', {
+      method: 'POST',
+      body: {
+        user: payload.user || '',
+        description: payload.description || '',
+        category: payload.category || '其他',
+        country: payload.country || '国内',
+        notes: payload.notes || '',
+      },
+    })
+    // 4. 用真 record_id 替换临时 id
+    activeTimer.value.record_id = res.record_id
+    persistTimer()
+    // 5. 通知 WeekView 用真 record_id 替换
+    window.dispatchEvent(new CustomEvent('timer-record-ready', {
+      detail: { temp_id: tempId, record_id: res.record_id, start_time: res.start_time }
+    }))
+  } catch (e) {
+    // 失败: 清理横条 + 删本地条目
+    activeTimer.value = null
+    persistTimer()
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+    window.dispatchEvent(new CustomEvent('timer-start-failed', {
+      detail: { temp_id: tempId }
+    }))
+    alert('开始计时失败: ' + e.message)
+  }
+}
+
+=== Edit #82 (turn 506) ===
+--- OLD ---
+// 完成计时：调 /timer/stop 补全 end_time
+async function stopActiveTimer() {
+  if (!activeTimer.value) return
+  const t = activeTimer.value
+  const endTime = Date.now()
+  // 1. 乐观更新: 立即通知 WeekView 更新本地 entries
+  window.dispatchEvent(new CustomEvent('timer-stopped', {
+    detail: { record_id: t.record_id, end_time: endTime }
+  }))
+  // 2. 后台异步同步
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: t.record_id },
+    })
+  } catch (e) {
+    alert('完成计时失败: ' + e.message)
+  }
+  // 清理
+  activeTimer.value = null
+  persistTimer()
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+}
+--- NEW ---
+// 完成计时：调 /timer/stop 补全 end_time
+async function stopActiveTimer() {
+  if (!activeTimer.value) return
+  const t = activeTimer.value
+  const endTime = Date.now()
+  // 1. 立即清理横条和计时器, 用户秒级响应
+  activeTimer.value = null
+  persistTimer()
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+  // 2. 乐观更新: 立即通知 WeekView 更新本地 entries 的 end_time
+  window.dispatchEvent(new CustomEvent('timer-stopped', {
+    detail: { record_id: t.record_id, end_time: endTime }
+  }))
+  // 3. 后台异步同步, 不阻塞用户
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: t.record_id },
+    })
+  } catch (e) {
+    // 失败: 恢复横条, 提示用户
+    activeTimer.value = t
+    persistTimer()
+    if (timerInterval) clearInterval(timerInterval)
+    timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+    alert('完成计时失败: ' + e.message)
+  }
+}
+
+=== Edit #83 (turn 517) ===
+--- OLD ---
+              <div class="user-role">{{ isAdmin ? '管理员' : '员工' }}</div>
+--- NEW ---
+              <div class="user-role">{{ roleLabel }}</div>
+
+=== Edit #84 (turn 517) ===
+--- OLD ---
+const isAdmin = computed(() => userRole.value === 'admin')
+--- NEW ---
+const isAdmin = computed(() => userRole.value === 'admin')
+
+// 角色标签
+const roleLabel = computed(() => {
+  const r = userRole.value
+  if (r === 'admin') return '管理员'
+  if (r === 'team_admin') return '团队管理员'
+  if (r === 'member') return '团队成员'
+  return '员工'
+})
+
+=== Edit #85 (turn 523) ===
+--- OLD ---
+// 当前用户所属团队 (从 localStorage 读, 登录时设置)
+const currentTeam = ref(localStorage.getItem('tt_team') || '')
+--- NEW ---
+// 当前用户所属团队 (从 App.vue inject, 登录时自动更新)
+const currentTeam = inject('userTeam')
+
+=== Edit #86 (turn 524) ===
+--- OLD ---
+    userName.value = res.user
+    userRole.value = res.role
+    displayName.value = res.display_name || res.user
+    localStorage.setItem('tt_user', res.user)
+    localStorage.setItem('tt_role', res.role)
+    localStorage.setItem('tt_display_name', displayName.value)
+    showLogin.value = false
+    loginUser.value = ''
+    loginPass.value = ''
+    // 登录成功后恢复未完成的计时器
+    await restoreActiveTimer()
+--- NEW ---
+    userName.value = res.user
+    userRole.value = res.role
+    displayName.value = res.display_name || res.user
+    userTeam.value = res.team || ''
+    feishuUserId.value = res.feishu_user_id || ''
+    localStorage.setItem('tt_user', res.user)
+    localStorage.setItem('tt_role', res.role)
+    localStorage.setItem('tt_display_name', displayName.value)
+    localStorage.setItem('tt_team', res.team || '')
+    localStorage.setItem('tt_feishu_id', res.feishu_user_id || '')
+    showLogin.value = false
+    loginUser.value = ''
+    loginPass.value = ''
+    // 登录成功后恢复未完成的计时器
+    await restoreActiveTimer()
+
+=== Edit #87 (turn 524) ===
+--- OLD ---
+    // 注册成功，自动登录
+    userName.value = res.user
+    userRole.value = res.role
+    displayName.value = res.display_name || res.user
+    localStorage.setItem('tt_user', res.user)
+    localStorage.setItem('tt_role', res.role)
+    localStorage.setItem('tt_display_name', displayName.value)
+    showLogin.value = false
+    showRegister.value = false
+--- NEW ---
+    // 注册成功，自动登录
+    userName.value = res.user
+    userRole.value = res.role
+    displayName.value = res.display_name || res.user
+    userTeam.value = res.team || ''
+    feishuUserId.value = res.feishu_user_id || ''
+    localStorage.setItem('tt_user', res.user)
+    localStorage.setItem('tt_role', res.role)
+    localStorage.setItem('tt_display_name', displayName.value)
+    localStorage.setItem('tt_team', res.team || '')
+    localStorage.setItem('tt_feishu_id', res.feishu_user_id || '')
+    showLogin.value = false
+    showRegister.value = false
+
+=== Edit #88 (turn 541) ===
+--- OLD ---
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <!-- 顶部固定计时器横条（只在周视图显示）-->
+        <div v-if="currentPage === 'week'" class="timer-bar" :class="{ 'is-running': activeTimer }" :style="activeTimer ? { background: activeTimer.color + '22', borderLeftColor: activeTimer.color } : {}">
+          <template v-if="activeTimer">
+            <div class="timer-bar-left">
+              <span class="timer-pulse" :style="{ background: activeTimer.color }"></span>
+              <span class="timer-bar-desc">{{ activeTimer.description || '(无描述)' }}</span>
+              <span class="timer-bar-cat" :style="{ color: activeTimer.color }">{{ activeTimer.category }}</span>
+            </div>
+            <div class="timer-bar-right">
+              <span class="timer-bar-elapsed">{{ timerElapsedText }}</span>
+              <button class="timer-bar-stop" @click="stopActiveTimer" title="完成计时">⏹ 完成</button>
+            </div>
+          </template>
+          <template v-else>
+            <div class="timer-bar-left">
+              <span class="timer-idle">⏱</span>
+              <span class="timer-bar-idle-text">未计时</span>
+            </div>
+            <div class="timer-bar-right">
+              <button class="timer-bar-start" @click="openStartFromBar" title="开始计时">▶ 开始计时</button>
+            </div>
+          </template>
+        </div>
+
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+--- NEW ---
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+
+=== Edit #89 (turn 543) ===
+--- OLD ---
+  z-index: 50;
+}
+--- NEW ---
+  z-index: 1000;
+}
+
+=== Edit #90 (turn 559) ===
+--- OLD ---
+// 网页端只保留周视图+设置 (仪表盘/报表在多维表格应用模式做)
+const navItems = computed(() => {
+  return [
+    { key: 'week', icon: '📅', label: '周视图' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+})
+--- NEW ---
+// 网页端保留周视图+列表视图+设置
+const navItems = computed(() => {
+  return [
+    { key: 'week', icon: '📅', label: '周视图' },
+    { key: 'list', icon: '📋', label: '列表视图' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+})
+
+=== Edit #91 (turn 559) ===
+--- OLD ---
+import WeekView from './views/WeekView.vue'
+import Settings from './views/Settings.vue'
+--- NEW ---
+import WeekView from './views/WeekView.vue'
+import ListView from './views/ListView.vue'
+import Settings from './views/Settings.vue'
+
+=== Edit #92 (turn 559) ===
+--- OLD ---
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+
+        <!-- 设置页 -->
+        <Settings v-else-if="currentPage === 'settings'" />
+      </main>
+--- NEW ---
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+        <!-- 列表视图页 -->
+        <ListView v-else-if="currentPage === 'list'" />
+        <!-- 设置页 -->
+        <Settings v-else-if="currentPage === 'settings'" />
+      </main>
+
+=== Edit #93 (turn 560) ===
+--- OLD ---
+provide('pendingStartTimer', pendingStartTimer)
+--- NEW ---
+provide('pendingStartTimer', pendingStartTimer)
+provide('currentPage', currentPage)
+provide('setPage', (key) => { currentPage.value = key })
+
+=== Edit #94 (turn 576) ===
+--- OLD ---
+import WeekView from './views/WeekView.vue'
+import ListView from './views/ListView.vue'
+import Settings from './views/Settings.vue'
+--- NEW ---
+import WeekView from './views/WeekView.vue'
+import ListView from './views/ListView.vue'
+import DayView from './views/DayView.vue'
+import Settings from './views/Settings.vue'
+
+=== Edit #95 (turn 576) ===
+--- OLD ---
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+        <!-- 列表视图页 -->
+        <ListView v-else-if="currentPage === 'list'" />
+        <!-- 设置页 -->
+        <Settings v-else-if="currentPage === 'settings'" />
+--- NEW ---
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+        <!-- 列表视图页 -->
+        <ListView v-else-if="currentPage === 'list'" />
+        <!-- 日视图页 -->
+        <DayView v-else-if="currentPage === 'day'" />
+        <!-- 设置页 -->
+        <Settings v-else-if="currentPage === 'settings'" />
+
+=== Edit #96 (turn 577) ===
+--- OLD ---
+// 网页端保留周视图+列表视图+设置
+const navItems = computed(() => {
+  return [
+    { key: 'week', icon: '📅', label: '周视图' },
+    { key: 'list', icon: '📋', label: '列表视图' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+})
+--- NEW ---
+// 侧边栏只留设置入口, 视图切换移到顶部横栏
+const navItems = computed(() => {
+  return [
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+})
+
+=== Edit #97 (turn 577) ===
+--- OLD ---
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+        <!-- 列表视图页 -->
+        <ListView v-else-if="currentPage === 'list'" />
+        <!-- 日视图页 -->
+        <DayView v-else-if="currentPage === 'day'" />
+        <!-- 设置页 -->
+        <Settings v-else-if="currentPage === 'settings'" />
+      </main>
+--- NEW ---
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <!-- 顶部视图切换横栏 (只在周/日/列表视图显示, 设置页不显示) -->
+        <div v-if="currentPage !== 'settings'" class="top-switch-bar">
+          <!-- 日历视图 + 下拉箭头 (切周/日) -->
+          <div class="switch-group">
+            <button
+              class="switch-btn"
+              :class="{ active: currentPage === 'week' || currentPage === 'day' }"
+              @click="currentPage = calendarMode"
+              title="日历视图"
+            >
+              <span class="switch-icon">📅</span>
+              <span class="switch-label">日历视图</span>
+              <span class="switch-sub">({{ calendarMode === 'week' ? '周' : '日' }})</span>
+            </button>
+            <button
+              class="switch-arrow"
+              :class="{ open: showCalendarDropdown }"
+              @click="showCalendarDropdown = !showCalendarDropdown"
+              title="切换周/日视图"
+            >▾</button>
+            <div v-if="showCalendarDropdown" class="switch-dropdown" @click.away="showCalendarDropdown = false">
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'week' }"
+                @click="calendarMode = 'week'; currentPage = 'week'; showCalendarDropdown = false"
+              >
+                <span>📅</span> 周视图
+              </div>
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'day' }"
+                @click="calendarMode = 'day'; currentPage = 'day'; showCalendarDropdown = false"
+              >
+                <span>📆</span> 日视图
+              </div>
+            </div>
+          </div>
+
+          <!-- 列表视图 -->
+          <button
+            class="switch-btn"
+            :class="{ active: currentPage === 'list' }"
+            @click="currentPage = 'list'"
+            title="列表视图"
+          >
+            <span class="switch-icon">📋</span>
+            <span class="switch-label">列表视图</span>
+          </button>
+        </div>
+
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+        <!-- 列表视图页 -->
+        <ListView v-else-if="currentPage === 'list'" />
+        <!-- 日视图页 -->
+        <DayView v-else-if="currentPage === 'day'" />
+        <!-- 设置页 -->
+        <Settings v-else-if="currentPage === 'settings'" />
+      </main>
+
+=== Edit #98 (turn 577) ===
+--- OLD ---
+const currentPage = ref('week')
+--- NEW ---
+const currentPage = ref('week')
+// 顶部横栏: 日历视图的当前模式 (week/day)
+const calendarMode = ref('week')
+const showCalendarDropdown = ref(false)
+
+=== Edit #99 (turn 577) ===
+--- OLD ---
+/* ───── 主内容区 ───── */
+--- NEW ---
+/* ───── 顶部视图切换横栏 ───── */
+.top-switch-bar {
+  position: sticky;
+  top: 16px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  width: fit-content;
+}
+.switch-group {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+.switch-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+.switch-btn:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+.switch-btn.active {
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.switch-icon { font-size: 14px; }
+.switch-sub { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+.switch-btn.active .switch-sub { color: var(--primary); }
+.switch-arrow {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+.switch-arrow:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+.switch-arrow.open { color: var(--primary); }
+.switch-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 200;
+  min-width: 140px;
+  overflow: hidden;
+}
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+}
+.dropdown-item:hover { background: var(--bg); }
+.dropdown-item.active {
+  color: var(--primary);
+  font-weight: 500;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+/* ───── 主内容区 ───── */
+
+=== Edit #100 (turn 578) ===
+--- OLD ---
+        <!-- 顶部视图切换横栏 (只在周/日/列表视图显示, 设置页不显示) -->
+        <div v-if="currentPage !== 'settings'" class="top-switch-bar">
+          <!-- 日历视图 + 下拉箭头 (切周/日) -->
+          <div class="switch-group">
+            <button
+              class="switch-btn"
+              :class="{ active: currentPage === 'week' || currentPage === 'day' }"
+              @click="currentPage = calendarMode"
+              title="日历视图"
+            >
+              <span class="switch-icon">📅</span>
+              <span class="switch-label">日历视图</span>
+              <span class="switch-sub">({{ calendarMode === 'week' ? '周' : '日' }})</span>
+            </button>
+            <button
+              class="switch-arrow"
+              :class="{ open: showCalendarDropdown }"
+              @click="showCalendarDropdown = !showCalendarDropdown"
+              title="切换周/日视图"
+            >▾</button>
+            <div v-if="showCalendarDropdown" class="switch-dropdown" @click.away="showCalendarDropdown = false">
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'week' }"
+                @click="calendarMode = 'week'; currentPage = 'week'; showCalendarDropdown = false"
+              >
+                <span>📅</span> 周视图
+              </div>
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'day' }"
+                @click="calendarMode = 'day'; currentPage = 'day'; showCalendarDropdown = false"
+              >
+                <span>📆</span> 日视图
+              </div>
+            </div>
+          </div>
+
+          <!-- 列表视图 -->
+          <button
+            class="switch-btn"
+            :class="{ active: currentPage === 'list' }"
+            @click="currentPage = 'list'"
+            title="列表视图"
+          >
+            <span class="switch-icon">📋</span>
+            <span class="switch-label">列表视图</span>
+          </button>
+        </div>
+--- NEW ---
+        <!-- 顶部视图切换横栏 (只在周/日/列表视图显示, 设置页不显示) -->
+        <div v-if="currentPage !== 'settings'" class="top-switch-bar">
+          <!-- 列表视图 -->
+          <button
+            class="switch-btn"
+            :class="{ active: currentPage === 'list' }"
+            @click="currentPage = 'list'"
+            title="列表视图"
+          >
+            <span class="switch-icon">📋</span>
+            <span class="switch-label">列表视图</span>
+          </button>
+
+          <!-- 日历视图 + 下拉箭头 (切周/日) -->
+          <div class="switch-group">
+            <button
+              class="switch-arrow"
+              :class="{ open: showCalendarDropdown }"
+              @click="showCalendarDropdown = !showCalendarDropdown"
+              title="切换周/日视图"
+            >▾</button>
+            <button
+              class="switch-btn"
+              :class="{ active: currentPage === 'week' || currentPage === 'day' }"
+              @click="currentPage = calendarMode"
+              title="日历视图"
+            >
+              <span class="switch-icon">📅</span>
+              <span class="switch-label">日历视图</span>
+              <span class="switch-sub">({{ calendarMode === 'week' ? '周' : '日' }})</span>
+            </button>
+            <div v-if="showCalendarDropdown" class="switch-dropdown" @click.away="showCalendarDropdown = false">
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'week' }"
+                @click="calendarMode = 'week'; currentPage = 'week'; showCalendarDropdown = false"
+              >
+                <span>📅</span> 周视图
+              </div>
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'day' }"
+                @click="calendarMode = 'day'; currentPage = 'day'; showCalendarDropdown = false"
+              >
+                <span>📆</span> 日视图
+              </div>
+            </div>
+          </div>
+        </div>
+
+=== Edit #101 (turn 578) ===
+--- OLD ---
+/* ───── 顶部视图切换横栏 ───── */
+.top-switch-bar {
+  position: sticky;
+  top: 16px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  width: fit-content;
+}
+--- NEW ---
+/* ───── 顶部视图切换横栏 ───── */
+.top-switch-bar {
+  position: sticky;
+  top: 16px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  margin-left: auto;
+  width: fit-content;
+}
+
+=== Edit #102 (turn 578) ===
+--- OLD ---
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 200;
+  min-width: 140px;
+  overflow: hidden;
+}
+--- NEW ---
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 1000;
+  min-width: 140px;
+  overflow: hidden;
+}
+
+=== Edit #103 (turn 580) ===
+--- OLD ---
+        <!-- 顶部视图切换横栏 (只在周/日/列表视图显示, 设置页不显示) -->
+        <div v-if="currentPage !== 'settings'" class="top-switch-bar">
+          <!-- 列表视图 -->
+          <button
+            class="switch-btn"
+            :class="{ active: currentPage === 'list' }"
+            @click="currentPage = 'list'"
+            title="列表视图"
+          >
+            <span class="switch-icon">📋</span>
+            <span class="switch-label">列表视图</span>
+          </button>
+
+          <!-- 日历视图 + 下拉箭头 (切周/日) -->
+          <div class="switch-group">
+            <button
+              class="switch-arrow"
+              :class="{ open: showCalendarDropdown }"
+              @click="showCalendarDropdown = !showCalendarDropdown"
+              title="切换周/日视图"
+            >▾</button>
+            <button
+              class="switch-btn"
+              :class="{ active: currentPage === 'week' || currentPage === 'day' }"
+              @click="currentPage = calendarMode"
+              title="日历视图"
+            >
+              <span class="switch-icon">📅</span>
+              <span class="switch-label">日历视图</span>
+              <span class="switch-sub">({{ calendarMode === 'week' ? '周' : '日' }})</span>
+            </button>
+            <div v-if="showCalendarDropdown" class="switch-dropdown" @click.away="showCalendarDropdown = false">
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'week' }"
+                @click="calendarMode = 'week'; currentPage = 'week'; showCalendarDropdown = false"
+              >
+                <span>📅</span> 周视图
+              </div>
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'day' }"
+                @click="calendarMode = 'day'; currentPage = 'day'; showCalendarDropdown = false"
+              >
+                <span>📆</span> 日视图
+              </div>
+            </div>
+          </div>
+        </div>
+--- NEW ---
+        <!-- 顶部视图切换横栏 (只在周/日/列表视图显示, 设置页不显示) -->
+        <div v-if="currentPage !== 'settings'" class="top-switch-bar">
+          <!-- 日历视图 + 下拉箭头 (切周/日) -->
+          <div class="switch-group">
+            <button
+              class="switch-arrow"
+              :class="{ open: showCalendarDropdown }"
+              @click="showCalendarDropdown = !showCalendarDropdown"
+              title="切换周/日视图"
+            >▾</button>
+            <button
+              class="switch-btn"
+              :class="{ active: currentPage === 'week' || currentPage === 'day' }"
+              @click="currentPage = calendarMode"
+              title="日历视图"
+            >
+              <span class="switch-icon">📅</span>
+              <span class="switch-label">日历视图</span>
+              <span class="switch-sub">({{ calendarMode === 'week' ? '周' : '日' }})</span>
+            </button>
+            <div v-if="showCalendarDropdown" class="switch-dropdown" @click.away="showCalendarDropdown = false">
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'week' }"
+                @click="calendarMode = 'week'; currentPage = 'week'; showCalendarDropdown = false"
+              >
+                <span>📅</span> 周视图
+              </div>
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'day' }"
+                @click="calendarMode = 'day'; currentPage = 'day'; showCalendarDropdown = false"
+              >
+                <span>📆</span> 日视图
+              </div>
+            </div>
+          </div>
+
+          <!-- 列表视图 -->
+          <button
+            class="switch-btn"
+            :class="{ active: currentPage === 'list' }"
+            @click="currentPage = 'list'"
+            title="列表视图"
+          >
+            <span class="switch-icon">📋</span>
+            <span class="switch-label">列表视图</span>
+          </button>
+        </div>
+
+=== Edit #104 (turn 582) ===
+--- OLD ---
+// 侧边栏只留设置入口, 视图切换移到顶部横栏
+const navItems = computed(() => {
+  return [
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+--- NEW ---
+// 侧边栏: 视图(回到日历视图) + 设置
+const navItems = computed(() => {
+  return [
+    { key: 'week', icon: '📊', label: '视图' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+
+=== Edit #105 (turn 583) ===
+--- OLD ---
+/* ───── 侧边栏 ───── */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s;
+  flex-shrink: 0;
+}
+--- NEW ---
+/* ───── 侧边栏 ───── */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+=== Edit #106 (turn 584) ===
+--- OLD ---
+/* ───── 主布局 ───── */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+--- NEW ---
+/* ───── 主布局 ───── */
+.layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+=== Edit #107 (turn 587) ===
+--- OLD ---
+const currentPage = ref('week')
+// 顶部横栏: 日历视图的当前模式 (week/day)
+const calendarMode = ref('week')
+--- NEW ---
+const currentPage = ref(localStorage.getItem('tt_current_page') || 'week')
+// 顶部横栏: 日历视图的当前模式 (week/day)
+const calendarMode = ref(localStorage.getItem('tt_calendar_mode') || 'week')
+
+=== Edit #108 (turn 587) ===
+--- OLD ---
+import { ref, computed, onMounted, onUnmounted, provide } from 'vue'
+--- NEW ---
+import { ref, computed, onMounted, onUnmounted, provide, watch } from 'vue'
+
+=== Edit #109 (turn 587) ===
+--- OLD ---
+const showCalendarDropdown = ref(false)
+--- NEW ---
+const showCalendarDropdown = ref(false)
+
+// 持久化当前页面和日历模式, 刷新后恢复
+watch(currentPage, (v) => localStorage.setItem('tt_current_page', v))
+watch(calendarMode, (v) => localStorage.setItem('tt_calendar_mode', v))
+
+=== Edit #110 (turn 589) ===
+--- OLD ---
+provide('userTeam', userTeam)
+--- NEW ---
+provide('userTeam', userTeam)
+
+// ───── 全局显示姓名开关 (所有视图共享) ─────
+const showUserName = ref(localStorage.getItem('tt_show_user_name') === 'true')
+watch(showUserName, (v) => localStorage.setItem('tt_show_user_name', String(v)))
+provide('showUserName', showUserName)
+
+=== Edit #111 (turn 589) ===
+--- OLD ---
+const entries = ref([])
+const hourPx = ref(Number(localStorage.getItem('tt_hour_px')) || 80)
+// 是否在条目上显示姓名 (管理员/团队管理员查看他人时用)
+const showUserName = ref(localStorage.getItem('tt_show_user_name') === 'true')
+--- NEW ---
+const entries = ref([])
+const hourPx = ref(Number(localStorage.getItem('tt_hour_px')) || 80)
+// 显示姓名开关: 全局共享 (从 App.vue inject)
+const showUserName = inject('showUserName')
+
+=== Edit #112 (turn 589) ===
+--- OLD ---
+// ───── 数据 ─────
+const entries = ref([])
+const showUserName = ref(false)
+--- NEW ---
+// ───── 数据 ─────
+const entries = ref([])
+// 显示姓名开关: 全局共享 (从 App.vue inject)
+const showUserName = inject('showUserName')
+
+=== Edit #113 (turn 589) ===
+--- OLD ---
+// ───── 数据 ─────
+const entries = ref([])
+const hourPx = ref(80)
+const showUserName = ref(false)
+--- NEW ---
+// ───── 数据 ─────
+const entries = ref([])
+const hourPx = ref(80)
+// 显示姓名开关: 全局共享 (从 App.vue inject)
+const showUserName = inject('showUserName')
+
+=== Edit #114 (turn 601) ===
+--- OLD ---
+// ───── 数据 ─────
+const entries = ref([])
+const hourPx = ref(80)
+// 显示姓名开关: 全局共享 (从 App.vue inject)
+const showUserName = inject('showUserName')
+--- NEW ---
+// ───── 数据 ─────
+const entries = ref([])
+const hourPx = ref(Number(localStorage.getItem('tt_hour_px')) || 80)
+// 显示姓名开关: 全局共享 (从 App.vue inject)
+const showUserName = inject('showUserName')
+// 持久化密度
+watch(hourPx, (v) => localStorage.setItem('tt_hour_px', String(v)))
+
+=== Edit #115 (turn 601) ===
+--- OLD ---
+function logout() {
+  if (!confirm('确定退出登录？')) return
+  localStorage.removeItem('tt_user')
+  localStorage.removeItem('tt_role')
+  localStorage.removeItem('tt_display_name')
+  userName.value = ''
+  userRole.value = ''
+  displayName.value = ''
+  showLogin.value = true
+}
+--- NEW ---
+function logout() {
+  if (!confirm('确定退出登录？')) return
+  localStorage.removeItem('tt_user')
+  localStorage.removeItem('tt_role')
+  localStorage.removeItem('tt_display_name')
+  // 清理视图状态, 避免下个账号登录时残留上个角色的视图选择
+  localStorage.removeItem('tt_view_scope')
+  localStorage.removeItem('tt_selected_user')
+  localStorage.removeItem('tt_selected_team')
+  userName.value = ''
+  userRole.value = ''
+  displayName.value = ''
+  showLogin.value = true
+}
+
+=== Edit #116 (turn 608) ===
+--- OLD ---
+// 完成计时：调 /timer/stop 补全 end_time
+async function stopActiveTimer() {
+  if (!activeTimer.value) return
+  const t = activeTimer.value
+  const endTime = Date.now()
+  // 1. 立即清理横条和计时器, 用户秒级响应
+  activeTimer.value = null
+  persistTimer()
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+  // 2. 乐观更新: 立即通知 WeekView 更新本地 entries 的 end_time
+  window.dispatchEvent(new CustomEvent('timer-stopped', {
+    detail: { record_id: t.record_id, end_time: endTime }
+  }))
+  // 3. 后台异步同步, 不阻塞用户
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: t.record_id },
+    })
+  } catch (e) {
+    // 失败: 恢复横条, 提示用户
+    activeTimer.value = t
+    persistTimer()
+    if (timerInterval) clearInterval(timerInterval)
+    timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+    alert('完成计时失败: ' + e.message)
+  }
+}
+--- NEW ---
+// 完成计时：调 /timer/stop 补全 end_time
+async function stopActiveTimer() {
+  if (!activeTimer.value) return
+  const t = activeTimer.value
+  const endTime = Date.now()
+  // 1. 立即清理横条和计时器, 用户秒级响应
+  activeTimer.value = null
+  persistTimer()
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+  // 2. 乐观更新: 立即通知 WeekView 更新本地 entries 的 end_time
+  window.dispatchEvent(new CustomEvent('timer-stopped', {
+    detail: { record_id: t.record_id, end_time: endTime }
+  }))
+  // 3. 后台异步同步, 不阻塞用户
+  // 如果 record_id 还是临时 id (temp_xxx), 等 /timer/start 返回真 id
+  let realRecordId = t.record_id
+  if (typeof realRecordId === 'string' && realRecordId.startsWith('temp_')) {
+    // 轮询等真 record_id (最多等 10 秒)
+    for (let i = 0; i < 100; i++) {
+      await new Promise(r => setTimeout(r, 100))
+      // activeTimer 已被清空, 从 localStorage 读
+      const saved = localStorage.getItem('tt_active_timer')
+      if (!saved) break // 计时器已被清理, 无法恢复 record_id
+      try {
+        const parsed = JSON.parse(saved)
+        if (parsed.record_id && !String(parsed.record_id).startsWith('temp_')) {
+          realRecordId = parsed.record_id
+          break
+        }
+      } catch (e) {}
+    }
+  }
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: realRecordId },
+    })
+  } catch (e) {
+    // 失败: 恢复横条, 提示用户
+    activeTimer.value = t
+    persistTimer()
+    if (timerInterval) clearInterval(timerInterval)
+    timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+    alert('完成计时失败: ' + e.message)
+  }
+}
+
+=== Edit #117 (turn 608) ===
+--- OLD ---
+// 完成计时：调 /timer/stop 补全 end_time
+async function stopActiveTimer() {
+  if (!activeTimer.value) return
+  const t = activeTimer.value
+  const endTime = Date.now()
+  // 1. 立即清理横条和计时器, 用户秒级响应
+  activeTimer.value = null
+  persistTimer()
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+  // 2. 乐观更新: 立即通知 WeekView 更新本地 entries 的 end_time
+  window.dispatchEvent(new CustomEvent('timer-stopped', {
+    detail: { record_id: t.record_id, end_time: endTime }
+  }))
+  // 3. 后台异步同步, 不阻塞用户
+  // 如果 record_id 还是临时 id (temp_xxx), 等 /timer/start 返回真 id
+  let realRecordId = t.record_id
+  if (typeof realRecordId === 'string' && realRecordId.startsWith('temp_')) {
+    // 轮询等真 record_id (最多等 10 秒)
+    for (let i = 0; i < 100; i++) {
+      await new Promise(r => setTimeout(r, 100))
+      // activeTimer 已被清空, 从 localStorage 读
+      const saved = localStorage.getItem('tt_active_timer')
+      if (!saved) break // 计时器已被清理, 无法恢复 record_id
+      try {
+        const parsed = JSON.parse(saved)
+        if (parsed.record_id && !String(parsed.record_id).startsWith('temp_')) {
+          realRecordId = parsed.record_id
+          break
+        }
+      } catch (e) {}
+    }
+  }
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: realRecordId },
+    })
+  } catch (e) {
+    // 失败: 恢复横条, 提示用户
+    activeTimer.value = t
+    persistTimer()
+    if (timerInterval) clearInterval(timerInterval)
+    timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+    alert('完成计时失败: ' + e.message)
+  }
+}
+--- NEW ---
+// 完成计时：调 /timer/stop 补全 end_time
+async function stopActiveTimer() {
+  if (!activeTimer.value) return
+  const t = activeTimer.value
+  const endTime = Date.now()
+
+  // 如果 record_id 还是临时 id (temp_xxx), 等 /timer/start 返回真 id
+  // 最多等 10 秒, 超时就放弃 (用户会看到错误提示)
+  let realRecordId = t.record_id
+  if (typeof realRecordId === 'string' && realRecordId.startsWith('temp_')) {
+    for (let i = 0; i < 100; i++) {
+      // activeTimer 还活着, startActiveTimer 会更新它的 record_id
+      if (activeTimer.value && !String(activeTimer.value.record_id).startsWith('temp_')) {
+        realRecordId = activeTimer.value.record_id
+        break
+      }
+      await new Promise(r => setTimeout(r, 100))
+    }
+  }
+
+  // 1. 立即清理横条和计时器, 用户秒级响应
+  activeTimer.value = null
+  persistTimer()
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+
+  // 2. 乐观更新: 立即通知 WeekView 更新本地 entries 的 end_time
+  window.dispatchEvent(new CustomEvent('timer-stopped', {
+    detail: { record_id: realRecordId, end_time: endTime }
+  }))
+
+  // 3. 后台异步同步, 不阻塞用户
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: realRecordId },
+    })
+  } catch (e) {
+    // 失败: 恢复横条, 提示用户
+    activeTimer.value = t
+    persistTimer()
+    if (timerInterval) clearInterval(timerInterval)
+    timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+    alert('完成计时失败: ' + e.message)
+  }
+}
+
+=== Edit #118 (turn 609) ===
+--- OLD ---
+  // 3. 后台异步同步, 不阻塞用户
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: realRecordId },
+    })
+  } catch (e) {
+--- NEW ---
+  // 3. 后台异步同步, 不阻塞用户
+  try {
+    console.log('stopActiveTimer record_id:', realRecordId, 'temp?', String(realRecordId).startsWith('temp_'))
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: realRecordId },
+    })
+  } catch (e) {
+
+=== Edit #119 (turn 609) ===
+--- OLD ---
+  // 3. 后台异步同步, 不阻塞用户
+  try {
+    console.log('stopActiveTimer record_id:', realRecordId, 'temp?', String(realRecordId).startsWith('temp_'))
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: realRecordId },
+    })
+  } catch (e) {
+--- NEW ---
+  // 3. 后台异步同步, 不阻塞用户
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: realRecordId },
+    })
+  } catch (e) {
+
+=== Edit #120 (turn 609) ===
+--- OLD ---
+  // 如果 record_id 还是临时 id (temp_xxx), 等 /timer/start 返回真 id
+  // 最多等 10 秒, 超时就放弃 (用户会看到错误提示)
+  let realRecordId = t.record_id
+  if (typeof realRecordId === 'string' && realRecordId.startsWith('temp_')) {
+    for (let i = 0; i < 100; i++) {
+      // activeTimer 还活着, startActiveTimer 会更新它的 record_id
+      if (activeTimer.value && !String(activeTimer.value.record_id).startsWith('temp_')) {
+        realRecordId = activeTimer.value.record_id
+        break
+      }
+      await new Promise(r => setTimeout(r, 100))
+    }
+  }
+--- NEW ---
+  // 如果 record_id 还是临时 id (temp_xxx), 等 /timer/start 返回真 id
+  // 最多等 10 秒, 超时就放弃 (用户会看到错误提示)
+  let realRecordId = t.record_id
+  if (typeof realRecordId === 'string' && realRecordId.startsWith('temp_')) {
+    for (let i = 0; i < 100; i++) {
+      // activeTimer 被 startActiveTimer 清空了 (/timer/start 失败), 跳出
+      if (!activeTimer.value) {
+        break
+      }
+      // activeTimer 还活着, startActiveTimer 会更新它的 record_id
+      if (!String(activeTimer.value.record_id).startsWith('temp_')) {
+        realRecordId = activeTimer.value.record_id
+        break
+      }
+      await new Promise(r => setTimeout(r, 100))
+    }
+  }
+
+=== Edit #121 (turn 609) ===
+--- OLD ---
+  // 3. 后台异步同步, 不阻塞用户
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: realRecordId },
+    })
+  } catch (e) {
+--- NEW ---
+  // 3. 后台异步同步, 不阻塞用户
+  try {
+    alert('调试: record_id=' + realRecordId + ' temp=' + String(realRecordId).startsWith('temp_'))
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: realRecordId },
+    })
+  } catch (e) {
+
+=== Edit #122 (turn 610) ===
+--- OLD ---
+    // 4. 用真 record_id 替换临时 id
+    activeTimer.value.record_id = res.record_id
+    persistTimer()
+--- NEW ---
+    // 4. 用真 record_id 替换临时 id (整体替换, 避免 Vue ref 深层属性赋值问题)
+    activeTimer.value = { ...activeTimer.value, record_id: res.record_id }
+    persistTimer()
+
+=== Edit #123 (turn 610) ===
+--- OLD ---
+    // 4. 用真 record_id 替换临时 id (整体替换, 避免 Vue ref 深层属性赋值问题)
+    activeTimer.value = { ...activeTimer.value, record_id: res.record_id }
+    persistTimer()
+--- NEW ---
+    // 4. 用真 record_id 替换临时 id
+    activeTimer.value.record_id = res.record_id
+    persistTimer()
+
+=== Edit #124 (turn 611) ===
+--- OLD ---
+  // 3. 后台异步同步, 不阻塞用户
+  try {
+    alert('调试: record_id=' + realRecordId + ' temp=' + String(realRecordId).startsWith('temp_'))
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: realRecordId },
+    })
+  } catch (e) {
+    // 失败: 恢复横条, 提示用户
+    activeTimer.value = t
+    persistTimer()
+    if (timerInterval) clearInterval(timerInterval)
+    timerInterval = setInterval(() => { timerTick.value++ }, 1000)
+    alert('完成计时失败: ' + e.message)
+  }
+}
+--- NEW ---
+  // 3. 后台异步同步, 不阻塞用户
+  try {
+    await http('/timer/stop', {
+      method: 'POST',
+      body: { record_id: realRecordId },
+    })
+  } catch (e) {
+    // 失败: 计时器可能是孤儿 (飞书表里没这条记录), 直接清理, 不恢复横条
+    console.error('完成计时失败:', e.message)
+    activeTimer.value = null
+    persistTimer()
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
+    window.dispatchEvent(new CustomEvent('timer-stopped', {
+      detail: { record_id: realRecordId, end_time: endTime }
+    }))
+    // 只在真正网络错误时提示, 孤儿记录静默清理
+    if (!e.message.includes('RecordIdNotFound') && !e.message.includes('HTTP 500')) {
+      alert('完成计时失败: ' + e.message)
+    }
+  }
+}
+
+=== Edit #125 (turn 622) ===
+--- OLD ---
+/* ───── 顶部视图切换横栏 ───── */
+.top-switch-bar {
+  position: sticky;
+  top: 16px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  margin-left: auto;
+  width: fit-content;
+}
+--- NEW ---
+/* ───── 顶部视图切换横栏 (固定横条, 顶满宽度) ───── */
+.top-switch-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 0;
+  width: 100%;
+  height: 48px;
+  box-sizing: border-box;
+}
+
+=== Edit #126 (turn 623) ===
+--- OLD ---
+/* ───── 顶部视图切换横栏 (固定横条, 顶满宽度) ───── */
+.top-switch-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 0;
+  width: 100%;
+  height: 48px;
+  box-sizing: border-box;
+}
+--- NEW ---
+/* ───── 顶部视图切换横栏 ───── */
+.top-switch-bar {
+  position: sticky;
+  top: 16px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  margin-left: auto;
+  width: fit-content;
+}
+
+=== Edit #127 (turn 624) ===
+--- OLD ---
+/* ───── 顶部视图切换横栏 ───── */
+.top-switch-bar {
+  position: sticky;
+  top: 16px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  margin-left: auto;
+  width: fit-content;
+}
+--- NEW ---
+/* ───── 顶部视图切换横栏 (固定, 顶满宽度) ───── */
+.top-switch-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 8px 24px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  height: 48px;
+  box-sizing: border-box;
+}
+
+=== Edit #128 (turn 624) ===
+--- OLD ---
+/* 固定顶部工具栏 */
+.week-toolbar {
+  position: sticky;
+  top: 48px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 8px;
+}
+--- NEW ---
+/* 固定顶部工具栏 (顶满宽度, 在 App.vue 顶部切换栏下方) */
+.week-toolbar {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  height: 48px;
+  box-sizing: border-box;
+}
+
+=== Edit #129 (turn 624) ===
+--- OLD ---
+/* 固定顶部工具栏 (顶满宽度, 在 App.vue 顶部切换栏下方) */
+.week-toolbar {
+  position: fixed;
+  top: 48px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  height: 48px;
+  box-sizing: border-box;
+}
+--- NEW ---
+/* 固定顶部工具栏 (顶满宽度, 在 App.vue 顶部切换栏下方) */
+.week-toolbar {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  height: 48px;
+  box-sizing: border-box;
+}
+
+=== Edit #130 (turn 624) ===
+--- OLD ---
+/* 固定顶部工具栏 */
+.day-toolbar {
+  position: sticky;
+  top: 48px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+--- NEW ---
+/* 固定顶部工具栏 (顶满宽度, 在 App.vue 顶部切换栏下方) */
+.day-toolbar {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  height: 48px;
+  box-sizing: border-box;
+}
+
+=== Edit #131 (turn 624) ===
+--- OLD ---
+/* 固定顶部工具栏 */
+.list-toolbar {
+  position: sticky;
+  top: 48px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 16px;
+}
+--- NEW ---
+/* 固定顶部工具栏 (顶满宽度, 在 App.vue 顶部切换栏下方) */
+.list-toolbar {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  height: 48px;
+  box-sizing: border-box;
+}
+
+=== Edit #132 (turn 624) ===
+--- OLD ---
+/* ───── 主内容区 ───── */
+.main-content {
+  flex: 1;
+  padding: 24px;
+  padding-top: 70px;
+  overflow-y: auto;
+  position: relative;
+}
+--- NEW ---
+/* ───── 主内容区 ───── */
+.main-content {
+  flex: 1;
+  padding: 24px;
+  padding-top: 108px;
+  overflow-y: auto;
+  position: relative;
+}
+
+=== Edit #133 (turn 625) ===
+--- OLD ---
+/* ───── 顶部视图切换横栏 (固定, 顶满宽度) ───── */
+.top-switch-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 8px 24px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  height: 48px;
+  box-sizing: border-box;
+}
+--- NEW ---
+/* ───── 顶部视图切换横栏 (固定, 顶满宽度, 不挡侧边栏) ───── */
+.top-switch-bar {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 8px 24px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  height: 48px;
+  box-sizing: border-box;
+}
+
+=== Edit #134 (turn 625) ===
+--- OLD ---
+/* 固定顶部工具栏 (顶满宽度, 在 App.vue 顶部切换栏下方) */
+.week-toolbar {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  height: 48px;
+  box-sizing: border-box;
+}
+--- NEW ---
+/* 固定顶部工具栏 (顶满宽度, 不挡侧边栏) */
+.week-toolbar {
+  position: fixed;
+  top: 48px;
+  left: var(--sidebar-width);
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  height: 48px;
+  box-sizing: border-box;
+}
+
+=== Edit #135 (turn 625) ===
+--- OLD ---
+/* 固定顶部工具栏 (顶满宽度, 在 App.vue 顶部切换栏下方) */
+.day-toolbar {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  height: 48px;
+  box-sizing: border-box;
+}
+--- NEW ---
+/* 固定顶部工具栏 (顶满宽度, 不挡侧边栏) */
+.day-toolbar {
+  position: fixed;
+  top: 48px;
+  left: var(--sidebar-width);
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  height: 48px;
+  box-sizing: border-box;
+}
+
+=== Edit #136 (turn 625) ===
+--- OLD ---
+/* 固定顶部工具栏 (顶满宽度, 在 App.vue 顶部切换栏下方) */
+.list-toolbar {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  height: 48px;
+  box-sizing: border-box;
+}
+--- NEW ---
+/* 固定顶部工具栏 (顶满宽度, 不挡侧边栏) */
+.list-toolbar {
+  position: fixed;
+  top: 48px;
+  left: var(--sidebar-width);
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  height: 48px;
+  box-sizing: border-box;
+}
+
+=== Edit #137 (turn 626) ===
+--- OLD ---
+// 侧边栏: 视图(回到日历视图) + 设置
+const navItems = computed(() => {
+  return [
+    { key: 'week', icon: '📊', label: '视图' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+})
+--- NEW ---
+// 侧边栏: 视图(回到日历视图, 周/日根据 calendarMode) + 设置
+const navItems = computed(() => {
+  return [
+    { key: calendarMode.value, icon: '📊', label: '视图' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+})
+
+=== Edit #138 (turn 627) ===
+--- OLD ---
+// 侧边栏: 视图(回到日历视图, 周/日根据 calendarMode) + 设置
+const navItems = computed(() => {
+  return [
+    { key: calendarMode.value, icon: '📊', label: '视图' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+})
+--- NEW ---
+// 侧边栏: 视图(仅标识当前视图, 点击不跳转) + 设置
+const navItems = computed(() => {
+  // 周/日/列表都属于"视图", 点击不跳转
+  const isView = currentPage.value === 'week' || currentPage.value === 'day' || currentPage.value === 'list'
+  return [
+    { key: isView ? currentPage.value : 'week', icon: '📊', label: '视图', noNav: isView },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+})
+
+=== Edit #139 (turn 627) ===
+--- OLD ---
+        <nav class="sidebar-nav">
+          <button
+            v-for="item in navItems"
+            :key="item.key"
+            class="nav-item"
+            :class="{ active: currentPage === item.key }"
+            @click="currentPage = item.key"
+            :title="item.label"
+          >
+            <span class="nav-icon">{{ item.icon }}</span>
+            <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
+          </button>
+        </nav>
+--- NEW ---
+        <nav class="sidebar-nav">
+          <button
+            v-for="item in navItems"
+            :key="item.key"
+            class="nav-item"
+            :class="{ active: item.noNav || currentPage === item.key }"
+            @click="!item.noNav && (currentPage = item.key)"
+            :title="item.label"
+          >
+            <span class="nav-icon">{{ item.icon }}</span>
+            <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
+          </button>
+        </nav>
+
+=== Edit #140 (turn 628) ===
+--- OLD ---
+          <div class="switch-group">
+            <button
+              class="switch-arrow"
+              :class="{ open: showCalendarDropdown }"
+              @click="showCalendarDropdown = !showCalendarDropdown"
+              title="切换周/日视图"
+            >▾</button>
+            <button
+              class="switch-btn"
+              :class="{ active: currentPage === 'week' || currentPage === 'day' }"
+              @click="currentPage = calendarMode"
+              title="日历视图"
+            >
+              <span class="switch-icon">📅</span>
+              <span class="switch-label">日历视图</span>
+              <span class="switch-sub">({{ calendarMode === 'week' ? '周' : '日' }})</span>
+            </button>
+            <div v-if="showCalendarDropdown" class="switch-dropdown" @click.away="showCalendarDropdown = false">
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'week' }"
+                @click="calendarMode = 'week'; currentPage = 'week'; showCalendarDropdown = false"
+              >
+                <span>📅</span> 周视图
+              </div>
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'day' }"
+                @click="calendarMode = 'day'; currentPage = 'day'; showCalendarDropdown = false"
+              >
+                <span>📆</span> 日视图
+              </div>
+            </div>
+          </div>
+--- NEW ---
+          <div class="switch-group" ref="switchGroupRef">
+            <button
+              class="switch-arrow"
+              :class="{ open: showCalendarDropdown }"
+              @click.stop="showCalendarDropdown = !showCalendarDropdown"
+              title="切换周/日视图"
+            >▾</button>
+            <button
+              class="switch-btn"
+              :class="{ active: currentPage === 'week' || currentPage === 'day' }"
+              @click="currentPage = calendarMode"
+              title="日历视图"
+            >
+              <span class="switch-icon">📅</span>
+              <span class="switch-label">日历视图</span>
+              <span class="switch-sub">({{ calendarMode === 'week' ? '周' : '日' }})</span>
+            </button>
+            <div v-if="showCalendarDropdown" class="switch-dropdown">
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'week' }"
+                @click="calendarMode = 'week'; currentPage = 'week'; showCalendarDropdown = false"
+              >
+                <span>📅</span> 周视图
+              </div>
+              <div
+                class="dropdown-item"
+                :class="{ active: calendarMode === 'day' }"
+                @click="calendarMode = 'day'; currentPage = 'day'; showCalendarDropdown = false"
+              >
+                <span>📆</span> 日视图
+              </div>
+            </div>
+          </div>
+
+=== Edit #141 (turn 628) ===
+--- OLD ---
+const showCalendarDropdown = ref(false)
+--- NEW ---
+const showCalendarDropdown = ref(false)
+const switchGroupRef = ref(null)
+
+// 全局点击: 点 switch-group 外部时关闭日历下拉
+function onGlobalClick(e) {
+  if (showCalendarDropdown.value && switchGroupRef.value && !switchGroupRef.value.contains(e.target)) {
+    showCalendarDropdown.value = false
+  }
+}
+onMounted(() => document.addEventListener('click', onGlobalClick))
+onUnmounted(() => document.removeEventListener('click', onGlobalClick))
+
+=== Edit #142 (turn 634) ===
+--- OLD ---
+  return [
+    { key: isView ? currentPage.value : 'week', icon: '📊', label: '视图', noNav: isView },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+--- NEW ---
+  return [
+    { key: 'dashboard', icon: '📈', label: '仪表盘' },
+    { key: isView ? currentPage.value : 'week', icon: '📊', label: '视图', noNav: isView },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+
+=== Edit #143 (turn 634) ===
+--- OLD ---
+import WeekView from './views/WeekView.vue'
+import ListView from './views/ListView.vue'
+import DayView from './views/DayView.vue'
+import Settings from './views/Settings.vue'
+--- NEW ---
+import WeekView from './views/WeekView.vue'
+import ListView from './views/ListView.vue'
+import DayView from './views/DayView.vue'
+import Settings from './views/Settings.vue'
+import Dashboard from './views/Dashboard.vue'
+
+=== Edit #144 (turn 634) ===
+--- OLD ---
+        <!-- 周视图页 -->
+        <WeekView v-if="currentPage === 'week'" />
+        <!-- 列表视图页 -->
+        <ListView v-else-if="currentPage === 'list'" />
+        <!-- 日视图页 -->
+        <DayView v-else-if="currentPage === 'day'" />
+        <!-- 设置页 -->
+        <Settings v-else-if="currentPage === 'settings'" />
+--- NEW ---
+        <!-- 仪表盘页 -->
+        <Dashboard v-if="currentPage === 'dashboard'" />
+        <!-- 周视图页 -->
+        <WeekView v-else-if="currentPage === 'week'" />
+        <!-- 列表视图页 -->
+        <ListView v-else-if="currentPage === 'list'" />
+        <!-- 日视图页 -->
+        <DayView v-else-if="currentPage === 'day'" />
+        <!-- 设置页 -->
+        <Settings v-else-if="currentPage === 'settings'" />
+
+=== Edit #145 (turn 639) ===
+--- OLD ---
+  return [
+    { key: 'dashboard', icon: '📈', label: '仪表盘' },
+    { key: isView ? currentPage.value : 'week', icon: '📊', label: '视图', noNav: isView },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+--- NEW ---
+  return [
+    { key: isView ? currentPage.value : 'week', icon: '📊', label: '视图', noNav: isView },
+    { key: 'dashboard', icon: '📈', label: '仪表盘' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+  ]
+
+=== Edit #146 (turn 662) ===
+--- OLD ---
+:root {
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --bg: #f9fafb;
+  --surface: #ffffff;
+  --text: #1f2937;
+  --text-secondary: #6b7280;
+  --border: #e5e7eb;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --sidebar-width: 220px;
+  --sidebar-collapsed: 60px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+--- NEW ---
+:root {
+  /* ── 暗色调科技感配色 ── */
+  --primary: #00d4ff;
+  --primary-light: #00d4ff;
+  --primary-dark: #0099cc;
+  --primary-glow: rgba(0, 212, 255, 0.4);
+  --bg: #0a0e1a;
+  --bg-gradient: linear-gradient(135deg, #0a0e1a 0%, #0f1729 50%, #0a0e1a 100%);
+  --surface: #131826;
+  --surface-light: #1a2138;
+  --surface-hover: #1e2940;
+  --text: #e2e8f0;
+  --text-secondary: #64748b;
+  --text-muted: #475569;
+  --border: #1e293b;
+  --border-light: #2a3650;
+  --success: #00ff88;
+  --warning: #ffaa00;
+  --danger: #ff3366;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(0, 212, 255, 0.15);
+  --sidebar-width: 220px;
+  --sidebar-collapsed: 60px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+=== Edit #147 (turn 662) ===
+--- OLD ---
+/* ───── 侧边栏 ───── */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed);
+}
+
+.sidebar-header {
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-brand {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+--- NEW ---
+/* ───── 侧边栏 ───── */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed);
+}
+
+.sidebar-header {
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface-light) 0%, var(--surface) 100%);
+}
+
+.sidebar-brand {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary);
+  text-shadow: 0 0 12px var(--primary-glow);
+  letter-spacing: 0.5px;
+}
+
+=== Edit #148 (turn 662) ===
+--- OLD ---
+.nav-item:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.nav-item.active {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary);
+  font-weight: 500;
+}
+--- NEW ---
+.nav-item:hover {
+  background: var(--surface-hover);
+  color: var(--primary);
+}
+
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 212, 255, 0.05) 100%);
+  color: var(--primary);
+  font-weight: 500;
+  box-shadow: inset 3px 0 0 var(--primary);
+  text-shadow: 0 0 8px var(--primary-glow);
+}
+
+=== Edit #149 (turn 662) ===
+--- OLD ---
+/* ───── 顶部视图切换横栏 (固定, 顶满宽度, 不挡侧边栏) ───── */
+.top-switch-bar {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 8px 24px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  height: 48px;
+  box-sizing: border-box;
+}
+--- NEW ---
+/* ───── 顶部视图切换横栏 (固定, 顶满宽度, 不挡侧边栏) ───── */
+.top-switch-bar {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 8px 24px;
+  background: var(--surface);
+  box-shadow: 0 1px 0 var(--border), 0 4px 12px rgba(0, 0, 0, 0.3);
+  height: 48px;
+  box-sizing: border-box;
+  backdrop-filter: blur(8px);
+}
+
+=== Edit #150 (turn 662) ===
+--- OLD ---
+.switch-btn:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+.switch-btn.active {
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+--- NEW ---
+.switch-btn:hover { color: var(--primary); background: var(--surface-hover); }
+.switch-btn.active {
+  background: var(--surface-light);
+  color: var(--primary);
+  font-weight: 500;
+  box-shadow: 0 0 12px var(--primary-glow), inset 0 0 0 1px var(--border-light);
+}
+
+=== Edit #151 (turn 662) ===
+--- OLD ---
+/* ───── 登录/注册弹窗 ───── */
+.auth-mask {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.auth-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 40px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+--- NEW ---
+/* ───── 登录/注册弹窗 ───── */
+.auth-mask {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: var(--shadow-lg), 0 0 40px rgba(0, 212, 255, 0.1);
+}
+
+=== Edit #152 (turn 662) ===
+--- OLD ---
+.auth-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+--- NEW ---
+.auth-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15), 0 0 12px var(--primary-glow);
+}
+
+=== Edit #153 (turn 662) ===
+--- OLD ---
+.auth-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.auth-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+--- NEW ---
+.auth-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px var(--primary-glow);
+  letter-spacing: 0.5px;
+}
+
+.auth-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--primary-glow);
+}
+
+.auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+=== Edit #154 (turn 662) ===
+--- OLD ---
+.collapse-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: background 0.15s;
+}
+
+.collapse-btn:hover {
+  background: var(--bg);
+}
+
+.logout-btn {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  border-radius: var(--radius);
+  transition: background 0.15s;
+}
+
+.logout-btn:hover {
+  background: #fef2f2;
+}
+--- NEW ---
+.collapse-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border-light);
+  background: var(--surface-light);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.collapse-btn:hover {
+  background: var(--surface-hover);
+  color: var(--primary);
+}
+
+.logout-btn {
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  border-radius: var(--radius);
+  transition: all 0.15s;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 51, 102, 0.1);
+  border-color: rgba(255, 51, 102, 0.3);
+}
+
+=== Edit #155 (turn 675) ===
+--- OLD ---
+import Dashboard from './views/Dashboard.vue'
+--- NEW ---
+import Dashboard from './views/Dashboard.vue'
+import Reports from './views/Reports.vue'
+
+=== Edit #156 (turn 675) ===
+--- OLD ---
+        <!-- 仪表盘页 -->
+        <Dashboard v-if="currentPage === 'dashboard'" />
+        <!-- 周视图页 -->
+        <WeekView v-else-if="currentPage === 'week'" />
+--- NEW ---
+        <!-- 仪表盘页 -->
+        <Dashboard v-if="currentPage === 'dashboard'" />
+        <!-- 报表页 -->
+        <Reports v-else-if="currentPage === 'reports'" />
+        <!-- 周视图页 -->
+        <WeekView v-else-if="currentPage === 'week'" />
+
+=== Edit #157 (turn 675) ===
+--- OLD ---
+    { key: 'dashboard', icon: '📈', label: '仪表盘' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+--- NEW ---
+    { key: 'dashboard', icon: '📈', label: '仪表盘' },
+    { key: 'reports', icon: '📄', label: '报表' },
+    { key: 'settings', icon: '⚙', label: '设置' },
+
+=== Edit #158 (turn 722) ===
+--- OLD ---
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+--- NEW ---
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ── 全局 select: 放大倒三角箭头 ── */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M5 8l5 5 5-5' stroke='%2300d4ff' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 32px;
+}
+
+=== Edit #159 (turn 726) ===
+--- OLD ---
+/* ── 全局 select: 放大倒三角箭头 ── */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M5 8l5 5 5-5' stroke='%2300d4ff' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 32px;
+}
+--- NEW ---
+/* ── 全局 select: 放大倒三角箭头 ── */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><path d='M7 11l7 7 7-7' stroke='%2300d4ff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 28px 28px;
+  padding-right: 40px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+=== Edit #160 (turn 727) ===
+--- OLD ---
+.switch-arrow {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+.switch-arrow:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+.switch-arrow.open { color: var(--primary); }
+--- NEW ---
+.switch-arrow {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--primary);
+  transition: all 0.15s;
+}
+.switch-arrow:hover { color: var(--primary); background: rgba(0, 212, 255, 0.1); text-shadow: 0 0 8px var(--primary-glow); }
+.switch-arrow.open { color: var(--primary); text-shadow: 0 0 8px var(--primary-glow); }
+
+=== Edit #161 (turn 743) ===
+--- OLD ---
+
+// ───── 飞书 H5 免登 ─────
+// 飞书企业自建应用 App ID
+const FEISHU_APP_ID = 'cli_aa07f5b29ef89bd1'
+
+// 检测 URL 是否有 code 参数(飞书重定向回来), 自动登录
+async function tryFeishuAuth() {
+  const url = new URL(window.location.href)
+  const code = url.searchParams.get('code')
+  if (!code) return false
+
+  try {
+    const res = await http('/feishu-auth?code=' + encodeURIComponent(code))
+    if (res.ok) {
+      // 飞书免登成功
+      userName.value = res.user
+      userRole.value = res.role
+      displayName.value = res.display_name
+      userTeam.value = res.team || ''
+      feishuUserId.value = res.feishu_user_id || ''
+      localStorage.setItem('tt_user', res.user)
+      localStorage.setItem('tt_role', res.role)
+      localStorage.setItem('tt_display_name', res.display_name)
+      localStorage.setItem('tt_team', res.team || '')
+      localStorage.setItem('tt_feishu_id', res.feishu_user_id || '')
+      showLogin.value = false
+      // 清掉 URL 里的 code 参数
+      url.searchParams.delete('code')
+      window.history.replaceState({}, '', url.toString())
+      return true
+    } else {
+      // 飞书账号未绑定, 提示用户去网页端绑定
+      console.warn('飞书免登失败:', res.error)
+    }
+  } catch (e) {
+    console.warn('飞书免登异常:', e.message)
+  }
+  return false
+}
+
+// 跳转到飞书授权页(用户点"飞书登录"时调用)
+// 统一用飞书 v2 oauth2 全流程:
+//   授权端点: https://accounts.feishu.cn/open-apis/authen/v1/authorize
+//   换token:  https://open.feishu.cn/open-apis/authen/v2/oauth/token (SCF后端)
+function redirectToFeishuAuth() {
+  const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname)
+  const authUrl = `https://accounts.feishu.cn/open-apis/authen/v1/authorize?client_id=${FEISHU_APP_ID}&response_type=code&redirect_uri=${redirectUri}`
+  window.location.href = authUrl
+}
+
+// 登录表单
+const loginUser = ref('')
+--- NEW ---
+
+// 登录表单
+const loginUser = ref('')
+
+=== Edit #162 (turn 743) ===
+--- OLD ---
+          </div>
+          <div v-if="loginError" class="auth-err">{{ loginError }}</div>
+          <button class="auth-btn" @click="confirmLogin" :disabled="authLoading">
+            {{ authLoading ? '登录中...' : '登录' }}
+          </button>
+          <div class="auth-divider"><span>或</span></div>
+          <button class="auth-btn feishu-btn" @click="redirectToFeishuAuth">
+            🚀 飞书一键登录
+          </button>
+          <div class="auth-switch">
+            没有账号？<a @click="toggleRegister">立即注册</a>
+          </div>
+--- NEW ---
+          </div>
+          <div v-if="loginError" class="auth-err">{{ loginError }}</div>
+          <button class="auth-btn" @click="confirmLogin" :disabled="authLoading">
+            {{ authLoading ? '登录中...' : '登录' }}
+          </button>
+          <div class="auth-switch">
+            没有账号？<a @click="toggleRegister">立即注册</a>
+          </div>
+
+=== Edit #163 (turn 743) ===
+--- OLD ---
+const userTeam = ref(localStorage.getItem('tt_team') || '')
+const feishuUserId = ref(localStorage.getItem('tt_feishu_id') || '')
+const showLogin = ref(!userName.value)
+--- NEW ---
+const userTeam = ref(localStorage.getItem('tt_team') || '')
+const showLogin = ref(!userName.value)
+
+=== Edit #164 (turn 743) ===
+--- OLD ---
+provide('startActiveTimer', startActiveTimer)
+provide('stopActiveTimer', stopActiveTimer)
+provide('timerElapsedText', timerElapsedText)
+provide('redirectToFeishuAuth', redirectToFeishuAuth)
+provide('feishuUserId', feishuUserId)
+provide('userTeam', userTeam)
+--- NEW ---
+provide('startActiveTimer', startActiveTimer)
+provide('stopActiveTimer', stopActiveTimer)
+provide('timerElapsedText', timerElapsedText)
+provide('userTeam', userTeam)
+
+=== Edit #165 (turn 743) ===
+--- OLD ---
+    userName.value = res.user
+    userRole.value = res.role
+    displayName.value = res.display_name || res.user
+    userTeam.value = res.team || ''
+    feishuUserId.value = res.feishu_user_id || ''
+    localStorage.setItem('tt_user', res.user)
+    localStorage.setItem('tt_role', res.role)
+    localStorage.setItem('tt_display_name', displayName.value)
+    localStorage.setItem('tt_team', res.team || '')
+    localStorage.setItem('tt_feishu_id', res.feishu_user_id || '')
+    showLogin.value = false
+    loginUser.value = ''
+    loginPass.value = ''
+    // 登录成功后恢复未完成的计时器
+    await restoreActiveTimer()
+--- NEW ---
+    userName.value = res.user
+    userRole.value = res.role
+    displayName.value = res.display_name || res.user
+    userTeam.value = res.team || ''
+    localStorage.setItem('tt_user', res.user)
+    localStorage.setItem('tt_role', res.role)
+    localStorage.setItem('tt_display_name', displayName.value)
+    localStorage.setItem('tt_team', res.team || '')
+    showLogin.value = false
+    loginUser.value = ''
+    loginPass.value = ''
+    // 登录成功后恢复未完成的计时器
+    await restoreActiveTimer()
+
+=== Edit #166 (turn 743) ===
+--- OLD ---
+    userName.value = res.user
+    userRole.value = res.role
+    displayName.value = res.display_name || res.user
+    userTeam.value = res.team || ''
+    feishuUserId.value = res.feishu_user_id || ''
+    localStorage.setItem('tt_user', res.user)
+    localStorage.setItem('tt_role', res.role)
+    localStorage.setItem('tt_display_name', displayName.value)
+    localStorage.setItem('tt_team', res.team || '')
+    localStorage.setItem('tt_feishu_id', res.feishu_user_id || '')
+    showLogin.value = false
+    showRegister.value = false
+    regInvite.value = ''
+    regUser.value = ''
+    regDisplayName.value = ''
+--- NEW ---
+    userName.value = res.user
+    userRole.value = res.role
+    displayName.value = res.display_name || res.user
+    userTeam.value = res.team || ''
+    localStorage.setItem('tt_user', res.user)
+    localStorage.setItem('tt_role', res.role)
+    localStorage.setItem('tt_display_name', displayName.value)
+    localStorage.setItem('tt_team', res.team || '')
+    showLogin.value = false
+    showRegister.value = false
+    regInvite.value = ''
+    regUser.value = ''
+    regDisplayName.value = ''
+

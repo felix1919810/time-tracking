@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>时间追踪系统 - 数据流图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #f5f6fa;
+    color: #2d3748;
+    padding: 40px 20px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 8px;
+    color: #1a202c;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #718096;
+    margin-bottom: 40px;
+  }
+  .legend {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #4a5568;
+  }
+  .legend-box {
+    width: 24px;
+    height: 16px;
+    border-radius: 4px;
+  }
+
+  /* SVG 图表容器 */
+  .chart-wrap {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    padding: 32px;
+    overflow-x: auto;
+  }
+  svg { display: block; margin: 0 auto; }
+
+  /* 节点样式 */
+  .node-frontend { fill: #ebf4ff; stroke: #6366f1; stroke-width: 2; }
+  .node-backend { fill: #fef3c7; stroke: #f59e0b; stroke-width: 2; }
+  .node-storage { fill: #dcfce7; stroke: #10b981; stroke-width: 2; }
+  .node-external { fill: #fce7f3; stroke: #ec4899; stroke-width: 2; }
+
+  .node-label {
+    font-size: 14px;
+    font-weight: 600;
+    fill: #1a202c;
+    text-anchor: middle;
+  }
+  .node-sublabel {
+    font-size: 11px;
+    fill: #718096;
+    text-anchor: middle;
+  }
+
+  /* 连线 */
+  .flow-line {
+    stroke: #a0aec0;
+    stroke-width: 2;
+    fill: none;
+    marker-end: url(#arrow);
+  }
+  .flow-line-data {
+    stroke: #6366f1;
+    stroke-width: 2.5;
+    fill: none;
+    marker-end: url(#arrow-primary);
+  }
+  .flow-label {
+    font-size: 11px;
+    fill: #4a5568;
+    text-anchor: middle;
+    font-weight: 500;
+  }
+
+  /* 表格说明 */
+  .tables-section {
+    margin-top: 40px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    padding: 32px;
+  }
+  .tables-section h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #1a202c;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    background: #f7fafc;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #4a5568;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #edf2f7;
+    color: #2d3748;
+  }
+  tr:hover td { background: #f7fafc; }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .tag-user { background: #ebf4ff; color: #6366f1; }
+  .tag-time { background: #fef3c7; color: #d97706; }
+  .tag-settings { background: #dcfce7; color: #059669; }
+
+  /* 流程说明 */
+  .flow-section {
+    margin-top: 40px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    padding: 32px;
+  }
+  .flow-section h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #1a202c;
+  }
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    background: #6366f1;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .step-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #2d3748;
+  }
+  .step-content strong { color: #6366f1; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⏱ 时间追踪系统 - 数据流图</h1>
+  <p class="subtitle">Vue 前端 → 腾讯 SCF API → 飞书多维表格</p>
+
+  <!-- 图例 -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-box" style="background:#ebf4ff;border:2px solid #6366f1;"></div>
+      <span>前端（Vue + GitHub Pages）</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-box" style="background:#fef3c7;border:2px solid #f59e0b;"></div>
+      <span>后端（腾讯 SCF）</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-box" style="background:#dcfce7;border:2px solid #10b981;"></div>
+      <span>存储（飞书多维表格）</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-box" style="background:#fce7f3;border:2px solid #ec4899;"></div>
+      <span>外部服务</span>
+    </div>
+  </div>
+
+  <!-- 数据流图 -->
+  <div class="chart-wrap">
+    <svg width="1100" height="680" viewBox="0 0 1100 680">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L9,3 z" fill="#a0aec0"/>
+        </marker>
+        <marker id="arrow-primary" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L9,3 z" fill="#6366f1"/>
+        </marker>
+      </defs>
+
+      <!-- ===== 第一层：用户 ===== -->
+      <rect x="470" y="20" width="160" height="50" rx="8" class="node-external"/>
+      <text x="550" y="42" class="node-label">👤 用户</text>
+      <text x="550" y="58" class="node-sublabel">浏览器</text>
+
+      <!-- ===== 第二层：前端 ===== -->
+      <rect x="50" y="120" width="220" height="70" rx="10" class="node-frontend"/>
+      <text x="160" y="148" class="node-label">Vue 前端</text>
+      <text x="160" y="166" class="node-sublabel">GitHub Pages</text>
+      <text x="160" y="180" class="node-sublabel">felix1919810.github.io</text>
+
+      <rect x="440" y="120" width="220" height="70" rx="10" class="node-frontend"/>
+      <text x="550" y="148" class="node-label">计时器横条</text>
+      <text x="550" y="166" class="node-sublabel">常驻顶部 / 开始·完成</text>
+      <text x="550" y="180" class="node-sublabel">实时跳动时长</text>
+
+      <rect x="830" y="120" width="220" height="70" rx="10" class="node-frontend"/>
+      <text x="940" y="148" class="node-label">4 个页面组件</text>
+      <text x="940" y="166" class="node-sublabel">WeekView / Dashboard</text>
+      <text x="940" y="180" class="node-sublabel">Report / Settings</text>
+
+      <!-- ===== 第三层：SCF 后端 ===== -->
+      <rect x="120" y="260" width="180" height="60" rx="10" class="node-backend"/>
+      <text x="210" y="286" class="node-label">认证接口</text>
+      <text x="210" y="304" class="node-sublabel">/login /register</text>
+      <text x="210" y="316" class="node-sublabel">/change-password</text>
+
+      <rect x="460" y="260" width="180" height="60" rx="10" class="node-backend"/>
+      <text x="550" y="286" class="node-label">计时数据接口</text>
+      <text x="550" y="304" class="node-sublabel">GET /entries</text>
+      <text x="550" y="316" class="node-sublabel">POST / PUT / DELETE</text>
+
+      <rect x="800" y="260" width="180" height="60" rx="10" class="node-backend"/>
+      <text x="890" y="286" class="node-label">飞书 API 封装</text>
+      <text x="890" y="304" class="node-sublabel">lark() 函数</text>
+      <text x="890" y="316" class="node-sublabel">tenant_access_token</text>
+
+      <!-- ===== 第四层：飞书多维表格 ===== -->
+      <rect x="120" y="400" width="180" height="70" rx="10" class="node-storage"/>
+      <text x="210" y="428" class="node-label">用户表</text>
+      <text x="210" y="446" class="node-sublabel">tblKmai7bKF54DYx</text>
+      <text x="210" y="460" class="node-sublabel">用户名/密码/角色/姓名</text>
+
+      <rect x="460" y="400" width="180" height="70" rx="10" class="node-storage"/>
+      <text x="550" y="428" class="node-label">工时表</text>
+      <text x="550" y="446" class="node-sublabel">tbl4DQrLz56St8Uj</text>
+      <text x="550" y="460" class="node-sublabel">description/start_time...</text>
+
+      <rect x="800" y="400" width="180" height="70" rx="10" class="node-storage"/>
+      <text x="890" y="428" class="node-label">设置表</text>
+      <text x="890" y="446" class="node-sublabel">tblgToxZeOIQMafP</text>
+      <text x="890" y="460" class="node-sublabel">邀请码</text>
+
+      <!-- ===== 第五层：飞书开放平台 ===== -->
+      <rect x="460" y="540" width="180" height="60" rx="10" class="node-external"/>
+      <text x="550" y="566" class="node-label">飞书开放平台</text>
+      <text x="550" y="584" class="node-sublabel">open.feishu.cn</text>
+      <text x="550" y="596" class="node-sublabel">Bitable REST API</text>
+
+      <!-- ===== 连线 ===== -->
+      <!-- 用户 → 前端 -->
+      <line x1="550" y1="70" x2="160" y2="120" class="flow-line-data"/>
+      <text x="300" y="100" class="flow-label">登录/操作</text>
+
+      <line x1="550" y1="70" x2="550" y2="120" class="flow-line-data"/>
+      <text x="570" y="100" class="flow-label">点击</text>
+
+      <line x1="550" y1="70" x2="940" y2="120" class="flow-line-data"/>
+      <text x="800" y="100" class="flow-label">浏览页面</text>
+
+      <!-- 前端内部 -->
+      <line x1="660" y1="155" x2="830" y2="155" class="flow-line"/>
+      <text x="745" y="148" class="flow-label">provide/inject</text>
+
+      <!-- 前端 → SCF -->
+      <line x1="210" y1="190" x2="210" y2="260" class="flow-line-data"/>
+      <text x="210" y="230" class="flow-label">POST /login</text>
+
+      <line x1="550" y1="190" x2="550" y2="260" class="flow-line-data"/>
+      <text x="550" y="230" class="flow-label">GET/POST /entries</text>
+
+      <line x1="940" y1="190" x2="890" y2="260" class="flow-line-data"/>
+      <text x="970" y="230" class="flow-label">HTTP fetch</text>
+
+      <!-- SCF 内部 -->
+      <line x1="640" y1="290" x2="800" y2="290" class="flow-line"/>
+      <text x="720" y="282" class="flow-label">调用 lark()</text>
+
+      <line x1="210" y1="290" x2="460" y2="290" class="flow-line"/>
+      <text x="335" y="282" class="flow-label">验证</text>
+
+      <!-- SCF → 多维表格 -->
+      <line x1="210" y1="320" x2="210" y2="400" class="flow-line-data"/>
+      <text x="210" y="365" class="flow-label">查用户表</text>
+
+      <line x1="550" y1="320" x2="550" y2="400" class="flow-line-data"/>
+      <text x="550" y="365" class="flow-label">读写工时表</text>
+
+      <line x1="890" y1="320" x2="890" y2="400" class="flow-line-data"/>
+      <text x="890" y="365" class="flow-label">读设置表</text>
+
+      <!-- 多维表格 → 飞书平台 -->
+      <line x1="550" y1="470" x2="550" y2="540" class="flow-line"/>
+      <text x="550" y="510" class="flow-label">Bitable 存储</text>
+
+      <!-- ===== 数据流标注 ===== -->
+      <rect x="30" y="620" width="1040" height="40" rx="8" fill="#f7fafc" stroke="#e2e8f0"/>
+      <text x="550" y="645" class="flow-label" style="font-size:12px;">
+        数据流：用户操作 → Vue 前端 → HTTP fetch → 腾讯 SCF API → lark() 封装 → 飞书 Bitable REST API → 多维表格存储
+      </text>
+    </svg>
+  </div>
+
+  <!-- 数据表说明 -->
+  <div class="tables-section">
+    <h2>📊 飞书多维表格数据结构</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>数据表</th>
+          <th>table_id</th>
+          <th>字段（英文 key）</th>
+          <th>用途</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag tag-user">工时表</span></td>
+          <td>tbl4DQrLz56St8Uj</td>
+          <td>
+            description（描述）<br>
+            category（任务分类）<br>
+            start_time / end_time（开始/结束时间，毫秒时间戳）<br>
+            user（用户，存 displayName）<br>
+            country（国家）<br>
+            notes（备注）
+          </td>
+          <td>存储所有计时记录</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-settings">用户表</span></td>
+          <td>tblKmai7bKF54DYx</td>
+          <td>
+            用户名（登录用）<br>
+            密码（明文存储）<br>
+            角色（admin / user）<br>
+            姓名（显示名）
+          </td>
+          <td>账号认证 + 角色权限</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-settings">设置表</span></td>
+          <td>tblgToxZeOIQMafP</td>
+          <td>邀请码</td>
+          <td>注册时验证邀请码</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 计时数据流说明 -->
+  <div class="flow-section">
+    <h2>🔄 计时数据流（核心流程）</h2>
+
+    <div class="flow-step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>用户点击"开始计时"</strong> → 计时器横条触发 <code>pendingStartTimer</code>，WeekView 弹出计时表单（描述 / 分类 / 国家）
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>填写后点"开始"</strong> → <code>startActiveTimer(payload)</code> 在 App.vue 设置全局 <code>activeTimer</code> ref，记录 <code>startTime = Date.now()</code>，启动 1 秒跳动定时器
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>横条显示实时时长</strong> → <code>timerElapsedText</code> 计算属性每秒更新 <code>HH:MM:SS</code> 或 <code>MM:SS</code> 格式
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <strong>用户点"完成"</strong> → <code>stopActiveTimer()</code> 构造 fields（含 ISO 时间戳），POST <code>/entries</code> 到 SCF
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <strong>SCF 后端转换</strong> → <code>lark()</code> 函数把 ISO 字符串转成毫秒时间戳，手动 JSON.stringify 后调用飞书 API
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <strong>飞书多维表格写入</strong> → 工时表新增一条记录，返回 <code>record_id</code>，前端 <code>loadEntries()</code> 刷新周视图
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">7</div>
+      <div class="step-content">
+        <strong>页面刷新恢复</strong> → <code>activeTimer</code> 持久化到 <code>localStorage('tt_active_timer')</code>，刷新后恢复跳动，点"完成"才写入
+      </div>
+    </div>
+  </div>
+
+  <!-- 查询数据流 -->
+  <div class="flow-section">
+    <h2>📖 查询数据流（周视图 / 仪表盘 / 报表）</h2>
+
+    <div class="flow-step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>页面 onMounted</strong> → 调用 <code>loadEntries()</code> / <code>loadData()</code>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>前端构造查询</strong> → <code>GET /entries?page_size=500</code>
+        <br>• admin 账号：不加 user filter，看所有数据
+        <br>• user 账号：加 <code>&user=displayName</code>，只看自己的数据
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>SCF 转发到飞书</strong> → 带 <code>filter=CurrentValue.[user]="xxx"</code> 调飞书 Bitable API
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <strong>前端渲染</strong> → <code>entries.value = data.items</code>，周视图按本地日期分组，仪表盘用 Chart.js 画图，报表用表格展示
+      </div>
+    </div>
+  </div>
+
+  <!-- 关键技术点 -->
+  <div class="flow-section">
+    <h2>🔧 关键技术决策</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>问题</th>
+          <th>解决方案</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>飞书 Node 环境中文字段名乱码</td>
+          <td>多维表格字段名全部改成英文（description / category / start_time 等）</td>
+        </tr>
+        <tr>
+          <td>飞书日期字段格式</td>
+          <td>SCF 后端把 ISO 字符串转成毫秒时间戳（Date.getTime()）</td>
+        </tr>
+        <tr>
+          <td>跨午夜加班显示</td>
+          <td>条目归到开始日，高度截断到当天 24:00，用本地日期比较</td>
+        </tr>
+        <tr>
+          <td>计时器状态持久化</td>
+          <td>activeTimer 存 localStorage，页面刷新后恢复跳动</td>
+        </tr>
+        <tr>
+          <td>user 账号数据隔离</td>
+          <td>filter 用 displayName 查询（工时表 user 字段存的就是 displayName）</td>
+        </tr>
+        <tr>
+          <td>Chart.js 图表无限拉长</td>
+          <td>容器固定高度 340px，canvas 绝对定位撑满</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="text-align:center; margin-top:40px; font-size:12px; color:#a0aec0;">
+    生成时间：2026-08-25 · 时间追踪系统数据流文档
+  </p>
+</div>
+</body>
+</html>

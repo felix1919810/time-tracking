@@ -20,10 +20,6 @@
           <button class="auth-btn" @click="confirmLogin" :disabled="authLoading">
             {{ authLoading ? '登录中...' : '登录' }}
           </button>
-          <div class="auth-divider"><span>或</span></div>
-          <button class="auth-btn feishu-btn" @click="redirectToFeishuAuth">
-            🚀 飞书一键登录
-          </button>
           <div class="auth-switch">
             没有账号？<a @click="toggleRegister">立即注册</a>
           </div>
@@ -154,6 +150,8 @@
 
         <!-- 仪表盘页 -->
         <Dashboard v-if="currentPage === 'dashboard'" />
+        <!-- 报表页 -->
+        <Reports v-else-if="currentPage === 'reports'" />
         <!-- 周视图页 -->
         <WeekView v-else-if="currentPage === 'week'" />
         <!-- 列表视图页 -->
@@ -174,6 +172,7 @@ import ListView from './views/ListView.vue'
 import DayView from './views/DayView.vue'
 import Settings from './views/Settings.vue'
 import Dashboard from './views/Dashboard.vue'
+import Reports from './views/Reports.vue'
 
 // ───── HTTP 工具 ─────
 const API_BASE = 'https://1473537498-ejcp1i6ib6.ap-shanghai.tencentscf.com'
@@ -193,7 +192,6 @@ const userName = ref(localStorage.getItem('tt_user') || '')
 const userRole = ref(localStorage.getItem('tt_role') || '')
 const displayName = ref(localStorage.getItem('tt_display_name') || '')
 const userTeam = ref(localStorage.getItem('tt_team') || '')
-const feishuUserId = ref(localStorage.getItem('tt_feishu_id') || '')
 const showLogin = ref(!userName.value)
 const authLoading = ref(false)
 
@@ -207,55 +205,6 @@ const roleLabel = computed(() => {
   if (r === 'member') return '团队成员'
   return '员工'
 })
-
-// ───── 飞书 H5 免登 ─────
-// 飞书企业自建应用 App ID
-const FEISHU_APP_ID = 'cli_aa07f5b29ef89bd1'
-
-// 检测 URL 是否有 code 参数(飞书重定向回来), 自动登录
-async function tryFeishuAuth() {
-  const url = new URL(window.location.href)
-  const code = url.searchParams.get('code')
-  if (!code) return false
-
-  try {
-    const res = await http('/feishu-auth?code=' + encodeURIComponent(code))
-    if (res.ok) {
-      // 飞书免登成功
-      userName.value = res.user
-      userRole.value = res.role
-      displayName.value = res.display_name
-      userTeam.value = res.team || ''
-      feishuUserId.value = res.feishu_user_id || ''
-      localStorage.setItem('tt_user', res.user)
-      localStorage.setItem('tt_role', res.role)
-      localStorage.setItem('tt_display_name', res.display_name)
-      localStorage.setItem('tt_team', res.team || '')
-      localStorage.setItem('tt_feishu_id', res.feishu_user_id || '')
-      showLogin.value = false
-      // 清掉 URL 里的 code 参数
-      url.searchParams.delete('code')
-      window.history.replaceState({}, '', url.toString())
-      return true
-    } else {
-      // 飞书账号未绑定, 提示用户去网页端绑定
-      console.warn('飞书免登失败:', res.error)
-    }
-  } catch (e) {
-    console.warn('飞书免登异常:', e.message)
-  }
-  return false
-}
-
-// 跳转到飞书授权页(用户点"飞书登录"时调用)
-// 统一用飞书 v2 oauth2 全流程:
-//   授权端点: https://accounts.feishu.cn/open-apis/authen/v1/authorize
-//   换token:  https://open.feishu.cn/open-apis/authen/v2/oauth/token (SCF后端)
-function redirectToFeishuAuth() {
-  const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname)
-  const authUrl = `https://accounts.feishu.cn/open-apis/authen/v1/authorize?client_id=${FEISHU_APP_ID}&response_type=code&redirect_uri=${redirectUri}`
-  window.location.href = authUrl
-}
 
 // 登录表单
 const loginUser = ref('')
@@ -290,12 +239,10 @@ async function confirmLogin() {
     userRole.value = res.role
     displayName.value = res.display_name || res.user
     userTeam.value = res.team || ''
-    feishuUserId.value = res.feishu_user_id || ''
     localStorage.setItem('tt_user', res.user)
     localStorage.setItem('tt_role', res.role)
     localStorage.setItem('tt_display_name', displayName.value)
     localStorage.setItem('tt_team', res.team || '')
-    localStorage.setItem('tt_feishu_id', res.feishu_user_id || '')
     showLogin.value = false
     loginUser.value = ''
     loginPass.value = ''
@@ -326,12 +273,10 @@ async function doRegister() {
     userRole.value = res.role
     displayName.value = res.display_name || res.user
     userTeam.value = res.team || ''
-    feishuUserId.value = res.feishu_user_id || ''
     localStorage.setItem('tt_user', res.user)
     localStorage.setItem('tt_role', res.role)
     localStorage.setItem('tt_display_name', displayName.value)
     localStorage.setItem('tt_team', res.team || '')
-    localStorage.setItem('tt_feishu_id', res.feishu_user_id || '')
     showLogin.value = false
     showRegister.value = false
     regInvite.value = ''
@@ -397,8 +342,9 @@ const navItems = computed(() => {
   // 周/日/列表都属于"视图", 点击不跳转
   const isView = currentPage.value === 'week' || currentPage.value === 'day' || currentPage.value === 'list'
   return [
-    { key: 'dashboard', icon: '📈', label: '仪表盘' },
     { key: isView ? currentPage.value : 'week', icon: '📊', label: '视图', noNav: isView },
+    { key: 'dashboard', icon: '📈', label: '仪表盘' },
+    { key: 'reports', icon: '📄', label: '报表' },
     { key: 'settings', icon: '⚙', label: '设置' },
   ]
 })
@@ -722,8 +668,6 @@ provide('activeTimer', activeTimer)
 provide('startActiveTimer', startActiveTimer)
 provide('stopActiveTimer', stopActiveTimer)
 provide('timerElapsedText', timerElapsedText)
-provide('redirectToFeishuAuth', redirectToFeishuAuth)
-provide('feishuUserId', feishuUserId)
 provide('userTeam', userTeam)
 
 // ───── 全局显示姓名开关 (所有视图共享) ─────
@@ -751,28 +695,52 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
+/* ── 全局 select: 放大倒三角箭头 ── */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><path d='M7 11l7 7 7-7' stroke='%2300d4ff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 28px 28px;
+  padding-right: 40px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
 :root {
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  --bg: #f9fafb;
-  --surface: #ffffff;
-  --text: #1f2937;
-  --text-secondary: #6b7280;
-  --border: #e5e7eb;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  /* ── 暗色调科技感配色 ── */
+  --primary: #00d4ff;
+  --primary-light: #00d4ff;
+  --primary-dark: #0099cc;
+  --primary-glow: rgba(0, 212, 255, 0.4);
+  --bg: #0a0e1a;
+  --bg-gradient: linear-gradient(135deg, #0a0e1a 0%, #0f1729 50%, #0a0e1a 100%);
+  --surface: #131826;
+  --surface-light: #1a2138;
+  --surface-hover: #1e2940;
+  --text: #e2e8f0;
+  --text-secondary: #64748b;
+  --text-muted: #475569;
+  --border: #1e293b;
+  --border-light: #2a3650;
+  --success: #00ff88;
+  --warning: #ffaa00;
+  --danger: #ff3366;
   --radius: 8px;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --radius-lg: 12px;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(0, 212, 255, 0.15);
   --sidebar-width: 220px;
   --sidebar-collapsed: 60px;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: var(--bg);
+  background: var(--bg-gradient);
+  background-attachment: fixed;
   color: var(--text);
   font-size: 14px;
   line-height: 1.5;
@@ -786,7 +754,7 @@ body {
 .auth-mask {
   position: fixed;
   inset: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--bg-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -795,11 +763,12 @@ body {
 
 .auth-card {
   background: var(--surface);
-  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
   padding: 40px;
   width: 400px;
   max-width: 90vw;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg), 0 0 40px rgba(0, 212, 255, 0.1);
 }
 
 .auth-logo {
@@ -831,16 +800,18 @@ body {
 .auth-field input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-light);
   border-radius: var(--radius);
   font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .auth-field input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15), 0 0 12px var(--primary-glow);
 }
 
 .auth-err {
@@ -855,18 +826,21 @@ body {
 .auth-btn {
   width: 100%;
   padding: 12px;
-  background: var(--primary);
-  color: white;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--bg);
   border: none;
   border-radius: var(--radius);
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px var(--primary-glow);
+  letter-spacing: 0.5px;
 }
 
 .auth-btn:hover:not(:disabled) {
-  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--primary-glow);
 }
 
 .auth-btn:disabled {
@@ -911,6 +885,7 @@ body {
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar.collapsed {
@@ -920,12 +895,15 @@ body {
 .sidebar-header {
   padding: 20px 16px;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface-light) 0%, var(--surface) 100%);
 }
 
 .sidebar-brand {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--primary);
+  text-shadow: 0 0 12px var(--primary-glow);
+  letter-spacing: 0.5px;
 }
 
 .sidebar-brand-icon {
@@ -959,14 +937,16 @@ body {
 }
 
 .nav-item:hover {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--surface-hover);
+  color: var(--primary);
 }
 
 .nav-item.active {
-  background: rgba(99, 102, 241, 0.1);
+  background: linear-gradient(90deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 212, 255, 0.05) 100%);
   color: var(--primary);
   font-weight: 500;
+  box-shadow: inset 3px 0 0 var(--primary);
+  text-shadow: 0 0 8px var(--primary-glow);
 }
 
 .nav-icon {
@@ -1032,33 +1012,35 @@ body {
 
 .collapse-btn {
   padding: 6px 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: 1px solid var(--border-light);
+  background: var(--surface-light);
   border-radius: var(--radius);
   cursor: pointer;
   font-size: 12px;
   color: var(--text-secondary);
-  transition: background 0.15s;
+  transition: all 0.15s;
 }
 
 .collapse-btn:hover {
-  background: var(--bg);
+  background: var(--surface-hover);
+  color: var(--primary);
 }
 
 .logout-btn {
   padding: 8px 12px;
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--danger);
   cursor: pointer;
   font-size: 13px;
   text-align: left;
   border-radius: var(--radius);
-  transition: background 0.15s;
+  transition: all 0.15s;
 }
 
 .logout-btn:hover {
-  background: #fef2f2;
+  background: rgba(255, 51, 102, 0.1);
+  border-color: rgba(255, 51, 102, 0.3);
 }
 
 /* ───── 顶部视图切换横栏 (固定, 顶满宽度, 不挡侧边栏) ───── */
@@ -1073,10 +1055,11 @@ body {
   justify-content: flex-end;
   gap: 4px;
   padding: 8px 24px;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  background: var(--surface);
+  box-shadow: 0 1px 0 var(--border), 0 4px 12px rgba(0, 0, 0, 0.3);
   height: 48px;
   box-sizing: border-box;
+  backdrop-filter: blur(8px);
 }
 .switch-group {
   position: relative;
@@ -1096,12 +1079,12 @@ body {
   color: var(--text-secondary);
   transition: all 0.15s;
 }
-.switch-btn:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+.switch-btn:hover { color: var(--primary); background: var(--surface-hover); }
 .switch-btn.active {
-  background: var(--surface);
+  background: var(--surface-light);
   color: var(--primary);
   font-weight: 500;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  box-shadow: 0 0 12px var(--primary-glow), inset 0 0 0 1px var(--border-light);
 }
 .switch-icon { font-size: 14px; }
 .switch-sub { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
@@ -1109,17 +1092,19 @@ body {
 .switch-arrow {
   display: flex;
   align-items: center;
-  padding: 6px 8px;
+  padding: 6px 10px;
   border: none;
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--primary);
   transition: all 0.15s;
 }
-.switch-arrow:hover { color: var(--text); background: rgba(0,0,0,0.04); }
-.switch-arrow.open { color: var(--primary); }
+.switch-arrow:hover { color: var(--primary); background: rgba(0, 212, 255, 0.1); text-shadow: 0 0 8px var(--primary-glow); }
+.switch-arrow.open { color: var(--primary); text-shadow: 0 0 8px var(--primary-glow); }
 .switch-dropdown {
   position: absolute;
   top: 100%;
