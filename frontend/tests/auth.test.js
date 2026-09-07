@@ -27,7 +27,7 @@ test('reject missing or forged sessions; ignore forged browser role; recheck cur
  const token=await h.login();assert(token)
  assert.equal((await h.call('/entries',{token:token+'x'})).status,401)
  assert.equal((await h.call('/teams/members',{method:'POST',token,body:{role:'admin'}})).status,403)
- const out=await h.call('/entries',{token,output:{items:[{fields:{user:'alice'}},{fields:{user:'bob'}}],total:2,has_more:true,page_token:'next'}})
+ const out=await h.call('/entries',{token,output:{items:[{fields:{user:'alice'}},{fields:{user:'alice',deleted_at:Date.now()}},{fields:{user:'bob'}}],total:2,has_more:true,page_token:'next'}})
  assert.equal(out.data.items.length,1);assert.equal(out.data.page_token,'next');assert.equal(out.data.total,undefined)
  h.users[0].fields.角色='admin';assert.equal((await h.call('/auth/me',{token})).data.role,'admin')
  h.users[0].fields.密码='changed';assert.equal((await h.call('/auth/me',{token})).status,401)

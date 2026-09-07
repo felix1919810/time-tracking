@@ -151,6 +151,7 @@
       <div class="section-title-row">
         <div class="section-title">{{ ui("明细") }}</div>
         <div class="action-btns">
+          <button class="export-btn" @click="openArchive()">{{ ui('最近删除') }}</button>
           <button class="export-btn" @click="exportCSV" :disabled="rangeEntries.length === 0">
             {{ ui("⬇ 导出 CSV") }}
           </button>
@@ -210,6 +211,7 @@
             <div class="detail-col detail-col-hours">{{ fmtHM(e.fields['时长(秒)'] ? e.fields['时长(秒)'] / 60 : entryDur(e)) }}</div>
           </div>
           <div v-if="expandedId === e.record_id" class="detail-expanded">
+            <button class="export-btn" @click="openArchive(e.record_id)">{{ ui('修改历史') }}</button>
             <button class="export-btn" @click="openEdit(e)">{{ ui("编辑条目") }}</button>
             <div class="detail-grid">
               <div class="detail-field"><span class="detail-label">{{ ui("日期") }}</span><span class="detail-value">{{ fmtFullDate(e.fields['start_time']) }}</span></div>
@@ -227,6 +229,7 @@
         <div v-if="sortedEntries.length === 0" class="cat-empty">{{ ui("暂无数据") }}</div>
       </div>
     </div>
+    <RecordArchive v-if="showArchive" :record-id="archiveRecord" @close="showArchive = false" @history="openArchive" />
     <div v-if="showEditModal" class="modal-mask" @click.self="showEditModal = false">
       <div class="modal-card">
         <div class="modal-header">
@@ -283,6 +286,9 @@ import { readJSON } from '../lib/storage.js'
 import { ref, computed, onMounted, onUnmounted, watch, inject, nextTick } from 'vue'
 import Chart from 'chart.js/auto'
 import ReportComparison from '../components/ReportComparison.vue'
+import RecordArchive from '../components/RecordArchive.vue'
+const showArchive = ref(false), archiveRecord = ref('')
+function openArchive(id = '') { archiveRecord.value = id; showArchive.value = true }
 import { filterReportEntries } from '../lib/report-analysis.js'
 import CountryPicker from '../components/CountryPicker.vue'
 

@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
+import './refined.css'
 import { initializeTheme } from './lib/theme.js'
 import { initializeLanguage } from './i18n.js'
 

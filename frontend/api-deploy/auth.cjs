@@ -71,9 +71,11 @@ function installAuth(app, config) {
     req.query.code=req.body.code;req.query.redirect_uri=state.redirect_uri
    } else if(!['/login','/register','/health','/'].includes(path)) req.auth=await authenticate(req)
    const auth=req.auth
+   if(auth)req.canAccessEntryUser=user=>canUser(auth,user)
    if(path==='/auth/me')return res.json({ok:true,...identity(auth.record)})
    if(path==='/feishu-bind')throw fail(403,'请从设置页重新验证飞书身份后绑定')
    if(auth) {
+    if(req.body?.fields && Object.hasOwn(req.body.fields,'deleted_at'))throw fail(403,'删除状态只能通过删除或恢复操作修改')
     const own=()=>{req.body.username=auth.user}
     if(['/change-password','/update-profile'].includes(path))own()
     if(path==='/entries/batch'){req.body.username=auth.user;req.body.role=auth.role;for(const row of req.body.rows||[])if(!canUser(auth,row['成员'] || auth.user))throw fail(403,'无权导入该成员数据')}
@@ -95,7 +97,7 @@ function installAuth(app, config) {
    }
    const json=res.json.bind(res)
    res.json= function(data) {
-    if(auth && path==='/entries' && method==='GET' && Array.isArray(data.items)) {data.items=data.items.filter(e=>canUser(auth,e.fields.user));delete data.total}
+    if(auth && path==='/entries' && method==='GET' && Array.isArray(data.items)) {data.items=data.items.filter(e=>!e.fields.deleted_at && canUser(auth,e.fields.user));delete data.total}
     if(auth && path==='/teams/members' && Array.isArray(data.items))data.items=data.items.filter(u=>canUser(auth,u.username)).map(u=>({...u,feishu_user_id:u.record_id===auth.record_id||auth.role==='admin'?u.feishu_user_id:''}))
     if(['/login','/register','/feishu-auth'].includes(path) && (data.ok || path==='/feishu-auth' && data.feishu_user_id)) {
      ;(async()=>{

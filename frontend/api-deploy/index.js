@@ -117,6 +117,7 @@ app.get('/', (req, res) => res.json({ ok: true, msg: 'time-track-api running', v
 // 测试路由：绕过 lark()，直接调飞书
 const { installAuth } = require('./auth.cjs')
 installAuth(app, { lark, appToken: DEFAULT_APP_TOKEN, userTable: DEFAULT_USER_TABLE, timeTable: DEFAULT_TIME_TABLE, categoryTable: DEFAULT_CATEGORY_TABLE, secret: () => { if (!FEISHU_H5_APP_SECRET) throw Error('Missing session signing secret'); return FEISHU_H5_APP_SECRET }, appId: () => FEISHU_H5_APP_ID })
+require('./history.cjs').installHistory(app, { lark, appToken: DEFAULT_APP_TOKEN, timeTable: DEFAULT_TIME_TABLE, auditTable: process.env.LARK_AUDIT_TABLE_ID || 'tbla2kZObkEkozl4' })
 function escapeFilter(value) { return JSON.stringify(String(value || '')).slice(1, -1) }
 
 app.post('/test-direct', async (req, res) => {

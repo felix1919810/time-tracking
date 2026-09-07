@@ -24,6 +24,9 @@ const path = require('node:path')
       const body=request.postDataJSON(),method=request.method();let data={},status=200
       if(method==='OPTIONS')data={}
       else if(url.pathname==='/login' || url.pathname==='/auth/me')data={ok:true,user:'alice',display_name:'Alice',role:serverRole,team:'测试团队',session_token:'mock-session'}
+      else if(url.pathname==='/entries/deleted')data={items:[{record_id:'trash',fields:{user:'alice',description:'Deleted task',category:'会议',start_time:'2000-01-01T09:00:00Z',end_time:'2000-01-01T10:00:00Z',deleted_at:Date.now()}}]}
+      else if(url.pathname.endsWith('/history'))data={items:[{record_id:'log',actor:'alice',action:'edit',occurred_at:Date.now(),status:'committed',before:{description:'Previous title'},after:{description:'客户沟通'}}]}
+      else if(url.pathname==='/entries/trash/restore')data={ok:true,record:{record_id:'trash',fields:{user:'alice',description:'Restored task',category:'会议',start_time:'2000-01-01T09:00:00Z',end_time:'2000-01-01T10:00:00Z',deleted_at:null}}}
       else if(url.pathname==='/entries')data={items:entries}
       else if(url.pathname==='/categories')data={items:[{record_id:'c1',name:'会议',color:'#10b981',team:'测试团队'},{record_id:'c2',name:'培训',color:'#6366f1',team:'测试团队'}]}
       else if(url.pathname==='/teams')data={items:[{record_id:'t1',name:'测试团队'}]}
@@ -73,6 +76,15 @@ const path = require('node:path')
         await page.locator('.modal-mask').waitFor({state:'hidden'})
 
         assert.equal(writes.at(-1).fields.description,'客户沟通')
+        await page.getByRole('button',{name:'Change history',exact:true}).click()
+        await page.getByText('Previous title',{exact:true}).waitFor()
+        await page.screenshot({path:path.join(__dirname,'../../artifacts/history-dialog.png')})
+        await page.getByRole('button',{name:'Close',exact:true}).click()
+        await page.getByRole('button',{name:'Recently deleted',exact:true}).click()
+        await page.getByText('Deleted task',{exact:true}).waitFor()
+        await page.getByRole('button',{name:'Restore',exact:true}).click()
+        await page.getByText('No records available to restore',{exact:true}).waitFor()
+        await page.getByRole('button',{name:'Close',exact:true}).click()
         const downloadPromise=page.waitForEvent('download')
         await page.getByRole('button',{name:'⬇ Export CSV',exact:true}).click()
         const download=await downloadPromise;const csv=fs.readFileSync(await download.path(),'utf8')

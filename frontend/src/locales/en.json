@@ -346,5 +346,21 @@
   "绑定飞书账号": "Link Feishu account",
   "登录已失效，请重新登录": "Your session has expired. Please log in again.",
   "飞书登录未完成，请重新点击登录": "Feishu sign-in was not completed. Please try again.",
-  "飞书账号未绑定，请先使用账号密码登录并在设置中绑定": "Your Feishu account is not linked. Log in with your password and link it in Settings."
+  "飞书账号未绑定，请先使用账号密码登录并在设置中绑定": "Your Feishu account is not linked. Log in with your password and link it in Settings.",
+  "最近删除": "Recently deleted",
+  "修改历史": "Change history",
+  "关闭": "Close",
+  "仅记录功能上线后的修改，不支持一键回退。": "Changes are recorded from this release onward. History is read-only.",
+  "删除的记录不计入报表，可在删除后 30 天内恢复。": "Deleted records are excluded from reports and can be restored within 30 days.",
+  "暂无修改历史": "No changes recorded yet",
+  "暂无可恢复的记录": "No records available to restore",
+  "结果待确认，请核对当前记录；以下为本次操作意图。": "Outcome unconfirmed. Check the current record; the intended change is shown below.",
+  "删除于": "Deleted on",
+  "剩余 {0} 天": "{0} days remaining",
+  "恢复中...": "Restoring...",
+  "恢复": "Restore",
+  "修改": "Edit",
+  "删除状态": "Deletion status",
+  "已删除": "Deleted",
+  "正常": "Active"
 }
