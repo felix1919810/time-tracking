@@ -69,6 +69,16 @@
       </div>
     </div>
 
+    <div class="report-filters">
+      <label v-for="field in filterFields" :key="field.key">{{ ui(field.label) }}
+        <select v-model="reportFilters[field.key]" :aria-label="ui(field.label)">
+          <option value="">{{ ui('全部') }}</option>
+          <option v-for="value in filterOptions(field.key)" :key="value" :value="value">{{ field.key === 'country' ? countryName(value) : field.key === 'category' ? tr(value) : value }}</option>
+        </select>
+      </label>
+      <button class="export-btn" @click="resetReportFilters">{{ ui('清除筛选') }}</button>
+    </div>
+    <ReportComparison :entries="entries" :filters="reportFilters" :start="periodRange.start" :end="periodRange.end" :now="clockNow" />
     <!-- ════════ 汇总卡片 ════════ -->
     <div class="summary-cards">
       <div class="summary-card">
@@ -200,6 +210,7 @@
             <div class="detail-col detail-col-hours">{{ fmtHM(e.fields['时长(秒)'] ? e.fields['时长(秒)'] / 60 : entryDur(e)) }}</div>
           </div>
           <div v-if="expandedId === e.record_id" class="detail-expanded">
+            <button class="export-btn" @click="openEdit(e)">{{ ui("编辑条目") }}</button>
             <div class="detail-grid">
               <div class="detail-field"><span class="detail-label">{{ ui("日期") }}</span><span class="detail-value">{{ fmtFullDate(e.fields['start_time']) }}</span></div>
               <div class="detail-field"><span class="detail-label">{{ ui("成员") }}</span><span class="detail-value">{{ e.fields['user'] || '-' }}</span></div>
@@ -216,6 +227,48 @@
         <div v-if="sortedEntries.length === 0" class="cat-empty">{{ ui("暂无数据") }}</div>
       </div>
     </div>
+    <div v-if="showEditModal" class="modal-mask" @click.self="showEditModal = false">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div><div class="modal-title">{{ ui("编辑条目") }}</div><p class="edit-original-hint">{{ ui("编辑时显示并保存原文") }}</p></div>
+          <button class="modal-close" @click="showEditModal = false">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-field">
+            <label>{{ ui("任务名") }}</label>
+            <input v-model="editForm.description" />
+          </div>
+          <div class="form-field">
+            <label>{{ ui("任务分类") }}</label>
+            <select v-model="editForm.category">
+              <option v-for="c in editCategories" :key="c.name" :value="c.name">{{ tr(c.name) }}</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>{{ ui("国家") }}</label>
+            <CountryPicker v-model="editForm.country" :countries="allCountries" />
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>{{ ui("开始时间") }}</label>
+              <input type="datetime-local" v-model="editForm.startTime" />
+            </div>
+            <div class="form-field">
+              <label>{{ ui("结束时间") }}</label>
+              <input type="datetime-local" v-model="editForm.endTime" />
+            </div>
+          </div>
+          <div class="form-field">
+            <label>{{ ui("备注") }}</label>
+            <textarea v-model="editForm.notes" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showEditModal = false">{{ ui("取消") }}</button>
+          <button class="btn btn-primary" @click="saveEdit" :disabled="savingEdit">{{ ui("保存") }}</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -225,10 +278,13 @@ import { useContentTranslation } from '../lib/content-translation.js'
 const { tr, translationVersion } = useContentTranslation()
 import { originalCountryName } from '../i18n.js'
 import { encodeCSV } from '../lib/csv.js'
-import { durationMinutes, filterScopedEntries } from '../lib/entries.js'
+import { durationMinutes, filterScopedEntries, validEditRange } from '../lib/entries.js'
 import { readJSON } from '../lib/storage.js'
 import { ref, computed, onMounted, onUnmounted, watch, inject, nextTick } from 'vue'
 import Chart from 'chart.js/auto'
+import ReportComparison from '../components/ReportComparison.vue'
+import { filterReportEntries } from '../lib/report-analysis.js'
+import CountryPicker from '../components/CountryPicker.vue'
 
 const clockNow = inject('clockNow')
 const http = inject('http')
@@ -239,6 +295,101 @@ const displayName = inject('displayName')
 const isAdmin = inject('isAdmin')
 const categories = inject('categories')
 const userTeam = inject('userTeam', ref(''))
+
+
+const activeTimer = inject('activeTimer', ref(null))
+const mountedAccount = userName.value
+const allCountries = ref([])
+const editCategories = ref([])
+async function loadReportCategories() {
+  try {
+    const data = await http('/categories?page_size=500')
+    allCategories.value = data.items || []
+  } catch (e) { console.error('加载分类失败:', e) }
+}
+async function loadCategoriesForUser(user) {
+  const member = teamMembers.value.find(m => [m.user, m.username, m.displayName].includes(user))
+  const team = member?.team || userTeam.value
+  let items = allCategories.value
+  if (team) {
+    try { items = (await http('/categories?team=' + encodeURIComponent(team))).items || [] }
+    catch (e) { console.error('加载分类失败:', e) }
+  }
+  const names = new Set(items.map(c => c.name))
+  editCategories.value = [...items, ...[editForm.value.category, '其他'].filter(n => n && !names.has(n)).map(name => ({name}))]
+}
+
+const showEditModal = ref(false)
+const editForm = ref({
+  record_id: '',
+  description: '',
+  category: '其他',
+  startTime: '',
+  endTime: '',
+  country: '',
+  notes: '',
+})
+
+async function openEdit(e) {
+  if (!e.fields.end_time || e.record_id === activeTimer.value?.record_id) { alert(ui("请先停止计时，再编辑这条记录")); return }
+  const s = new Date(e.fields['start_time'])
+  const en = new Date(e.fields.end_time || e.fields.start_time)
+  editForm.value = {
+    record_id: e.record_id,
+    description: e.fields['description'] || '',
+    category: e.fields['category'] || '其他',
+    startTime: toLocalDatetime(s),
+    endTime: toLocalDatetime(en),
+    country: e.fields['country'] || '',
+    notes: e.fields['notes'] || e.fields['备注'] || e.fields['remark'] || '',
+  }
+  showEditModal.value = true
+  await loadCategoriesForUser(e.fields['user'])
+}
+
+function toLocalDatetime(d) {
+  const off = d.getTimezoneOffset()
+  const local = new Date(d.getTime() - off * 60000)
+  return local.toISOString().slice(0, 16)
+}
+
+function fromLocalDatetime(s) {
+  return new Date(s).toISOString()
+}
+
+const savingEdit = ref(false)
+async function saveEdit() {
+  if (savingEdit.value) return
+  if (!validEditRange(editForm.value.startTime, editForm.value.endTime)) {
+    alert(ui("请填写有效时间，结束时间必须晚于开始时间")); return
+  }
+  const rid = editForm.value.record_id
+  const oldEntry = entryStore.items.value.find(e => e.record_id === rid)
+  if (!oldEntry) return
+  if (!oldEntry.fields.end_time || rid === activeTimer.value?.record_id) {
+    alert(ui("请先停止计时，再编辑这条记录")); return
+  }
+  savingEdit.value = true
+  const fields = {
+    ...oldEntry.fields, description: editForm.value.description, category: editForm.value.category,
+    start_time: fromLocalDatetime(editForm.value.startTime), end_time: fromLocalDatetime(editForm.value.endTime),
+    country: editForm.value.country, notes: editForm.value.notes,
+    '时长(秒)': (new Date(editForm.value.endTime) - new Date(editForm.value.startTime)) / 1000,
+  }
+  const changed = { ...oldEntry, fields }
+  entryStore.update(changed)
+  showEditModal.value = false
+  try {
+    const result = await http('/entries/' + rid, { method: 'PUT', body: { fields: {
+      description: fields.description, category: fields.category, start_time: fields.start_time,
+      end_time: fields.end_time, country: fields.country, notes: fields.notes,
+    } } })
+    if (userName.value === mountedAccount) entryStore.update(result.record || changed)
+  } catch (e) {
+    if (userName.value === mountedAccount) entryStore.update(oldEntry)
+    alert(ui("保存失败，已恢复原记录：") + e.message)
+  } finally { savingEdit.value = false }
+}
 
 // ───── 数据状态 ─────
 const entries = ref([])
@@ -380,14 +531,20 @@ function categoryColor(name) {
 }
 
 // ───── 区间内条目 ─────
+const reportFilters = ref({ category: '', country: '', user: '' })
+const filterFields = computed(() => [
+  {key:'category', label:'任务分类'}, {key:'country', label:'国家'},
+  ...(canViewOthers.value ? [{key:'user', label:'成员'}] : []),
+])
+function filterOptions(key) { return [...new Set(entries.value.map(e => e.fields[key]).filter(Boolean))].sort() }
+function resetReportFilters() { reportFilters.value = {category:'', country:'', user:''} }
+watch([viewScope, selectedUser, selectedTeam], resetReportFilters)
 const rangeEntries = computed(() => {
   const { start, end } = periodRange.value
-  if (!start || !end) return []
-  return entries.value.filter(e => {
-    const s = new Date(e.fields['start_time'])
-    return s >= start && s <= end
-  })
+  if (!start || !end || end < start) return []
+  return filterReportEntries(entries.value, reportFilters.value, start, end)
 })
+watch(reportFilters, () => renderAll(), {deep:true})
 
 // 区间总工时
 const rangeTotalMin = computed(() => rangeEntries.value.reduce((s, e) => s + entryDur(e), 0))
@@ -810,6 +967,7 @@ async function loadData() {
     const [data] = await Promise.all([
       entryStore.load(),
       loadTeamMembers(),
+      loadReportCategories(),
     ])
     const allItems = data || []
 
@@ -836,12 +994,16 @@ onMounted(() => {
     viewScope.value = 'self'
   }
   loadData()
+  http('/countries?page_size=300').then(data => { allCountries.value = data.items || [] }).catch(console.error)
 })
 watch(clockNow, () => renderAll())
 onUnmounted(() => { for (const chart of [trendInstance]) chart?.destroy() })
 </script>
 
 <style scoped>
+.report-filters { display:flex; flex-wrap:wrap; gap:16px; align-items:end; margin:16px 0; }
+.report-filters label { display:grid; gap:6px; font-size:13px; }
+.report-filters select { padding:8px; max-width:260px; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:6px; }
 .reports {
   max-width: 1200px;
   margin: 0 auto;

@@ -323,5 +323,20 @@
   "用户名和姓名都必填": "Username and name are required",
   "用户不存在": "User not found",
   "计时记录的开始或结束时间无效": "The timer start or end time is invalid",
-  "结束时间必须晚于有效的开始时间": "End time must be after a valid start time"
+  "结束时间必须晚于有效的开始时间": "End time must be after a valid start time",
+  "全部": "All",
+  "清除筛选": "Clear filters",
+  "对比分析": "Comparison",
+  "比较类型": "Compare by",
+  "时间段": "Date ranges",
+  "比较对象": "Comparison object",
+  "请选择": "Select an option",
+  "开始日期": "Start date",
+  "结束日期": "End date",
+  "比较仅使用当前查看范围内的数据；按任务开始日期归属，日均按活跃天数计算。": "Only data in the current viewing scope is compared. Entries belong to their start date; daily averages use active days.",
+  "比较时保留其他筛选条件，忽略所比较维度的筛选。": "Other filters apply; the filter for the comparison dimension is ignored.",
+  "请选择两个不同对象，或填写两个有效且不同的时间段。": "Select two different objects, or enter two valid and different date ranges.",
+  "工时差值（A − B）": "Time difference (A − B)",
+  "相对 B": "Relative to B",
+  "B 为零，无法计算百分比": "B is zero; percentage is unavailable"
 }
