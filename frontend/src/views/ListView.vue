@@ -6,37 +6,37 @@
         <button class="nav-arrow" @click="shiftWeek(-1)">‹</button>
         <span class="week-range">{{ rangeText }}</span>
         <button class="nav-arrow" @click="shiftWeek(1)">›</button>
-        <button class="today-btn" @click="goToday">本周</button>
+        <button class="today-btn" @click="goToday">{{ ui("本周") }}</button>
       </div>
       <!-- 计时器 (管理员不显示) -->
       <div v-if="userRole !== 'admin'" class="toolbar-timer" :class="{ 'is-running': activeTimer }" :style="activeTimer ? { background: activeTimer.color + '22', borderColor: activeTimer.color } : {}">
         <template v-if="activeTimer">
           <span class="timer-pulse" :style="{ background: activeTimer.color }"></span>
-          <span class="timer-desc">{{ activeTimer.description || '(无描述)' }}</span>
-          <span class="timer-cat" :style="{ color: activeTimer.color }">{{ activeTimer.category }}</span>
+          <span class="timer-desc">{{ tr(activeTimer.description || '(无描述)') }}</span>
+          <span class="timer-cat" :style="{ color: activeTimer.color }">{{ tr(activeTimer.category) }}</span>
           <span class="timer-elapsed">{{ timerElapsedText }}</span>
-          <button class="timer-stop" @click="stopActiveTimer" title="完成计时">⏹</button>
+          <button class="timer-stop" :disabled="timerStopping || timerRestoring" :aria-busy="timerStopping" @click="stopActiveTimer" :title="ui(&quot;完成计时&quot;)">⏹</button>
         </template>
         <template v-else>
           <span class="timer-idle">⏱</span>
-          <span class="timer-idle-text">未计时</span>
-          <button class="timer-start" @click="openStartTimer" title="开始计时">▶ 开始</button>
+          <span class="timer-idle-text">{{ ui("未计时") }}</span>
+          <button class="timer-start" :disabled="timerRestoring" @click="openStartTimer" :title="ui(&quot;开始计时&quot;)">{{ ui("▶ 开始") }}</button>
         </template>
       </div>
       <div class="toolbar-right">
         <div v-if="canViewOthers" class="view-switch">
-          <label>查看:</label>
+          <label>{{ ui("查看:") }}</label>
           <select v-model="viewScope" @change="onScopeChange">
-            <option v-if="userRole !== 'admin'" value="self">自己 ({{ displayName }})</option>
-            <option v-if="userRole === 'team_admin'" value="team">本团队总表</option>
-            <option v-if="userRole === 'admin'" value="all">全部总表</option>
-            <option value="member">指定成员个人表</option>
+            <option v-if="userRole !== 'admin'" value="self">{{ ui("自己 (") }}{{ displayName }})</option>
+            <option v-if="userRole === 'team_admin'" value="team">{{ ui("本团队总表") }}</option>
+            <option v-if="userRole === 'admin'" value="all">{{ ui("全部总表") }}</option>
+            <option value="member">{{ ui("指定成员个人表") }}</option>
           </select>
           <div v-if="viewScope === 'member'" class="member-search-wrap">
             <input
               v-model="memberSearch"
               class="member-search-input"
-              placeholder="检索成员..."
+              :placeholder="ui(&quot;检索成员...&quot;)"
               @focus="showMemberDropdown = true"
               @blur="hideMemberDropdownLater"
             />
@@ -46,7 +46,7 @@
                 :class="{ active: selectedUser === '' }"
                 @mousedown="pickMember('')"
               >
-                (全部成员)
+                {{ ui("(全部成员)") }}
               </div>
               <div
                 v-for="u in filteredMembers"
@@ -58,17 +58,17 @@
                 {{ u.user }}
                 <span v-if="u.displayName && u.displayName !== u.user" class="member-sub">{{ u.displayName }}</span>
               </div>
-              <div v-if="filteredMembers.length === 0" class="member-empty">无匹配成员</div>
+              <div v-if="filteredMembers.length === 0" class="member-empty">{{ ui("无匹配成员") }}</div>
             </div>
           </div>
           <select v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="loadEntries">
-            <option value="">(全部团队)</option>
+            <option value="">{{ ui("(全部团队)") }}</option>
             <option v-for="t in allTeams" :key="t.name" :value="t.name">{{ t.name }}</option>
           </select>
         </div>
         <label class="show-name-toggle">
           <input type="checkbox" v-model="showUserName" />
-          <span>显示姓名</span>
+          <span>{{ ui("显示姓名") }}</span>
         </label>
       </div>
     </div>
@@ -76,13 +76,13 @@
     <!-- 列表: 按日期分组 -->
     <div class="list-body">
       <div v-if="groupedEntries.length === 0" class="list-empty">
-        本周暂无工时记录
+        {{ ui("本周暂无工时记录") }}
       </div>
       <div v-for="group in groupedEntries" :key="group.dateStr" class="day-group">
         <div class="day-group-header">
           <span class="day-date">{{ group.dateLabel }}</span>
-          <span class="day-weekday">{{ group.weekday }}</span>
-          <span class="day-count">{{ group.entries.length }} 条</span>
+          <span class="day-weekday">{{ ui(group.weekday) }}</span>
+          <span class="day-count">{{ group.entries.length }} {{ ui("条") }}</span>
           <span class="day-total">{{ fmtHM(group.totalMin) }}</span>
         </div>
         <div class="day-entries">
@@ -96,11 +96,11 @@
             <div class="entry-cat-dot" :style="{ background: entryColor(e) }"></div>
             <div class="entry-main">
               <div class="entry-desc">
-                <template v-if="showUserName">{{ e.fields['user'] || '?' }}：</template>{{ e.fields['description'] || '(无描述)' }}
-                <span v-if="!e.fields['end_time']" class="running-tag">进行中</span>
+                <template v-if="showUserName">{{ e.fields['user'] || '?' }}：</template>{{ tr(e.fields['description'] || '(无描述)') }}
+                <span v-if="!e.fields['end_time']" class="running-tag">{{ ui("进行中") }}</span>
               </div>
               <div class="entry-meta">
-                <span class="entry-cat" :style="{ color: entryColor(e) }">{{ e.fields['category'] || '其他' }}</span>
+                <span class="entry-cat" :style="{ color: entryColor(e) }">{{ tr(e.fields['category'] || '其他') }}</span>
                 <span class="entry-time">{{ entryTimeRange(e) }}</span>
               </div>
             </div>
@@ -112,60 +112,39 @@
 
     <!-- 本周合计 -->
     <div class="week-sum">
-      本周合计：<strong>{{ fmtHM(weekTotalMin) }}</strong>
+      {{ ui("本周合计：") }}<strong>{{ fmtHM(weekTotalMin) }}</strong>
     </div>
 
     <!-- 开始计时弹窗 -->
     <div v-if="showStartModal" class="modal-mask" @click.self="showStartModal = false">
       <div class="modal-card">
         <div class="modal-header">
-          <div class="modal-title">开始计时</div>
+          <div class="modal-title">{{ ui("开始计时") }}</div>
           <button class="modal-close" @click="showStartModal = false">×</button>
         </div>
         <div class="modal-body">
           <div class="form-field">
-            <label>任务名 <span class="required">*</span></label>
-            <input v-model="timerForm.description" placeholder="你在做什么？" />
+            <label>{{ ui("任务名") }} <span class="required">*</span></label>
+            <input v-model="timerForm.description" :placeholder="ui(&quot;你在做什么？&quot;)" />
           </div>
           <div class="form-field">
-            <label>任务分类 <span class="required">*</span></label>
+            <label>{{ ui("任务分类") }} <span class="required">*</span></label>
             <select v-model="timerForm.category">
-              <option v-for="c in teamCategories" :key="c.name" :value="c.name">{{ c.name }}</option>
+              <option v-for="c in teamCategories" :key="c.name" :value="c.name">{{ tr(c.name) }}</option>
             </select>
           </div>
           <div class="form-field">
-            <label>国家</label>
-            <div class="country-search-wrap">
-              <input
-                v-model="countrySearch"
-                class="country-search-input"
-                placeholder="检索国家..."
-                @focus="showCountryDropdown = true"
-                @blur="hideCountryDropdownLater"
-              />
-              <div v-if="showCountryDropdown" class="country-dropdown">
-                <div
-                  v-for="c in filteredCountries"
-                  :key="c.record_id"
-                  class="country-option"
-                  :class="{ active: timerForm.country === c.name }"
-                  @mousedown="pickCountry(c.name)"
-                >
-                  <span>{{ c.name }}</span>
-                  <span class="country-code">{{ c.code }}</span>
-                </div>
-                <div v-if="filteredCountries.length === 0" class="country-empty">无匹配国家</div>
-              </div>
-            </div>
+            <label>{{ ui("国家") }}</label>
+            <CountryPicker v-model="timerForm.country" :countries="allCountries" />
           </div>
           <div class="form-field">
-            <label>备注</label>
+            <label>{{ ui("备注") }}</label>
             <textarea v-model="timerForm.notes" rows="2"></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showStartModal = false">取消</button>
-          <button class="btn btn-primary" @click="startTimer">开始计时</button>
+          <button class="btn btn-secondary" @click="showStartModal = false">{{ ui("取消") }}</button>
+          <button class="btn btn-primary" @click="startTimer">{{ ui("开始计时") }}</button>
         </div>
       </div>
     </div>
@@ -174,64 +153,43 @@
     <div v-if="showEditModal" class="modal-mask" @click.self="showEditModal = false">
       <div class="modal-card">
         <div class="modal-header">
-          <div class="modal-title">编辑条目</div>
+          <div><div class="modal-title">{{ ui("编辑条目") }}</div><p class="edit-original-hint">{{ ui("编辑时显示并保存原文") }}</p></div>
           <button class="modal-close" @click="showEditModal = false">×</button>
         </div>
         <div class="modal-body">
           <div class="form-field">
-            <label>任务名</label>
+            <label>{{ ui("任务名") }}</label>
             <input v-model="editForm.description" />
           </div>
           <div class="form-field">
-            <label>任务分类</label>
+            <label>{{ ui("任务分类") }}</label>
             <select v-model="editForm.category">
-              <option v-for="c in teamCategories" :key="c.name" :value="c.name">{{ c.name }}</option>
+              <option v-for="c in teamCategories" :key="c.name" :value="c.name">{{ tr(c.name) }}</option>
             </select>
           </div>
           <div class="form-field">
-            <label>国家</label>
-            <div class="country-search-wrap">
-              <input
-                v-model="editForm.country"
-                placeholder="检索国家..."
-                class="country-search-input"
-                @focus="showEditCountryDropdown = true"
-                @blur="hideEditCountryDropdownLater"
-              />
-              <div v-if="showEditCountryDropdown" class="country-dropdown">
-                <div
-                  v-for="c in filteredEditCountries"
-                  :key="c.record_id"
-                  class="country-option"
-                  :class="{ active: editForm.country === c.name }"
-                  @mousedown="pickEditCountry(c.name)"
-                >
-                  <span>{{ c.name }}</span>
-                  <span class="country-code">{{ c.code }}</span>
-                </div>
-                <div v-if="filteredEditCountries.length === 0" class="country-empty">无匹配</div>
-              </div>
-            </div>
+            <label>{{ ui("国家") }}</label>
+            <CountryPicker v-model="editForm.country" :countries="allCountries" />
           </div>
           <div class="form-row">
             <div class="form-field">
-              <label>开始时间</label>
+              <label>{{ ui("开始时间") }}</label>
               <input type="datetime-local" v-model="editForm.startTime" />
             </div>
             <div class="form-field">
-              <label>结束时间</label>
+              <label>{{ ui("结束时间") }}</label>
               <input type="datetime-local" v-model="editForm.endTime" />
             </div>
           </div>
           <div class="form-field">
-            <label>备注</label>
+            <label>{{ ui("备注") }}</label>
             <textarea v-model="editForm.notes" rows="2"></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-danger" @click="deleteEntry">删除</button>
-          <button class="btn btn-secondary" @click="showEditModal = false">取消</button>
-          <button class="btn btn-primary" @click="saveEdit">保存</button>
+          <button class="btn btn-danger" @click="deleteEntry">{{ ui("删除") }}</button>
+          <button class="btn btn-secondary" @click="showEditModal = false">{{ ui("取消") }}</button>
+          <button class="btn btn-primary" @click="saveEdit">{{ ui("保存") }}</button>
         </div>
       </div>
     </div>
@@ -239,9 +197,20 @@
 </template>
 
 <script setup>
+import CountryPicker from '../components/CountryPicker.vue'
+import { ui, locale, setLang, countryName, countryMatches, localDate } from '../i18n.js'
+import { useContentTranslation } from '../lib/content-translation.js'
+const { tr, translationVersion } = useContentTranslation()
+import { validEditRange, durationMinutes, filterScopedEntries } from '../lib/entries.js'
+import { readJSON } from '../lib/storage.js'
 import { ref, computed, onMounted, onUnmounted, inject, watch, nextTick } from 'vue'
 
+const clockNow = inject('clockNow')
 const http = inject('http')
+const entryStore = inject('entryStore')
+const mountedAccount = inject('userName').value
+const timerStopping = inject('timerStopping')
+const timerRestoring = inject('timerRestoring')
 const userName = inject('userName')
 const userRole = inject('userRole')
 const displayName = inject('displayName')
@@ -302,9 +271,9 @@ function onScopeChange() {
 
 const roleLabel = computed(() => {
   const r = userRole.value
-  if (r === 'admin') return '管理员'
-  if (r === 'team_admin') return '团队管理员'
-  return '团队成员'
+  if (r === 'admin') return ui("管理员")
+  if (r === 'team_admin') return ui("团队管理员")
+  return ui("团队成员")
 })
 
 const canViewOthers = computed(() => {
@@ -403,7 +372,7 @@ async function loadTeamMembers() {
       items = items.filter(m => m.team === currentTeam.value)
     }
     teamMembers.value = items.map(m => ({
-      user: m.display_name || m.username,
+      user: m.username || m.display_name,
       username: m.username,
       displayName: m.display_name,
       team: m.team,
@@ -429,7 +398,7 @@ async function loadAllTeams() {
 const weekOffset = ref(0)
 
 function getWeekStart(offset = 0) {
-  const now = new Date()
+  const now = new Date(clockNow.value)
   const day = now.getDay() || 7
   const monday = new Date(now)
   monday.setDate(now.getDate() - day + 1 + offset * 7)
@@ -443,17 +412,15 @@ const rangeText = computed(() => {
   const s = weekStart.value
   const e = new Date(s)
   e.setDate(s.getDate() + 6)
-  return `${s.getMonth() + 1}月${s.getDate()}-${e.getMonth() + 1}月${e.getDate()}日`
+  return ui("{0}月{1}-{2}月{3}日", [s.getMonth() + 1, s.getDate(), e.getMonth() + 1, e.getDate()])
 })
 
 function shiftWeek(n) {
   weekOffset.value += n
-  loadEntries()
 }
 
 function goToday() {
   weekOffset.value = 0
-  loadEntries()
 }
 
 // ───── 条目计算 ─────
@@ -466,15 +433,11 @@ function localDateStr(d) {
 
 function getEndTime(e) {
   const et = e.fields['end_time']
-  if (!et || et === 'null' || et === 'undefined') return new Date()
+  if (!et || et === 'null' || et === 'undefined') return new Date(clockNow.value)
   return new Date(et)
 }
 
-function entryDurationMin(e) {
-  const s = new Date(e.fields['start_time'])
-  const en = getEndTime(e)
-  return (en - s) / 60000
-}
+function entryDurationMin(e) { return durationMinutes(e, clockNow.value) }
 
 function entryColor(e) {
   const cat = e.fields['category'] || '其他'
@@ -528,7 +491,7 @@ const groupedEntries = computed(() => {
     const totalMin = dayEntries.reduce((sum, e) => sum + entryDurationMin(e), 0)
     groups.push({
       dateStr,
-      dateLabel: `${date.getMonth() + 1}月${date.getDate()}日`,
+      dateLabel: ui("{0}月{1}日", [date.getMonth() + 1, date.getDate()]),
       weekday: weekdayLabels[date.getDay()],
       entries: dayEntries,
       totalMin,
@@ -544,67 +507,22 @@ const weekTotalMin = computed(() => {
 })
 
 // ───── 加载数据 ─────
-let allEntriesCache = []
+watch(entryStore.items, () => filterEntries(), { immediate: true })
 
 function filterEntries() {
-  const scope = viewScope.value
-  const items = allEntriesCache
-  if (scope === 'self') {
-    const name = displayName.value || userName.value
-    entries.value = name ? items.filter(e => e.fields.user === name) : []
-  } else if (scope === 'member') {
-    const name = selectedUser.value || userName.value
-    entries.value = name ? items.filter(e => e.fields.user === name) : []
-  } else if (scope === 'team') {
-    const teamFilter = selectedTeam.value || currentTeam.value
-    if (teamFilter) {
-      const usersInTeam = new Set(
-        teamMembers.value.filter(m => m.team === teamFilter).map(m => m.user)
-      )
-      entries.value = items.filter(e => usersInTeam.has(e.fields.user))
-    } else {
-      entries.value = items
-    }
-  } else if (scope === 'all' && selectedTeam.value) {
-    const usersInTeam = new Set(
-      teamMembers.value.filter(m => m.team === selectedTeam.value).map(m => m.user)
-    )
-    entries.value = items.filter(e => usersInTeam.has(e.fields.user))
-  } else {
-    entries.value = items
-  }
+  const allItems = entryStore.items.value
+  entries.value = filterScopedEntries(allItems, {
+    role: userRole.value, user: userName.value, name: displayName.value,
+    scope: viewScope.value, selectedUser: selectedUser.value, selectedTeam: selectedTeam.value,
+    team: currentTeam.value, members: teamMembers.value,
+  })
 }
 
 async function loadEntries() {
-  const cached = localStorage.getItem('tt_entries_cache')
-  if (cached) {
-    try {
-      allEntriesCache = JSON.parse(cached)
-      filterEntries()
-    } catch (e) {}
-  }
-  try {
-    const data = await http('/entries?page_size=500')
-    allEntriesCache = data.items || []
-    localStorage.setItem('tt_entries_cache', JSON.stringify(allEntriesCache))
-    // 先按当前 scope 过滤渲染 (不等 Promise.all)
-    filterEntries()
-  } catch (e) {
-    console.error('加载条目失败:', e)
-  }
-  // 并行加载成员/团队/分类 (失败不影响条目显示)
-  try {
-    await Promise.all([
-      loadTeamMembers(),
-      loadAllTeams(),
-      loadTeamCategories(),
-      loadAllCategories(),
-    ])
-    // 成员列表刷新后重新过滤 (team 模式按 teamMembers 过滤)
-    filterEntries()
-  } catch (e) {
-    console.error('加载分类/成员失败:', e)
-  }
+  await Promise.allSettled([
+    entryStore.load(), loadTeamMembers(), loadAllTeams(), loadTeamCategories(), loadAllCategories(),
+  ])
+  filterEntries()
 }
 
 // ───── 开始计时弹窗 ─────
@@ -729,90 +647,65 @@ function fromLocalDatetime(s) {
   return new Date(s).toISOString()
 }
 
+const savingEdit = ref(false)
 async function saveEdit() {
+  if (savingEdit.value) return
+  if (!validEditRange(editForm.value.startTime, editForm.value.endTime)) {
+    alert(ui("请填写有效时间，结束时间必须晚于开始时间")); return
+  }
   const rid = editForm.value.record_id
-  const oldEntry = entries.value.find(e => e.record_id === rid)
-  const newFields = {
-    'description': editForm.value.description,
-    'category': editForm.value.category,
-    'start_time': fromLocalDatetime(editForm.value.startTime),
-    'end_time': fromLocalDatetime(editForm.value.endTime),
-    'country': editForm.value.country,
-    'notes': editForm.value.notes,
+  const oldEntry = entryStore.items.value.find(e => e.record_id === rid)
+  if (!oldEntry) return
+  if (!oldEntry.fields.end_time || rid === activeTimer.value?.record_id) {
+    alert(ui("请先停止计时，再编辑这条记录")); return
   }
-  if (oldEntry) {
-    entries.value = entries.value.map(e =>
-      e.record_id === rid ? { ...e, fields: { ...e.fields, ...newFields } } : e
-    )
+  savingEdit.value = true
+  const fields = {
+    ...oldEntry.fields, description: editForm.value.description, category: editForm.value.category,
+    start_time: fromLocalDatetime(editForm.value.startTime), end_time: fromLocalDatetime(editForm.value.endTime),
+    country: editForm.value.country, notes: editForm.value.notes,
   }
+  const changed = { ...oldEntry, fields }
+  entryStore.update(changed)
   showEditModal.value = false
   try {
-    await http(`/entries/${rid}`, { method: 'PUT', body: { fields: newFields } })
+    const result = await http('/entries/' + rid, { method: 'PUT', body: { fields: {
+      description: fields.description, category: fields.category, start_time: fields.start_time,
+      end_time: fields.end_time, country: fields.country, notes: fields.notes,
+    } } })
+    if (userName.value === mountedAccount) entryStore.update(result.record || changed)
   } catch (e) {
-    console.error('保存失败:', e)
-    if (oldEntry) {
-      entries.value = entries.value.map(x =>
-        x.record_id === rid ? oldEntry : x
-      )
-    }
-    alert('保存失败, 请重试')
-  }
+    if (userName.value === mountedAccount) entryStore.update(oldEntry)
+    alert(ui("保存失败，已恢复原记录：") + e.message)
+  } finally { savingEdit.value = false }
 }
 
 async function deleteEntry() {
-  if (!confirm('确定删除这条记录？')) return
+  if (savingEdit.value) return
   const rid = editForm.value.record_id
-  const oldIdx = entries.value.findIndex(e => e.record_id === rid)
-  const oldEntry = oldIdx >= 0 ? entries.value[oldIdx] : null
-  if (oldIdx >= 0) {
-    entries.value.splice(oldIdx, 1)
+  const oldEntry = entryStore.items.value.find(e => e.record_id === rid)
+  if (!oldEntry) return
+  if (!oldEntry.fields.end_time || rid === activeTimer.value?.record_id) {
+    alert(ui("请先停止计时，再删除这条记录")); return
   }
+  if (!confirm(ui("确定删除这条记录？"))) return
+  savingEdit.value = true
+  entryStore.remove(rid)
   showEditModal.value = false
-  try {
-    await http(`/entries/${rid}`, { method: 'DELETE' })
-  } catch (e) {
-    console.error('删除失败:', e)
-    if (oldEntry) {
-      entries.value.splice(oldIdx, 0, oldEntry)
-    }
-    alert('删除失败, 请重试')
-  }
+  try { await http('/entries/' + rid, { method: 'DELETE' }) }
+  catch (e) { if (userName.value === mountedAccount) entryStore.update(oldEntry); alert(ui("删除失败，已恢复原记录：") + e.message) }
+  finally { savingEdit.value = false }
 }
 
 // ───── 计时事件监听 ─────
-function onTimerStopped() { loadEntries() }
-function onTimerStarted(e) {
-  const d = e.detail || {}
-  entries.value.push({
-    record_id: d.record_id,
-    fields: {
-      description: d.description,
-      category: d.category,
-      user: d.user,
-      country: d.country,
-      start_time: d.start_time,
-      end_time: d.end_time,
-    },
-  })
-}
-function onTimerRecordReady() { loadEntries() }
-function onTimerStartFailed() { loadEntries() }
 
 onMounted(() => {
   // loadEntries 内部 Promise.all 已加载成员/团队/分类, 不重复调
   if (userName.value) loadEntries()
   loadAllCountries()
-  window.addEventListener('timer-stopped', onTimerStopped)
-  window.addEventListener('timer-started', onTimerStarted)
-  window.addEventListener('timer-record-ready', onTimerRecordReady)
-  window.addEventListener('timer-start-failed', onTimerStartFailed)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('timer-stopped', onTimerStopped)
-  window.removeEventListener('timer-started', onTimerStarted)
-  window.removeEventListener('timer-record-ready', onTimerRecordReady)
-  window.removeEventListener('timer-start-failed', onTimerStartFailed)
 })
 </script>
 
@@ -1163,7 +1056,7 @@ onUnmounted(() => {
   display: inline-block;
   padding: 1px 6px;
   background: var(--success);
-  color: #0a0e1a;
+  color: var(--bg);
   border-radius: 4px;
   font-size: 10px;
   font-weight: 500;

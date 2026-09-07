@@ -3,29 +3,29 @@
     <!-- 页头 -->
     <div class="dash-header">
       <div class="dash-title-wrap">
-        <div class="page-title">仪表盘</div>
+        <div class="page-title">{{ ui("仪表盘") }}</div>
         <div class="page-subtitle">{{ displayName }} · {{ roleLabel }}</div>
       </div>
       <!-- 查看对象 (团队管理员/管理员可见) -->
       <div v-if="canViewOthers" class="view-switch">
-        <label>查看:</label>
+        <label>{{ ui("查看:") }}</label>
         <select v-model="viewScope" @change="onScopeChange">
-          <option v-if="userRole !== 'admin'" value="self">自己 ({{ displayName }})</option>
-          <option v-if="userRole === 'team_admin'" value="team">本团队总表</option>
-          <option v-if="userRole === 'admin'" value="all">全部总表</option>
-          <option value="member">指定成员个人表</option>
+          <option v-if="userRole !== 'admin'" value="self">{{ ui("自己 (") }}{{ displayName }})</option>
+          <option v-if="userRole === 'team_admin'" value="team">{{ ui("本团队总表") }}</option>
+          <option v-if="userRole === 'admin'" value="all">{{ ui("全部总表") }}</option>
+          <option value="member">{{ ui("指定成员个人表") }}</option>
         </select>
         <div v-if="viewScope === 'member'" class="member-search-wrap">
           <input
             v-model="memberSearch"
             class="member-search-input"
-            placeholder="检索成员..."
+            :placeholder="ui(&quot;检索成员...&quot;)"
             @focus="showMemberDropdown = true"
             @blur="hideMemberDropdownLater"
           />
           <div v-if="showMemberDropdown" class="member-dropdown">
             <div class="member-option" :class="{ active: selectedUser === '' }" @mousedown="pickMember('')">
-              (全部成员)
+              {{ ui("(全部成员)") }}
             </div>
             <div
               v-for="u in filteredMembers"
@@ -37,11 +37,11 @@
               {{ u.user }}
               <span v-if="u.displayName && u.displayName !== u.user" class="member-sub">{{ u.displayName }}</span>
             </div>
-            <div v-if="filteredMembers.length === 0" class="member-empty">无匹配成员</div>
+            <div v-if="filteredMembers.length === 0" class="member-empty">{{ ui("无匹配成员") }}</div>
           </div>
         </div>
         <select v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="loadData">
-          <option value="">(全部团队)</option>
+          <option value="">{{ ui("(全部团队)") }}</option>
           <option v-for="t in allTeams" :key="t.name" :value="t.name">{{ t.name }}</option>
         </select>
       </div>
@@ -49,33 +49,33 @@
 
     <!-- ════════ 分区 1: 固定指标 (不受日期选择影响) ════════ -->
     <div class="dash-section section-fixed">
-      <div class="section-title">📊 当前工时快览</div>
+      <div class="section-title">{{ ui("📊 当前工时快览") }}</div>
       <div class="stat-grid">
         <div class="stat-card">
           <div class="stat-icon">📅</div>
           <div class="stat-body">
-            <div class="stat-label">今日工时</div>
+            <div class="stat-label">{{ ui("今日工时") }}</div>
             <div class="stat-value">{{ fmtHM(todayMin) }}</div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon">📆</div>
           <div class="stat-body">
-            <div class="stat-label">本周累计</div>
+            <div class="stat-label">{{ ui("本周累计") }}</div>
             <div class="stat-value">{{ fmtHM(weekMin) }}</div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon">🗓</div>
           <div class="stat-body">
-            <div class="stat-label">本月累计</div>
+            <div class="stat-label">{{ ui("本月累计") }}</div>
             <div class="stat-value">{{ fmtHM(monthMin) }}</div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon">✓</div>
           <div class="stat-body">
-            <div class="stat-label">本月任务数</div>
+            <div class="stat-label">{{ ui("本月任务数") }}</div>
             <div class="stat-value">{{ monthTaskCount }}</div>
           </div>
         </div>
@@ -86,55 +86,55 @@
     <div class="dash-section section-dynamic">
       <!-- 日期选择栏 (属于变化模块) -->
       <div class="dynamic-header">
-        <div class="section-title">📈 时段分析</div>
+        <div class="section-title">{{ ui("📈 时段分析") }}</div>
         <div class="period-nav">
           <div class="period-tabs">
-            <button :class="{ active: period === 'day' }" @click="setPeriod('day')">日</button>
-            <button :class="{ active: period === 'week' }" @click="setPeriod('week')">周</button>
-            <button :class="{ active: period === 'month' }" @click="setPeriod('month')">月</button>
+            <button :class="{ active: period === 'day' }" @click="setPeriod('day')">{{ ui("日") }}</button>
+            <button :class="{ active: period === 'week' }" @click="setPeriod('week')">{{ ui("周") }}</button>
+            <button :class="{ active: period === 'month' }" @click="setPeriod('month')">{{ ui("月") }}</button>
           </div>
           <button class="nav-arrow" @click="shiftPeriod(-1)">‹</button>
           <span class="period-text">{{ periodText }}</span>
           <button class="nav-arrow" @click="shiftPeriod(1)">›</button>
-          <button class="today-btn" @click="goCurrent">当前</button>
+          <button class="today-btn" @click="goCurrent">{{ ui("当前") }}</button>
         </div>
       </div>
 
       <!-- 每日工时柱状图 + 分类占比饼图 -->
       <div class="chart-grid">
         <div class="chart-container">
-          <div class="chart-title">{{ periodText }} 每日工时（按分类堆叠）</div>
+          <div class="chart-title">{{ periodText }} {{ ui("每日工时（按分类堆叠）") }}</div>
           <div class="chart-canvas-wrap"><canvas ref="barChart"></canvas></div>
         </div>
         <div class="chart-container">
-          <div class="chart-title">{{ periodText }} 分类占比</div>
+          <div class="chart-title">{{ periodText }} {{ ui("分类占比") }}</div>
           <div class="chart-canvas-wrap"><canvas ref="pieChart"></canvas></div>
         </div>
       </div>
 
       <!-- 趋势折线图 -->
       <div class="chart-container" style="margin-top: 16px;">
-        <div class="chart-title">工时趋势（最近 {{ trendDays }} 天）</div>
+          <div class="chart-title">{{ ui('工时趋势（最近 {0} 天）', [trendDays]) }}</div>
         <div class="chart-canvas-wrap"><canvas ref="trendChart"></canvas></div>
       </div>
 
       <!-- 成员对比柱状图 (团队管理员/管理员可见) -->
       <div v-if="canViewOthers" class="chart-container" style="margin-top: 16px;">
-        <div class="chart-title">成员工时对比（{{ periodText }}）</div>
+        <div class="chart-title">{{ ui('成员工时对比（{0}）', [periodText]) }}</div>
         <div class="chart-canvas-wrap"><canvas ref="memberChart"></canvas></div>
       </div>
 
       <!-- 分类明细 -->
       <div class="chart-container" style="margin-top: 16px;">
-        <div class="chart-title">{{ periodText }} 分类明细</div>
+        <div class="chart-title">{{ periodText }} {{ ui("分类明细") }}</div>
         <div class="cat-list">
           <div v-for="c in periodCategoryStats" :key="c.name" class="cat-item">
             <span class="cat-dot" :style="{ background: c.color }"></span>
-            <span class="cat-name">{{ c.name }}</span>
+            <span class="cat-name">{{ tr(c.name) }}</span>
             <span class="cat-duration">{{ fmtHM(c.minutes) }}</span>
             <span class="cat-percent">{{ c.percent }}%</span>
           </div>
-          <div v-if="periodCategoryStats.length === 0" class="empty-hint">暂无数据</div>
+          <div v-if="periodCategoryStats.length === 0" class="empty-hint">{{ ui("暂无数据") }}</div>
         </div>
       </div>
     </div>
@@ -142,10 +142,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject, nextTick } from 'vue'
+import { ui, locale, setLang, countryName, countryMatches, localDate } from '../i18n.js'
+import { useContentTranslation } from '../lib/content-translation.js'
+const { tr, translationVersion } = useContentTranslation()
+import { durationMinutes, filterScopedEntries } from '../lib/entries.js'
+import { readJSON } from '../lib/storage.js'
+import { ref, computed, onMounted, onUnmounted, watch, inject, nextTick } from 'vue'
 import Chart from 'chart.js/auto'
 
+const clockNow = inject('clockNow')
 const http = inject('http')
+const entryStore = inject('entryStore')
 const userName = inject('userName')
 const userRole = inject('userRole')
 const displayName = inject('displayName')
@@ -174,7 +181,7 @@ const teamMembers = ref([])
 const allTeams = ref([])
 const memberSearch = ref('')
 const showMemberDropdown = ref(false)
-const allCategories = ref(JSON.parse(localStorage.getItem('tt_all_categories') || '[]'))
+const allCategories = ref(readJSON('tt_all_categories', [], Array.isArray))
 
 const filteredMembers = computed(() => {
   const q = memberSearch.value.trim().toLowerCase()
@@ -205,9 +212,9 @@ function onScopeChange() {
 
 const roleLabel = computed(() => {
   const r = userRole.value
-  if (r === 'admin') return '管理员'
-  if (r === 'team_admin') return '团队管理员'
-  return '团队成员'
+  if (r === 'admin') return ui("管理员")
+  if (r === 'team_admin') return ui("团队管理员")
+  return ui("团队成员")
 })
 
 const canViewOthers = computed(() => {
@@ -233,7 +240,7 @@ async function loadTeamMembers() {
       items = items.filter(m => m.team === userTeam.value)
     }
     teamMembers.value = items.map(m => ({
-      user: m.display_name || m.username,
+      user: m.username || m.display_name,
       displayName: m.display_name || m.username,
       team: m.team,
     }))
@@ -277,7 +284,7 @@ const periodText = computed(() => getCurrentPeriodLabel())
 function getCurrentPeriodLabel() {
   const { start, end } = getPeriodRange()
   if (period.value === 'month') {
-    return `${start.getFullYear()}年${start.getMonth() + 1}月`
+    return ui("{0}年{1}月", [start.getFullYear(), start.getMonth() + 1])
   }
   if (period.value === 'day') {
     return `${start.getFullYear()}/${start.getMonth() + 1}/${start.getDate()}`
@@ -287,7 +294,7 @@ function getCurrentPeriodLabel() {
 }
 
 function getPeriodRange() {
-  const now = new Date()
+  const now = new Date(clockNow.value)
   if (period.value === 'week') {
     const day = now.getDay() || 7
     const monday = new Date(now)
@@ -334,14 +341,14 @@ const periodEntries = computed(() => {
 
 // ───── 快捷指标 (跟随当前查看视角: entries 已按 viewScope/selectedUser/selectedTeam 过滤) ─────
 const todayMin = computed(() => {
-  const today = new Date().toDateString()
+  const today = new Date(clockNow.value).toDateString()
   return entries.value
     .filter(e => new Date(e.fields['start_time']).toDateString() === today)
     .reduce((s, e) => s + entryDur(e), 0)
 })
 
 const weekMin = computed(() => {
-  const now = new Date()
+  const now = new Date(clockNow.value)
   const day = now.getDay() || 7
   const monday = new Date(now)
   monday.setDate(now.getDate() - day + 1)
@@ -352,7 +359,7 @@ const weekMin = computed(() => {
 })
 
 const monthMin = computed(() => {
-  const now = new Date()
+  const now = new Date(clockNow.value)
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   return entries.value
     .filter(e => new Date(e.fields['start_time']) >= monthStart)
@@ -360,7 +367,7 @@ const monthMin = computed(() => {
 })
 
 const monthTaskCount = computed(() => {
-  const now = new Date()
+  const now = new Date(clockNow.value)
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   return entries.value.filter(e => new Date(e.fields['start_time']) >= monthStart).length
 })
@@ -385,13 +392,7 @@ const periodCategoryStats = computed(() => {
     .sort((a, b) => b.minutes - a.minutes)
 })
 
-function entryDur(e) {
-  const s = new Date(e.fields['start_time'])
-  const en = new Date(e.fields['end_time'])
-  const min = Math.max(0, (en - s) / 60000)
-  // 过滤异常时长: 超过 24h (1440min) 的条目视为忘记停止计时, 忽略
-  return min > 1440 ? 0 : min
-}
+function entryDur(e) { return durationMinutes(e, clockNow.value) }
 
 function fmtHM(min) {
   min = Math.round(min)
@@ -416,11 +417,11 @@ function renderBarChart() {
     for (let i = 0; i < 7; i++) {
       const d = new Date(start)
       d.setDate(start.getDate() + i)
-      labels.push(weekDays[i] + ' ' + (d.getMonth() + 1) + '/' + d.getDate())
+      labels.push((i === 6 && locale.value === 'en' ? 'Sun' : ui(weekDays[i])) + ' ' + (d.getMonth() + 1) + '/' + d.getDate())
       dates.push(d.toDateString())
     }
   } else if (period.value === 'day') {
-    labels.push('当日 ' + (start.getMonth() + 1) + '/' + start.getDate())
+    labels.push(ui("当日 ") + (start.getMonth() + 1) + '/' + start.getDate())
     dates.push(start.toDateString())
   } else {
     const daysInMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
@@ -442,7 +443,7 @@ function renderBarChart() {
         .reduce((s, e) => s + entryDur(e) / 60, 0)
     })
     return {
-      label: cat.name,
+      label: tr(cat.name),
       data,
       backgroundColor: cat.color,
       borderRadius: 4,
@@ -476,7 +477,7 @@ function renderPieChart() {
   if (stats.length === 0) {
     pieInstance = new Chart(pieChart.value, {
       type: 'pie',
-      data: { labels: ['暂无数据'], datasets: [{ data: [1], backgroundColor: ['#e5e7eb'] }] },
+      data: { labels: [ui("暂无数据")], datasets: [{ data: [1], backgroundColor: ['#e5e7eb'] }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
     })
     return
@@ -485,7 +486,7 @@ function renderPieChart() {
   pieInstance = new Chart(pieChart.value, {
     type: 'pie',
     data: {
-      labels: stats.map(s => s.name),
+      labels: stats.map(s => tr(s.name)),
       datasets: [{
         data: stats.map(s => Math.round(s.minutes)),
         backgroundColor: stats.map(s => s.color),
@@ -514,7 +515,7 @@ function renderTrendChart() {
 
   const labels = []
   const data = []
-  const today = new Date()
+  const today = new Date(clockNow.value)
   today.setHours(0, 0, 0, 0)
   for (let i = trendDays.value - 1; i >= 0; i--) {
     const d = new Date(today)
@@ -532,7 +533,7 @@ function renderTrendChart() {
     data: {
       labels,
       datasets: [{
-        label: '每日工时',
+        label: ui('每日工时'),
         data,
         borderColor: '#6366f1',
         backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -579,7 +580,7 @@ function renderMemberChart() {
     data: {
       labels: sorted.map(s => s.user),
       datasets: [{
-        label: '工时',
+        label: ui('工时'),
         data: sorted.map(s => Math.round(s.min / 60 * 100) / 100),
         backgroundColor: '#6366f1',
         borderRadius: 4,
@@ -610,37 +611,26 @@ function renderAll() {
 }
 
 // ───── 加载数据 (3 个网络请求并行, 总耗时 ≈ max 而非 sum) ─────
+function applyEntries(allItems = entryStore.items.value) {
+  entries.value = filterScopedEntries(allItems, {
+    role: userRole.value, user: userName.value, name: displayName.value,
+    scope: viewScope.value, selectedUser: selectedUser.value, selectedTeam: selectedTeam.value,
+    team: userTeam.value, members: teamMembers.value,
+  })
+}
+watch(entryStore.items, () => { applyEntries(); renderAll() })
+
 async function loadData() {
+  applyEntries()
   try {
     const [data] = await Promise.all([
-      http('/entries?page_size=500'),
+      entryStore.load(),
       loadTeamMembers(),
       loadAllCategories(),
     ])
-    const allItems = data.items || []
+    const allItems = data || []
 
-    const scope = viewScope.value
-    if (scope === 'self') {
-      // 飞书工时表 user 字段存的是用户名 (如 testuser113), 不是姓名
-      // 用 userName 匹配; displayName 兜底
-      const names = new Set([userName.value, displayName.value].filter(Boolean))
-      entries.value = names.size ? allItems.filter(e => names.has(e.fields.user)) : []
-    } else if (scope === 'member') {
-      const name = selectedUser.value || userName.value
-      entries.value = name ? allItems.filter(e => e.fields.user === name) : []
-    } else if (scope === 'team') {
-      const usersInTeam = new Set(
-        teamMembers.value.filter(m => m.team === userTeam.value).map(m => m.user)
-      )
-      entries.value = allItems.filter(e => usersInTeam.has(e.fields.user))
-    } else if (scope === 'all' && selectedTeam.value) {
-      const usersInTeam = new Set(
-        teamMembers.value.filter(m => m.team === selectedTeam.value).map(m => m.user)
-      )
-      entries.value = allItems.filter(e => usersInTeam.has(e.fields.user))
-    } else {
-      entries.value = allItems
-    }
+    applyEntries(allItems)
     renderAll()
   } catch (e) {
     console.error('加载失败:', e)
@@ -653,11 +643,13 @@ function goCurrent() {
 }
 
 // 监听时段变化，重渲染图表
-watch([period, periodOffset], () => renderAll())
+watch([period, periodOffset, locale, translationVersion], () => renderAll())
 
 onMounted(() => {
   if (userName.value) loadData()
 })
+watch(clockNow, () => renderAll())
+onUnmounted(() => { for (const chart of [barInstance, pieInstance, trendInstance, memberInstance]) chart?.destroy() })
 </script>
 
 <style scoped>

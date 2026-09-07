@@ -9,13 +9,30 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+// 托管前端静态文件（和后端同一个域名，避免 COS CDN 缓存问题）
+const path = require('path')
+
+// 全局中间件：强制所有响应 Content-Disposition: inline（覆盖 SCF 网关的 attachment）
+app.use((req, res, next) => {
+  res.setHeader('Content-Disposition', 'inline')
+  next()
+})
+
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache')
+    else if (filePath.includes(path.sep + 'assets' + path.sep)) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+  },
+}))
+app.get('/health', (req, res) => res.json({ ok: true, version: 'stability-20260906' }))
+
 // 飞书凭证（从 SCF 环境变量读）
 // 旧凭证: 多维表格 bot (cli_aa0e40ef3fe19bcd) - 用于读写 Bitable
 const LARK_APP_ID = process.env.LARK_APP_ID || 'cli_aa0e40ef3fe19bcd'
-const LARK_APP_SECRET = process.env.LARK_APP_SECRET || 'dyBZhig4pWYsDuBlgnRsRdaqYMecCHw6'
+const LARK_APP_SECRET = process.env.LARK_APP_SECRET || ''
 // 新凭证: 飞书企业自建应用 (cli_aa07f5b29ef89bd1) - 用于 H5 免登
 const FEISHU_H5_APP_ID = process.env.FEISHU_H5_APP_ID || 'cli_aa07f5b29ef89bd1'
-const FEISHU_H5_APP_SECRET = process.env.FEISHU_H5_APP_SECRET || 'iaNlh9dpp4dpKxkvJaOQOeXq00EpNUui'
+const FEISHU_H5_APP_SECRET = process.env.FEISHU_H5_APP_SECRET || ''
 const DEFAULT_APP_TOKEN = process.env.LARK_BITABLE_APP_TOKEN || 'VYF7btMbnaNkV1sTnYBc1ldjnqh'
 const DEFAULT_TIME_TABLE = process.env.LARK_TIME_ENTRIES_TABLE_ID || 'tbl4DQrLz56St8Uj'
 // 用户表（与工时表同一个 base，table_id 在控制台或 API 里查）
@@ -31,7 +48,14 @@ const DEFAULT_COUNTRY_TABLE = process.env.LARK_COUNTRY_TABLE_ID || 'tbl3PnVDvHZm
 let cachedToken = null
 let cachedTokenExpire = 0
 
+let tokenFlight = null
 async function getTenantToken() {
+  if (tokenFlight) return tokenFlight
+  tokenFlight = obtainTenantToken()
+  try { return await tokenFlight } finally { tokenFlight = null }
+}
+
+async function obtainTenantToken() {
   const now = Date.now()
   if (cachedToken && now < cachedTokenExpire - 60000) return cachedToken
   const r = await axios.post(
@@ -54,7 +78,8 @@ async function lark(path, method = 'GET', body = null) {
       const v = body.fields[k]
       if (typeof v === 'string') {
         const d = new Date(v)
-        body.fields[k] = isNaN(d.getTime()) ? Date.now() : d.getTime()
+        if (isNaN(d.getTime())) throw new Error('无效时间字段: ' + k)
+        body.fields[k] = d.getTime()
       }
     }
   }
@@ -262,7 +287,7 @@ app.get('/entries', async (req, res) => {
   try {
     const { appToken, tableId } = getCtx(req)
     const { page_size = 100, page_token, user } = req.query
-    const params = new URLSearchParams({ page_size: String(page_size) })
+    const params = new URLSearchParams({ page_size: String(Math.min(500, Math.max(1, Number(page_size) || 100))) })
     if (page_token) params.set('page_token', page_token)
     if (user) {
       // 飞书 filter 语法：CurrentValue.[字段名]="值"
@@ -271,7 +296,7 @@ app.get('/entries', async (req, res) => {
       params.set('filter', filter)
     }
     const data = await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records?${params}`)
-    res.json({ items: data.data.items || [], total: data.data.total, has_more: data.data.has_more })
+    res.json({ items: data.data.items || [], total: data.data.total, has_more: data.data.has_more, page_token: data.data.page_token })
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 
@@ -315,7 +340,11 @@ app.post('/timer/stop', async (req, res) => {
     // 先查这条记录，拿 start_time 算时长
     const r = await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records/${record_id}`)
     const startMs = r.data.record.fields.start_time
-    const endTime = Date.now()
+    const existingEnd = r.data.record.fields.end_time
+    const endTime = existingEnd ? new Date(existingEnd).getTime() : Date.now()
+    if (!Number.isFinite(Number(startMs)) || Number(startMs) <= 0 || !Number.isFinite(endTime) || endTime < Number(startMs)) {
+      return res.status(400).json({ error: '计时记录的开始或结束时间无效' })
+    }
 
     // 计算时长
     const durationMs = startMs ? (endTime - startMs) : 0
@@ -331,7 +360,7 @@ app.post('/timer/stop', async (req, res) => {
       }
     })
 
-    res.json({ ok: true, duration_ms: durationMs, duration_sec: durationSec, duration_hour: durationHour })
+    res.json({ ok: true, end_time: endTime, duration_ms: durationMs, duration_sec: durationSec, duration_hour: durationHour })
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 
@@ -359,6 +388,9 @@ app.get('/timer/active', async (req, res) => {
         start_time: f.start_time,
         description: f.description || '',
         category: f.category || '其他',
+        user: f.user || user,
+        country: f.country || '中国',
+        notes: f.notes || '',
       })
     }
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -579,6 +611,9 @@ app.put('/entries/:id', async (req, res) => {
       // 转毫秒时间戳
       const startMs = typeof startTime === 'string' ? new Date(startTime).getTime() : startTime
       const endMs = typeof endTime === 'string' ? new Date(endTime).getTime() : endTime
+      if (!Number.isFinite(startMs) || startMs <= 0 || (endTime != null && (!Number.isFinite(endMs) || endMs <= startMs))) {
+        return res.status(400).json({ error: '结束时间必须晚于有效的开始时间' })
+      }
       if (startMs && endMs) {
         const durationMs = endMs - startMs
         const durationSec = Math.floor(durationMs / 1000)
@@ -774,6 +809,66 @@ app.get('/countries', async (req, res) => {
 })
 
 // ───── 飞书 H5 免登接口 ─────
+
+// JSAPI 鉴权：生成 signature
+// GET /feishu-jsapi-sign?url=xxx → 返回 { appId, timestamp, noncestr, signature }
+const crypto = require('crypto')
+
+let cachedJsapiTicket = null
+let cachedJsapiTicketExpire = 0
+
+async function getH5AppAccessToken() {
+  // 飞书企业自建应用 (cli_aa07f5b29ef89bd1) 的 app_access_token
+  const r = await axios.post(
+    'https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal',
+    { app_id: FEISHU_H5_APP_ID, app_secret: FEISHU_H5_APP_SECRET },
+    { timeout: 10000 }
+  )
+  if (!r.data.app_access_token) throw new Error(`获取 H5 app_access_token 失败: ${JSON.stringify(r.data)}`)
+  return r.data.app_access_token
+}
+
+async function getJsapiTicket() {
+  const now = Date.now()
+  if (cachedJsapiTicket && now < cachedJsapiTicketExpire - 60000) return cachedJsapiTicket
+  const appAccessToken = await getH5AppAccessToken()
+  const r = await axios.post(
+    'https://open.feishu.cn/open-apis/jssdk/ticket/get',
+    {},
+    { headers: { Authorization: `Bearer ${appAccessToken}` }, timeout: 10000 }
+  )
+  const ticket = r.data?.data?.ticket
+  if (!ticket) throw new Error(`获取 jsapi_ticket 失败: ${JSON.stringify(r.data)}`)
+  cachedJsapiTicket = ticket
+  cachedJsapiTicketExpire = now + (r.data?.data?.expire_in || 7200) * 1000
+  return ticket
+}
+
+app.get('/feishu-jsapi-sign', async (req, res) => {
+  try {
+    const { url } = req.query
+    if (!url) return res.status(400).json({ error: 'url 必填' })
+
+    const ticket = await getJsapiTicket()
+    const noncestr = Math.random().toString(36).substring(2, 18)
+    const timestamp = Math.floor(Date.now() / 1000).toString()
+
+    // signature = sha1(ticket + noncestr + timestamp + url)
+    const signStr = `jsapi_ticket=${ticket}&noncestr=${noncestr}&timestamp=${timestamp}&url=${url}`
+    const signature = crypto.createHash('sha1').update(signStr).digest('hex')
+
+    res.json({
+      appId: FEISHU_H5_APP_ID,
+      timestamp,
+      noncestr,
+      signature,
+    })
+  } catch (e) {
+    console.error('feishu-jsapi-sign error:', e.response?.data || e.message)
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // GET /feishu-auth?code=xxx → 用 code 换 user_id, 再匹配用户表
 // 返回: { ok, user, role, display_name, team, feishu_user_id }
 app.get('/feishu-auth', async (req, res) => {
@@ -918,6 +1013,22 @@ app.post('/feishu-bind', async (req, res) => {
   }
 })
 
+
+// Display-only translation. Credentials stay in server environment variables.
+const { createTranslationService } = require('./translation.cjs')
+const translateContent = createTranslationService({ appid: process.env.BAIDU_APP_ID, key: process.env.BAIDU_KEY })
+app.post('/translate', async (req, res) => {
+  try {
+    res.json({ text: await translateContent(req.body) })
+  } catch (error) {
+    res.status(error.status || 502).json({ error: error.status ? error.message : 'Translation temporarily unavailable' })
+  }
+})
+
+// SPA catch-all: 非 API 路径都返回 index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'))
+})
 
 // ───── 启动 ─────
 const port = process.env.PORT || 9000

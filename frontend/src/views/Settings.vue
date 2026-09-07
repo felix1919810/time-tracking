@@ -3,65 +3,88 @@
     <!-- 页头 -->
     <div class="page-header">
       <div>
-        <div class="page-title">设置</div>
+        <div class="page-title">{{ ui("设置") }}</div>
         <div class="page-subtitle">{{ displayName }} · {{ roleLabel }}</div>
       </div>
     </div>
 
+    <section class="settings-section" aria-labelledby="language-title">
+      <div id="language-title" class="section-title">{{ ui('语言') }}</div>
+      <div class="section-body">
+        <LanguagePicker />
+        <p class="section-hint">{{ ui('界面和国家名称即时切换。任务分类、标题和备注由百度翻译，原始记录保持不变。') }}</p>
+        <label class="original-toggle"><input type="checkbox" v-model="showOriginal" /> {{ ui('显示任务内容原文') }}</label>
+        <p class="section-hint">{{ ui('翻译暂不可用时显示原文；编辑时始终使用原文。') }}</p>
+      </div>
+    </section>
+    <section class="settings-section" aria-labelledby="appearance-title">
+      <div id="appearance-title" class="section-title">{{ ui("外观") }}</div>
+      <div class="section-body">
+        <p id="theme-hint" class="section-hint">{{ ui("选择页面配色，立即生效并自动保存在当前浏览器。") }}</p>
+        <div class="theme-options" role="radiogroup" :aria-label="ui(&quot;页面主题&quot;)" aria-describedby="theme-hint">
+          <label v-for="option in themeOptions" :key="option.value" class="theme-option" :class="{ selected: theme === option.value }">
+            <input type="radio" name="theme" :value="option.value" :checked="theme === option.value" @change="setTheme(option.value)" />
+            <span class="theme-preview" :class="option.value" aria-hidden="true"><span></span></span>
+            <span class="theme-label">{{ ui(option.label) }}</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
     <!-- 个人信息 -->
     <div class="settings-section">
-      <div class="section-title">个人信息</div>
+      <div class="section-title">{{ ui("个人信息") }}</div>
       <div class="section-body">
         <div class="form-field">
-          <label>登录用户名</label>
+          <label>{{ ui("登录用户名") }}</label>
           <input :value="userName" disabled />
         </div>
         <div class="form-field">
-          <label>姓名 <span class="required">*</span></label>
-          <input v-model="profileForm.displayName" placeholder="填入工时表的姓名" />
+          <label>{{ ui("姓名") }} <span class="required">*</span></label>
+          <input v-model="profileForm.displayName" :placeholder="ui(&quot;填入工时表的姓名&quot;)" />
         </div>
         <button class="btn btn-primary" @click="saveProfile" :disabled="!profileForm.displayName || profileForm.displayName === displayName">
-          {{ profileLoading ? '保存中...' : '保存姓名' }}
+          {{ profileLoading ? ui("保存中...") : ui("保存姓名") }}
         </button>
       </div>
     </div>
 
     <!-- 修改密码 -->
     <div class="settings-section">
-      <div class="section-title">修改密码</div>
+      <div class="section-title">{{ ui("修改密码") }}</div>
       <div class="section-body">
         <div class="form-field">
-          <label>原密码 <span class="required">*</span></label>
-          <input type="password" v-model="passwordForm.oldPassword" placeholder="当前密码" />
+          <label>{{ ui("原密码") }} <span class="required">*</span></label>
+          <input type="password" v-model="passwordForm.oldPassword" :placeholder="ui(&quot;当前密码&quot;)" />
         </div>
         <div class="form-field">
-          <label>新密码 <span class="required">*</span></label>
-          <input type="password" v-model="passwordForm.newPassword" placeholder="新密码" />
+          <label>{{ ui("新密码") }} <span class="required">*</span></label>
+          <input type="password" v-model="passwordForm.newPassword" :placeholder="ui(&quot;新密码&quot;)" />
         </div>
         <div class="form-field">
-          <label>确认新密码 <span class="required">*</span></label>
-          <input type="password" v-model="passwordForm.confirmPassword" placeholder="再输入一遍新密码" @keyup.enter="changePassword" />
+          <label>{{ ui("确认新密码") }} <span class="required">*</span></label>
+          <input type="password" v-model="passwordForm.confirmPassword" :placeholder="ui(&quot;再输入一遍新密码&quot;)" @keyup.enter="changePassword" />
         </div>
         <div v-if="passwordError" class="error-msg">{{ passwordError }}</div>
         <div v-if="passwordSuccess" class="success-msg">{{ passwordSuccess }}</div>
         <button class="btn btn-primary" @click="changePassword" :disabled="!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword || passwordLoading">
-          {{ passwordLoading ? '修改中...' : '修改密码' }}
+          {{ passwordLoading ? ui("修改中...") : ui("修改密码") }}
         </button>
       </div>
     </div>
 
     <!-- 团队管理 (只有管理员可见) -->
     <div v-if="userRole === 'admin'" class="settings-section">
-      <div class="section-title">团队管理</div>
+      <div class="section-title">{{ ui("团队管理") }}</div>
       <div class="section-body">
-        <p class="section-hint">创建团队、分配成员到团队。每个团队有独立的任务分类。</p>
+        <p class="section-hint">{{ ui("创建团队、分配成员到团队。每个团队有独立的任务分类。") }}</p>
 
         <!-- 创建团队 -->
         <div class="add-cat-form" style="margin-bottom:16px;">
-          <input v-model="newTeamName" placeholder="新团队名称" class="add-cat-input" @keyup.enter="addTeam" />
-          <input v-model="newTeamDesc" placeholder="团队描述(可选)" class="add-cat-input" style="flex:1.5;" />
+          <input v-model="newTeamName" :placeholder="ui(&quot;新团队名称&quot;)" class="add-cat-input" @keyup.enter="addTeam" />
+          <input v-model="newTeamDesc" :placeholder="ui(&quot;团队描述(可选)&quot;)" class="add-cat-input" style="flex:1.5;" />
           <button class="btn btn-secondary" @click="addTeam" :disabled="!newTeamName.trim() || teamLoading">
-            {{ teamLoading ? '添加中...' : '创建团队' }}
+            {{ teamLoading ? ui("添加中...") : ui("创建团队") }}
           </button>
         </div>
 
@@ -72,28 +95,28 @@
               <div class="team-name">{{ t.name }}</div>
               <div v-if="t.description" class="team-desc">{{ t.description }}</div>
             </div>
-            <button class="btn-icon danger" @click="removeTeam(t)" title="删除团队">×</button>
+            <button class="btn-icon danger" @click="removeTeam(t)" :title="ui(&quot;删除团队&quot;)">×</button>
           </div>
 
           <!-- 该团队的成员列表 -->
           <div class="team-members">
-            <div class="members-title">团队成员</div>
+            <div class="members-title">{{ ui("团队成员") }}</div>
             <div v-for="m in membersInTeam(t.name)" :key="m.record_id" class="member-row">
               <span class="member-name">{{ m.display_name }}</span>
               <select :value="m.role" @change="assignMember(m.record_id, t.name, $event.target.value)" class="member-select">
-                <option value="member">成员</option>
-                <option value="team_admin">团队管理员</option>
+                <option value="member">{{ ui("成员") }}</option>
+                <option value="team_admin">{{ ui("团队管理员") }}</option>
               </select>
-              <button class="btn-icon danger" @click="removeMemberFromTeam(m)" title="移出团队">×</button>
+              <button class="btn-icon danger" @click="removeMemberFromTeam(m)" :title="ui(&quot;移出团队&quot;)">×</button>
             </div>
             <div v-if="membersInTeam(t.name).length === 0" class="empty-hint">
-              该团队暂无成员，从下方"未分配成员"点击加入
+              {{ ui("该团队暂无成员，从下方\"未分配成员\"点击加入") }}
             </div>
           </div>
 
           <!-- 未分配成员 (可点击加入该团队) -->
           <div class="unassigned-members">
-            <div class="members-title">未分配成员 (点击加入该团队)</div>
+            <div class="members-title">{{ ui("未分配成员 (点击加入该团队)") }}</div>
             <div class="member-chips">
               <span
                 v-for="m in unassignedMembers"
@@ -103,24 +126,24 @@
               >
                 {{ m.display_name }} +
               </span>
-              <span v-if="unassignedMembers.length === 0" class="empty-hint">所有成员都已分配团队</span>
+              <span v-if="unassignedMembers.length === 0" class="empty-hint">{{ ui("所有成员都已分配团队") }}</span>
             </div>
           </div>
         </div>
-        <div v-if="teams.length === 0" class="empty-hint">暂无团队, 请在上方创建</div>
+        <div v-if="teams.length === 0" class="empty-hint">{{ ui("暂无团队, 请在上方创建") }}</div>
       </div>
     </div>
 
     <!-- 分类管理 -->
     <div class="settings-section">
       <div class="section-title">
-        任务分类管理
-        <span class="team-badge">团队: {{ userRole === 'admin' ? (selectedTeamForCategory || '未选择') : (currentTeam || '未分配') }}</span>
+        {{ ui("任务分类管理") }}
+        <span class="team-badge">{{ ui("团队:") }} {{ userRole === 'admin' ? (selectedTeamForCategory || ui("未选择")) : (currentTeam || ui("未分配")) }}</span>
       </div>
       <div class="section-body">
         <!-- 团队选择器: 只有管理员可选任意团队, 团队管理员/成员锁定自己团队 -->
         <div v-if="userRole === 'admin'" class="form-field" style="margin-bottom:12px;">
-          <label>选择团队</label>
+          <label>{{ ui("选择团队") }}</label>
           <select v-model="selectedTeamForCategory" @change="onTeamChange" class="team-select">
             <option v-for="t in availableTeamsForCategory" :key="t.name" :value="t.name">
               {{ t.name }}
@@ -129,13 +152,13 @@
         </div>
 
         <p class="section-hint">
-          <template v-if="userRole === 'admin'">管理员可编辑任意团队的分类。</template>
-          <template v-else-if="userRole === 'team_admin'">团队管理员可编辑自己团队的分类。</template>
-          <template v-else>团队成员只能查看自己团队的分类, 如需修改请联系团队管理员。</template>
+          <template v-if="userRole === 'admin'">{{ ui("管理员可编辑任意团队的分类。") }}</template>
+          <template v-else-if="userRole === 'team_admin'">{{ ui("团队管理员可编辑自己团队的分类。") }}</template>
+          <template v-else>{{ ui("团队成员只能查看自己团队的分类, 如需修改请联系团队管理员。") }}</template>
         </p>
 
         <div v-if="!selectedTeamForCategory && userRole === 'admin'" class="readonly-hint">
-          请先在上方选择一个团队。
+          {{ ui("请先在上方选择一个团队。") }}
         </div>
 
         <div v-else>
@@ -145,19 +168,23 @@
                 <input type="color" v-model="cat.color" @change="updateCategoryColor(cat)" class="cat-color-input" :disabled="!canManageCategories" />
                 <span class="cat-color-dot" :style="{ background: cat.color }"></span>
               </div>
-              <input v-model="cat.name" @change="onCatRename(cat)" class="cat-name-input" :disabled="cat.name === '其他' || !canManageCategories" />
-              <button v-if="cat.name !== '其他' && canManageCategories" class="btn-icon danger" @click="removeCategory(cat)" title="删除">
+              <div class="category-editor">
+                <input v-if="canManageCategories && cat.name !== '其他'" v-model.lazy="cat.name" @change="onCatRename(cat)" class="cat-name-input" :aria-label="ui('分类原文')" />
+                <span v-else class="cat-name-input">{{ tr(cat.name) }}</span>
+                <small v-if="canManageCategories && cat.name !== '其他' && tr(cat.name) !== cat.name">{{ tr(cat.name) }}</small>
+              </div>
+              <button v-if="cat.name !== '其他' && canManageCategories" class="btn-icon danger" @click="removeCategory(cat)" :title="ui(&quot;删除&quot;)">
                 ×
               </button>
-              <span v-else-if="cat.name === '其他'" class="cat-default-tag">默认</span>
+              <span v-else-if="cat.name === '其他'" class="cat-default-tag">{{ ui("默认") }}</span>
             </div>
           </div>
 
           <div v-if="canManageCategories" class="add-cat-form">
-            <input v-model="newCatName" placeholder="新分类名称" class="add-cat-input" @keyup.enter="addCategory" />
+            <input v-model="newCatName" :placeholder="ui(&quot;新分类名称&quot;)" class="add-cat-input" @keyup.enter="addCategory" />
             <input type="color" v-model="newCatColor" class="cat-color-input" />
             <button class="btn btn-secondary" @click="addCategory" :disabled="!newCatName.trim() || catLoading">
-              {{ catLoading ? '添加中...' : '添加' }}
+              {{ catLoading ? ui("添加中...") : ui("添加") }}
             </button>
           </div>
         </div>
@@ -167,7 +194,18 @@
 </template>
 
 <script setup>
+import LanguagePicker from '../components/LanguagePicker.vue'
+import { showOriginal } from '../lib/content-translation.js'
+import { ui, locale, setLang, countryName, countryMatches, localDate } from '../i18n.js'
+import { useContentTranslation } from '../lib/content-translation.js'
+const { tr, translationVersion } = useContentTranslation()
 import { ref, computed, inject, onMounted } from 'vue'
+import { theme, setTheme } from '../lib/theme.js'
+
+const themeOptions = [
+  { value: 'dark', label: '深色模式' },
+  { value: 'light', label: '浅色模式' },
+]
 
 const http = inject('http')
 const userName = inject('userName')
@@ -189,9 +227,9 @@ const canManageCategories = computed(() => {
 // 角色标签
 const roleLabel = computed(() => {
   const r = userRole.value
-  if (r === 'admin') return '管理员'
-  if (r === 'team_admin') return '团队管理员'
-  return '团队成员'
+  if (r === 'admin') return ui("管理员")
+  if (r === 'team_admin') return ui("团队管理员")
+  return ui("团队成员")
 })
 // 当前用户所属团队 (从 App.vue inject, 登录时自动更新)
 const currentTeam = inject('userTeam')
@@ -243,11 +281,11 @@ async function addCategory() {
   if (!name) return
   const team = selectedTeamForCategory.value || currentTeam.value
   if (!team) {
-    alert('请先选择团队')
+    alert(ui("请先选择团队"))
     return
   }
   if (teamCategories.value.find(c => c.name === name)) {
-    alert('该分类已存在')
+    alert(ui("该分类已存在"))
     return
   }
   catLoading.value = true
@@ -269,7 +307,7 @@ async function addCategory() {
     newCatName.value = ''
     newCatColor.value = '#6366f1'
   } catch (e) {
-    alert('添加分类失败: ' + e.message)
+    alert(ui("添加分类失败: ") + e.message)
   } finally {
     catLoading.value = false
   }
@@ -277,12 +315,12 @@ async function addCategory() {
 
 async function removeCategory(cat) {
   if (cat.name === '其他') return
-  if (!confirm(`确定删除分类"${cat.name}"？已使用此分类的条目不会受影响。`)) return
+  if (!confirm(ui("确定删除分类\"{0}\"？已使用此分类的条目不会受影响。", [cat.name]))) return
   try {
     await http(`/categories/${cat.record_id}`, { method: 'DELETE' })
     teamCategories.value = teamCategories.value.filter(c => c.record_id !== cat.record_id)
   } catch (e) {
-    alert('删除分类失败: ' + e.message)
+    alert(ui("删除分类失败: ") + e.message)
   }
 }
 
@@ -295,7 +333,7 @@ async function updateCategoryColor(cat) {
       body: { color: cat.color },
     })
   } catch (e) {
-    alert('更新颜色失败: ' + e.message)
+    alert(ui("更新颜色失败: ") + e.message)
   }
 }
 
@@ -308,7 +346,7 @@ async function onCatRename(cat) {
       body: { name: cat.name },
     })
   } catch (e) {
-    alert('重命名失败: ' + e.message)
+    alert(ui("重命名失败: ") + e.message)
   }
 }
 
@@ -326,12 +364,12 @@ async function saveProfile() {
     if (res.ok) {
       displayName.value = res.display_name
       localStorage.setItem('tt_display_name', res.display_name)
-      alert('姓名已更新')
+      alert(ui("姓名已更新"))
     } else {
-      alert('保存失败: ' + (res.error || '未知错误'))
+      alert(ui("保存失败: ") + (res.error || ui("未知错误")))
     }
   } catch (e) {
-    alert('保存失败: ' + e.message)
+    alert(ui("保存失败: ") + e.message)
   } finally {
     profileLoading.value = false
   }
@@ -353,15 +391,15 @@ async function changePassword() {
 
   const { oldPassword, newPassword, confirmPassword } = passwordForm.value
   if (!oldPassword || !newPassword || !confirmPassword) {
-    passwordError.value = '所有字段都必填'
+    passwordError.value = ui("所有字段都必填")
     return
   }
   if (newPassword !== confirmPassword) {
-    passwordError.value = '两次新密码不一致'
+    passwordError.value = ui("两次新密码不一致")
     return
   }
   if (newPassword.length < 4) {
-    passwordError.value = '新密码至少 4 位'
+    passwordError.value = ui("新密码至少 4 位")
     return
   }
 
@@ -376,11 +414,11 @@ async function changePassword() {
       },
     })
     if (res.ok) {
-      passwordSuccess.value = '密码修改成功 ✓'
+      passwordSuccess.value = ui("密码修改成功 ✓")
       passwordForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
       setTimeout(() => { passwordSuccess.value = '' }, 3000)
     } else {
-      passwordError.value = res.error || '修改失败'
+      passwordError.value = res.error || ui("修改失败")
     }
   } catch (e) {
     passwordError.value = e.message
@@ -428,7 +466,7 @@ async function addTeam() {
   const name = newTeamName.value.trim()
   if (!name) return
   if (teams.value.find(t => t.name === name)) {
-    alert('该团队已存在')
+    alert(ui("该团队已存在"))
     return
   }
   teamLoading.value = true
@@ -441,21 +479,21 @@ async function addTeam() {
     newTeamName.value = ''
     newTeamDesc.value = ''
   } catch (e) {
-    alert('创建团队失败: ' + e.message)
+    alert(ui("创建团队失败: ") + e.message)
   } finally {
     teamLoading.value = false
   }
 }
 
 async function removeTeam(t) {
-  if (!confirm(`确定删除团队"${t.name}"？该团队的成员会变成"未分配"。`)) return
+  if (!confirm(ui("确定删除团队\"{0}\"？该团队的成员会变成\"未分配\"。", [t.name]))) return
   try {
     await http(`/teams/${t.record_id}`, { method: 'DELETE' })
     teams.value = teams.value.filter(x => x.record_id !== t.record_id)
     // 刷新成员列表(被删团队的成员会变成未分配)
     await loadAllMembers()
   } catch (e) {
-    alert('删除团队失败: ' + e.message)
+    alert(ui("删除团队失败: ") + e.message)
   }
 }
 
@@ -472,13 +510,13 @@ async function assignMember(recordId, team, role) {
       m.role = role
     }
   } catch (e) {
-    alert('分配成员失败: ' + e.message)
+    alert(ui("分配成员失败: ") + e.message)
   }
 }
 
 // 把成员移出团队 (team 设为空)
 async function removeMemberFromTeam(m) {
-  if (!confirm(`确定把"${m.display_name}"移出团队？`)) return
+  if (!confirm(ui("确定把\"{0}\"移出团队？", [m.display_name]))) return
   try {
     await http('/teams/members', {
       method: 'POST',
@@ -486,7 +524,7 @@ async function removeMemberFromTeam(m) {
     })
     m.team = ''
   } catch (e) {
-    alert('移出团队失败: ' + e.message)
+    alert(ui("移出团队失败: ") + e.message)
   }
 }
 
@@ -518,6 +556,52 @@ onMounted(() => {
   color: var(--text-secondary);
   margin-top: 4px;
 }
+
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.theme-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.theme-option.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.theme-option:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.theme-option input { accent-color: var(--primary); }
+.theme-label { font-size: 14px; font-weight: 500; }
+
+.theme-preview {
+  display: flex;
+  flex: 0 0 100%;
+  order: -1;
+  height: 64px;
+  padding: 10px 10px 10px 28px;
+  border: 1px solid #2a3650;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #1a2138 20%, #0a0e1a 20%);
+}
+
+.theme-preview span { width: 100%; border-radius: 3px; background: #131826; }
+.theme-preview.light { border-color: #c5d0df; background: linear-gradient(90deg, #e5edf5 20%, #f5f7fb 20%); }
+.theme-preview.light span { background: #ffffff; }
 
 .settings-section {
   background: var(--surface);

@@ -3,67 +3,68 @@
     <!-- 登录/注册弹窗 -->
     <div v-if="showLogin" class="auth-mask">
       <div class="auth-card">
+        <LanguagePicker />
         <div class="auth-logo">⏱</div>
-        <div class="auth-title">{{ showRegister ? '注册新账号' : '欢迎使用 Time Tracking' }}</div>
+        <div class="auth-title">{{ showRegister ? ui("注册新账号") : ui("欢迎使用 Time Tracking") }}</div>
 
         <!-- 登录表单 -->
         <template v-if="!showRegister">
           <div class="auth-field">
-            <label>用户名</label>
-            <input v-model="loginUser" placeholder="您的用户名" autofocus @keyup.enter="$refs.passInput.focus()" />
+            <label>{{ ui("用户名") }}</label>
+            <input v-model="loginUser" :placeholder="ui(&quot;您的用户名&quot;)" autofocus @keyup.enter="$refs.passInput.focus()" />
           </div>
           <div class="auth-field">
-            <label>密码</label>
-            <input ref="passInput" type="password" v-model="loginPass" placeholder="您的密码" @keyup.enter="confirmLogin" />
+            <label>{{ ui("密码") }}</label>
+            <input ref="passInput" type="password" v-model="loginPass" :placeholder="ui(&quot;您的密码&quot;)" @keyup.enter="confirmLogin" />
           </div>
-          <div v-if="loginError" class="auth-err">{{ loginError }}</div>
+          <div v-if="loginError" class="auth-err">{{ ui(loginError) }}</div>
           <button class="auth-btn" @click="confirmLogin" :disabled="authLoading">
-            {{ authLoading ? '登录中...' : '登录' }}
+            {{ authLoading ? ui("登录中...") : ui("登录") }}
           </button>
-          <div class="auth-divider"><span>或</span></div>
+          <div class="auth-divider"><span>{{ ui("或") }}</span></div>
           <button class="auth-btn feishu-btn" @click="redirectToFeishuAuth">
-            🚀 飞书一键登录
+            {{ ui("🚀 飞书一键登录") }}
           </button>
           <div class="auth-switch">
-            没有账号？<a @click="toggleRegister">立即注册</a>
+            {{ ui("没有账号？") }}<a @click="toggleRegister">{{ ui("立即注册") }}</a>
           </div>
         </template>
 
         <!-- 注册表单 -->
         <template v-else>
           <div class="auth-field">
-            <label>邀请码</label>
-            <input v-model="regInvite" placeholder="管理员发给您的邀请码" autofocus />
+            <label>{{ ui("邀请码") }}</label>
+            <input v-model="regInvite" :placeholder="ui(&quot;管理员发给您的邀请码&quot;)" autofocus />
           </div>
           <div class="auth-field">
-            <label>姓名</label>
-            <input v-model="regDisplayName" placeholder="您的姓名（如 Jenny Chee）" />
+            <label>{{ ui("姓名") }}</label>
+            <input v-model="regDisplayName" :placeholder="ui(&quot;您的姓名（如 Jenny Chee）&quot;)" />
           </div>
           <div class="auth-field">
-            <label>用户名</label>
-            <input v-model="regUser" placeholder="登录用户名" />
+            <label>{{ ui("用户名") }}</label>
+            <input v-model="regUser" :placeholder="ui(&quot;登录用户名&quot;)" />
           </div>
           <div class="auth-field">
-            <label>密码</label>
-            <input type="password" v-model="regPass" placeholder="设置密码" />
+            <label>{{ ui("密码") }}</label>
+            <input type="password" v-model="regPass" :placeholder="ui(&quot;设置密码&quot;)" />
           </div>
           <div class="auth-field">
-            <label>确认密码</label>
-            <input type="password" v-model="regPass2" placeholder="再输入一遍密码" @keyup.enter="doRegister" />
+            <label>{{ ui("确认密码") }}</label>
+            <input type="password" v-model="regPass2" :placeholder="ui(&quot;再输入一遍密码&quot;)" @keyup.enter="doRegister" />
           </div>
-          <div v-if="regError" class="auth-err">{{ regError }}</div>
+          <div v-if="regError" class="auth-err">{{ ui(regError) }}</div>
           <button class="auth-btn" @click="doRegister" :disabled="authLoading">
-            {{ authLoading ? '注册中...' : '注册' }}
+            {{ authLoading ? ui("注册中...") : ui("注册") }}
           </button>
           <div class="auth-switch">
-            已有账号？<a @click="toggleRegister">返回登录</a>
+            {{ ui("已有账号？") }}<a @click="toggleRegister">{{ ui("返回登录") }}</a>
           </div>
         </template>
       </div>
     </div>
 
     <!-- 主布局 -->
-    <div v-if="userName && !showLogin" class="layout">
+    <div v-if="userName && !showLogin" :key="userName" class="layout" :style="{ '--sidebar-width': sidebarCollapsed ? '60px' : '220px' }">
       <!-- 侧边栏 -->
       <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
         <div class="sidebar-header">
@@ -78,14 +79,15 @@
             class="nav-item"
             :class="{ active: item.noNav || currentPage === item.key }"
             @click="!item.noNav && (currentPage = item.key)"
-            :title="item.label"
+            :title="ui(item.label)"
           >
             <span class="nav-icon">{{ item.icon }}</span>
-            <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
+            <span v-if="!sidebarCollapsed" class="nav-label">{{ ui(item.label) }}</span>
           </button>
         </nav>
 
         <div class="sidebar-footer">
+          <LanguagePicker v-if="!sidebarCollapsed" />
           <div v-if="!sidebarCollapsed" class="user-info">
             <div class="user-avatar">{{ (displayName || userName).charAt(0).toUpperCase() }}</div>
             <div class="user-details">
@@ -94,9 +96,9 @@
             </div>
           </div>
           <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
-            {{ sidebarCollapsed ? '▶' : '◀ 收起' }}
+            {{ sidebarCollapsed ? '▶' : ui("◀ 收起") }}
           </button>
-          <button v-if="!sidebarCollapsed" class="logout-btn" @click="logout">退出登录</button>
+          <button v-if="!sidebarCollapsed" class="logout-btn" @click="logout">{{ ui("退出登录") }}</button>
         </div>
       </aside>
 
@@ -110,17 +112,17 @@
               class="switch-arrow"
               :class="{ open: showCalendarDropdown }"
               @click.stop="showCalendarDropdown = !showCalendarDropdown"
-              title="切换周/日视图"
+              :title="ui(&quot;切换周/日视图&quot;)"
             >▾</button>
             <button
               class="switch-btn"
               :class="{ active: currentPage === 'week' || currentPage === 'day' }"
               @click="currentPage = calendarMode"
-              title="日历视图"
+              :title="ui(&quot;日历视图&quot;)"
             >
               <span class="switch-icon">📅</span>
-              <span class="switch-label">日历视图</span>
-              <span class="switch-sub">({{ calendarMode === 'week' ? '周' : '日' }})</span>
+              <span class="switch-label">{{ ui("日历视图") }}</span>
+              <span class="switch-sub">({{ calendarMode === 'week' ? ui("周") : ui("日") }})</span>
             </button>
             <div v-if="showCalendarDropdown" class="switch-dropdown">
               <div
@@ -128,14 +130,14 @@
                 :class="{ active: calendarMode === 'week' }"
                 @click="calendarMode = 'week'; currentPage = 'week'; showCalendarDropdown = false"
               >
-                <span>📅</span> 周视图
+                <span>📅</span> {{ ui("周视图") }}
               </div>
               <div
                 class="dropdown-item"
                 :class="{ active: calendarMode === 'day' }"
                 @click="calendarMode = 'day'; currentPage = 'day'; showCalendarDropdown = false"
               >
-                <span>📆</span> 日视图
+                <span>📆</span> {{ ui("日视图") }}
               </div>
             </div>
           </div>
@@ -145,13 +147,15 @@
             class="switch-btn"
             :class="{ active: currentPage === 'list' }"
             @click="currentPage = 'list'"
-            title="列表视图"
+            :title="ui(&quot;列表视图&quot;)"
           >
             <span class="switch-icon">📋</span>
-            <span class="switch-label">列表视图</span>
+            <span class="switch-label">{{ ui("列表视图") }}</span>
           </button>
         </div>
 
+        <div v-if="dataError" class="data-error" role="alert">{{ ui("工时加载失败：") }}{{ ui(dataError) }} <button @click="retryEntries">{{ ui("重试") }}</button></div>
+        <div v-else-if="dataLoading" class="data-loading" role="status">{{ ui("正在同步工时…") }}</div>
         <!-- 仪表盘页 -->
         <Dashboard v-if="currentPage === 'dashboard'" />
         <!-- 报表页 -->
@@ -170,26 +174,41 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, provide, watch } from 'vue'
-import WeekView from './views/WeekView.vue'
-import ListView from './views/ListView.vue'
-import DayView from './views/DayView.vue'
-import Settings from './views/Settings.vue'
-import Dashboard from './views/Dashboard.vue'
-import Reports from './views/Reports.vue'
+import LanguagePicker from './components/LanguagePicker.vue'
+import { configureContentTranslation, resetContentTranslations } from './lib/content-translation.js'
+import { ui, locale, setLang, countryName, countryMatches, localDate } from './i18n.js'
+import { useContentTranslation } from './lib/content-translation.js'
+const { tr, translationVersion } = useContentTranslation()
+import { ref, computed, onMounted, onUnmounted, provide, watch, defineAsyncComponent } from 'vue'
+import { createHttp } from './lib/http.js'
+import { createEntryStore } from './lib/entries.js'
+import { createTimer } from './lib/timer.js'
+import { readJSON } from './lib/storage.js'
+const WeekView = defineAsyncComponent(() => import('./views/WeekView.vue'))
+const ListView = defineAsyncComponent(() => import('./views/ListView.vue'))
+const DayView = defineAsyncComponent(() => import('./views/DayView.vue'))
+const Settings = defineAsyncComponent(() => import('./views/Settings.vue'))
+const Dashboard = defineAsyncComponent(() => import('./views/Dashboard.vue'))
+const Reports = defineAsyncComponent(() => import('./views/Reports.vue'))
 
 // ───── HTTP 工具 ─────
-const API_BASE = 'https://1473537498-ejcp1i6ib6.ap-shanghai.tencentscf.com'
-async function http(path, options = {}) {
-  const url = path.startsWith('http') ? path : API_BASE + path
-  const res = await fetch(url, {
-    method: options.method || 'GET',
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.json()
-}
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://1473537498-ejcp1i6ib6.ap-shanghai.tencentscf.com'
+const http = createHttp({ base: API_BASE, message: ui })
+const translationHttp = createHttp({ base: API_BASE, timeout: 90000 })
+configureContentTranslation(async (text, to) => {
+  const result = await translationHttp('/translate', { method: 'POST', body: { text, from: 'auto', to } })
+  return result.text
+})
+const entryStore = createEntryStore(http)
+const dataError = entryStore.error
+const dataLoading = entryStore.loading
+provide('entryStore', entryStore)
+const clockNow = ref(Date.now())
+provide('clockNow', clockNow)
+let clockInterval
+onMounted(() => { clockInterval = setInterval(() => { clockNow.value = Date.now() }, 60000) })
+onUnmounted(() => clearInterval(clockInterval))
+async function retryEntries() { try { await entryStore.load() } catch {} }
 
 // ───── 登录状态 ─────
 const userName = ref(localStorage.getItem('tt_user') || '')
@@ -254,10 +273,10 @@ const isAdmin = computed(() => userRole.value === 'admin')
 // 角色标签
 const roleLabel = computed(() => {
   const r = userRole.value
-  if (r === 'admin') return '管理员'
-  if (r === 'team_admin') return '团队管理员'
-  if (r === 'member') return '团队成员'
-  return '员工'
+  if (r === 'admin') return ui("管理员")
+  if (r === 'team_admin') return ui("团队管理员")
+  if (r === 'member') return ui("团队成员")
+  return ui("员工")
 })
 
 // 登录表单
@@ -281,14 +300,15 @@ function toggleRegister() {
 }
 
 async function confirmLogin() {
+  if (authLoading.value) return
   loginError.value = ''
   const u = loginUser.value.trim()
   const p = loginPass.value.trim()
-  if (!u || !p) { loginError.value = '用户名和密码必填'; return }
+  if (!u || !p) { loginError.value = ui("用户名和密码必填"); return }
   authLoading.value = true
   try {
     const res = await http('/login', { method: 'POST', body: { username: u, password: p } })
-    if (!res.ok) { loginError.value = res.error || '登录失败'; return }
+    if (!res.ok) { loginError.value = res.error || ui("登录失败"); return }
     userName.value = res.user
     userRole.value = res.role
     displayName.value = res.display_name || res.user
@@ -312,18 +332,19 @@ async function confirmLogin() {
 }
 
 async function doRegister() {
+  if (authLoading.value) return
   regError.value = ''
   const invite = regInvite.value.trim()
   const u = regUser.value.trim()
   const dn = regDisplayName.value.trim()
   const p = regPass.value.trim()
   const p2 = regPass2.value.trim()
-  if (!invite || !u || !p || !p2) { regError.value = '所有字段都必填'; return }
-  if (p !== p2) { regError.value = '两次密码不一致'; return }
+  if (!invite || !u || !p || !p2) { regError.value = ui("所有字段都必填"); return }
+  if (p !== p2) { regError.value = ui("两次密码不一致"); return }
   authLoading.value = true
   try {
     const res = await http('/register', { method: 'POST', body: { invite_code: invite, username: u, password: p, display_name: dn } })
-    if (!res.ok) { regError.value = res.error || '注册失败'; return }
+    if (!res.ok) { regError.value = res.error || ui("注册失败"); return }
     // 注册成功，自动登录
     userName.value = res.user
     userRole.value = res.role
@@ -350,7 +371,14 @@ async function doRegister() {
 }
 
 function logout() {
-  if (!confirm('确定退出登录？')) return
+  if (!confirm(ui("确定退出登录？"))) return
+  timer.reset()
+  entryStore.clear()
+  http.clear()
+  userTeam.value = ''
+  feishuUserId.value = ''
+  for (const key of ['tt_team', 'tt_feishu_id', 'tt_active_timer', 'tt_entries_cache', 'tt_all_categories']) localStorage.removeItem(key)
+  document.cookie = 'tt_timer=; max-age=0; path=/'
   localStorage.removeItem('tt_user')
   localStorage.removeItem('tt_role')
   localStorage.removeItem('tt_display_name')
@@ -366,9 +394,10 @@ function logout() {
 
 // ───── 侧边栏 ─────
 const sidebarCollapsed = ref(false)
-const currentPage = ref(localStorage.getItem('tt_current_page') || 'week')
+const savedPage = localStorage.getItem('tt_current_page')
+const currentPage = ref(['week', 'day', 'list', 'dashboard', 'reports', 'settings'].includes(savedPage) ? savedPage : 'week')
 // 顶部横栏: 日历视图的当前模式 (week/day)
-const calendarMode = ref(localStorage.getItem('tt_calendar_mode') || 'week')
+const calendarMode = ref(localStorage.getItem('tt_calendar_mode') === 'day' ? 'day' : 'week')
 const showCalendarDropdown = ref(false)
 const switchGroupRef = ref(null)
 
@@ -382,7 +411,10 @@ onMounted(() => document.addEventListener('click', onGlobalClick))
 onUnmounted(() => document.removeEventListener('click', onGlobalClick))
 
 // 持久化当前页面和日历模式, 刷新后恢复
-watch(currentPage, (v) => localStorage.setItem('tt_current_page', v))
+watch(currentPage, (v) => {
+  localStorage.setItem('tt_current_page', v)
+  if (v === 'week' || v === 'day') calendarMode.value = v
+})
 watch(calendarMode, (v) => localStorage.setItem('tt_calendar_mode', v))
 
 // 横条"开始计时"按钮：跳到周视图并触发弹窗
@@ -414,7 +446,7 @@ const defaultCategories = [
   { name: '培训', color: '#f59e0b' },
   { name: '其他', color: '#6b7280' },
 ]
-const categories = ref(JSON.parse(localStorage.getItem('tt_categories') || 'null') || defaultCategories)
+const categories = ref(readJSON('tt_categories', defaultCategories, Array.isArray))
 
 function saveCategories() {
   localStorage.setItem('tt_categories', JSON.stringify(categories.value))
@@ -441,7 +473,7 @@ function getCategoryColor(name) {
 
 // ───── 国家管理（自定义，默认国内）─────
 const defaultCountries = ['国内', '其他']
-const countries = ref(JSON.parse(localStorage.getItem('tt_countries') || 'null') || defaultCountries)
+const countries = ref(readJSON('tt_countries', defaultCountries, Array.isArray))
 
 function saveCountries() {
   localStorage.setItem('tt_countries', JSON.stringify(countries.value))
@@ -478,234 +510,24 @@ const timezones = [
   { value: 'UTC-12', label: 'UTC-12 国际日期变更线' },
 ]
 
-// ───── 实时计时器（全局状态）─────
-// activeTimer 结构: { record_id, description, category, color, country, user, notes, startTime }
-const activeTimer = ref(null)
-const timerTick = ref(0)
-let timerInterval = null
-
-const timerElapsedMs = computed(() => {
-  timerTick.value // 依赖触发重算
-  if (!activeTimer.value) return 0
-  return Date.now() - activeTimer.value.startTime
+// 各页面共用计时状态；后台确认成功后才广播停止。
+const timer = createTimer({
+  http, user: () => userName.value, displayName: () => displayName.value,
+  emit: entryStore.timerEvent, message: ui, notify: message => alert(message),
 })
-
-const timerElapsedText = computed(() => {
-  const ms = timerElapsedMs.value
-  const totalSec = Math.floor(ms / 1000)
-  const h = Math.floor(totalSec / 3600)
-  const m = Math.floor((totalSec % 3600) / 60)
-  const s = totalSec % 60
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-  return `${m}:${String(s).padStart(2, '0')}`
-})
-
-// 把计时状态存到 localStorage + cookie（cookie 防清缓存，localStorage 主存）
-function persistTimer() {
-  if (activeTimer.value) {
-    const data = {
-      record_id: activeTimer.value.record_id,
-      startTime: activeTimer.value.startTime,
-      description: activeTimer.value.description,
-      category: activeTimer.value.category,
-      color: activeTimer.value.color,
-      country: activeTimer.value.country,
-      user: activeTimer.value.user,
-      notes: activeTimer.value.notes,
-    }
-    localStorage.setItem('tt_active_timer', JSON.stringify(data))
-    // cookie 备份（有效期 7 天），格式: record_id|start_time
-    const cookieVal = `${data.record_id}|${data.startTime}`
-    document.cookie = `tt_timer=${cookieVal}; max-age=604800; path=/`
-  } else {
-    localStorage.removeItem('tt_active_timer')
-    document.cookie = 'tt_timer=; max-age=0; path=/'
+const { activeTimer, timerElapsedText, startActiveTimer, stopActiveTimer, restoreActiveTimer } = timer
+watch(userName, (next, previous) => {
+  resetContentTranslations()
+  if (next !== previous) {
+    timer.reset()
+    entryStore.clear()
+    http.clear()
   }
-}
-
-// 开始计时：乐观插入本地条目立即显示, 后台异步拿真 record_id
-async function startActiveTimer(payload) {
-  // payload: { description, category, color, country, user, notes }
-  const startTime = Date.now()
-  const tempId = 'temp_' + startTime
-  // 1. 乐观更新: 立即设置 activeTimer, 横条马上显示
-  activeTimer.value = {
-    ...payload,
-    record_id: tempId,
-    startTime: startTime,
-  }
-  persistTimer()
-  if (timerInterval) clearInterval(timerInterval)
-  timerInterval = setInterval(() => { timerTick.value++ }, 1000)
-  // 2. 乐观插入本地 entries, 周视图马上看到这条
-  window.dispatchEvent(new CustomEvent('timer-started', {
-    detail: {
-      record_id: tempId,
-      description: payload.description || '',
-      category: payload.category || '其他',
-      user: payload.user || '',
-      country: payload.country || '国内',
-      start_time: startTime,
-      end_time: null,  // 计时中
-    }
-  }))
-  // 3. 后台异步调 /timer/start 拿真 record_id
-  try {
-    const res = await http('/timer/start', {
-      method: 'POST',
-      body: {
-        user: payload.user || '',
-        description: payload.description || '',
-        category: payload.category || '其他',
-        country: payload.country || '国内',
-        notes: payload.notes || '',
-      },
-    })
-    // 4. 用真 record_id 替换临时 id
-    activeTimer.value.record_id = res.record_id
-    persistTimer()
-    // 5. 通知 WeekView 用真 record_id 替换
-    window.dispatchEvent(new CustomEvent('timer-record-ready', {
-      detail: { temp_id: tempId, record_id: res.record_id, start_time: res.start_time }
-    }))
-  } catch (e) {
-    // 失败: 清理横条 + 删本地条目
-    activeTimer.value = null
-    persistTimer()
-    if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
-    window.dispatchEvent(new CustomEvent('timer-start-failed', {
-      detail: { temp_id: tempId }
-    }))
-    alert('开始计时失败: ' + e.message)
-  }
-}
-
-// 完成计时：调 /timer/stop 补全 end_time
-async function stopActiveTimer() {
-  if (!activeTimer.value) return
-  const t = activeTimer.value
-  const endTime = Date.now()
-
-  // 如果 record_id 还是临时 id (temp_xxx), 等 /timer/start 返回真 id
-  // 最多等 10 秒, 超时就放弃 (用户会看到错误提示)
-  let realRecordId = t.record_id
-  if (typeof realRecordId === 'string' && realRecordId.startsWith('temp_')) {
-    for (let i = 0; i < 100; i++) {
-      // activeTimer 被 startActiveTimer 清空了 (/timer/start 失败), 跳出
-      if (!activeTimer.value) {
-        break
-      }
-      // activeTimer 还活着, startActiveTimer 会更新它的 record_id
-      if (!String(activeTimer.value.record_id).startsWith('temp_')) {
-        realRecordId = activeTimer.value.record_id
-        break
-      }
-      await new Promise(r => setTimeout(r, 100))
-    }
-  }
-
-  // 1. 立即清理横条和计时器, 用户秒级响应
-  activeTimer.value = null
-  persistTimer()
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
-
-  // 2. 乐观更新: 立即通知 WeekView 更新本地 entries 的 end_time
-  window.dispatchEvent(new CustomEvent('timer-stopped', {
-    detail: { record_id: realRecordId, end_time: endTime }
-  }))
-
-  // 3. 后台异步同步, 不阻塞用户
-  try {
-    await http('/timer/stop', {
-      method: 'POST',
-      body: { record_id: realRecordId },
-    })
-  } catch (e) {
-    // 失败: 计时器可能是孤儿 (飞书表里没这条记录), 直接清理, 不恢复横条
-    console.error('完成计时失败:', e.message)
-    activeTimer.value = null
-    persistTimer()
-    if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
-    window.dispatchEvent(new CustomEvent('timer-stopped', {
-      detail: { record_id: realRecordId, end_time: endTime }
-    }))
-    // 只在真正网络错误时提示, 孤儿记录静默清理
-    if (!e.message.includes('RecordIdNotFound') && !e.message.includes('HTTP 500')) {
-      alert('完成计时失败: ' + e.message)
-    }
-  }
-}
-
-// 从服务端恢复正在进行的计时器（刷新/重启后）
-// 核心逻辑: 直接信任 localStorage 里的 record_id 和 startTime
-// 用 /timer/active 只是为了拿服务端的 start_time (毫秒) 覆盖 localStorage 里可能过期的值
-// 不做 record_id 匹配 (因为 /timer/active 返回最早的, 不是最新的)
-async function restoreActiveTimer() {
-  // 1. 先尝试从 localStorage 恢复
-  let saved = localStorage.getItem('tt_active_timer')
-  // 2. localStorage 没有就从 cookie 读
-  if (!saved) {
-    const m = document.cookie.match(/tt_timer=([^;]+)/)
-    if (m) {
-      const [cookieRecordId, cookieStartTime] = m[1].split('|')
-      if (cookieRecordId && userName.value) {
-        try {
-          const res = await http(`/timer/active?user=${encodeURIComponent(userName.value)}`)
-          if (res.active) {
-            // 用服务端的 start_time (毫秒), fallback 到 cookie 里的值
-            const startTime = Number(res.start_time) || Number(cookieStartTime) || Date.now()
-            activeTimer.value = {
-              record_id: cookieRecordId,
-              startTime: startTime,
-              description: res.description || '',
-              category: res.category || '其他',
-              color: '#6366f1',
-              user: userName.value,
-              country: '国内',
-              notes: '',
-            }
-            persistTimer()
-            if (timerInterval) clearInterval(timerInterval)
-            timerInterval = setInterval(() => { timerTick.value++ }, 1000)
-          }
-        } catch (e) { /* 忽略 */ }
-      }
-      return
-    }
-  }
-
-  // 3. localStorage 有数据, 直接恢复 (不依赖 /timer/active 的 record_id 匹配)
-  if (saved) {
-    try {
-      const data = JSON.parse(saved)
-      if (data.record_id && data.startTime) {
-        // 强制转数字, 避免 localStorage 存的是字符串
-        const startTime = Number(data.startTime)
-        if (!isNaN(startTime) && startTime > 0) {
-          activeTimer.value = {
-            record_id: data.record_id,
-            startTime: startTime,
-            description: data.description || '',
-            category: data.category || '其他',
-            color: data.color || '#6366f1',
-            user: data.user || userName.value,
-            country: data.country || '国内',
-            notes: data.notes || '',
-          }
-          persistTimer()
-          if (timerInterval) clearInterval(timerInterval)
-          timerInterval = setInterval(() => { timerTick.value++ }, 1000)
-          return
-        }
-      }
-      // localStorage 数据无效, 清理
-      localStorage.removeItem('tt_active_timer')
-      document.cookie = 'tt_timer=; max-age=0; path=/'
-    } catch (e) {
-      localStorage.removeItem('tt_active_timer')
-    }
-  }
-}
+}, { flush: 'sync' })
+provide('timerStarting', timer.starting)
+provide('timerStopping', timer.stopping)
+provide('timerRestoring', timer.restoring)
+onUnmounted(timer.reset)
 
 // ───── provide 给子组件 ─────
 provide('http', http)
@@ -772,6 +594,7 @@ select {
 }
 
 :root {
+  color-scheme: dark;
   /* ── 暗色调科技感配色 ── */
   --primary: #00d4ff;
   --primary-light: #00d4ff;
@@ -795,8 +618,34 @@ select {
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(0, 212, 255, 0.15);
+  --sidebar-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
   --sidebar-width: 220px;
   --sidebar-collapsed: 60px;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --primary: #007da3;
+  --primary-light: #007da3;
+  --primary-dark: #006583;
+  --primary-glow: rgba(0, 125, 163, 0.12);
+  --bg: #f5f7fb;
+  --bg-gradient: linear-gradient(135deg, #f5f7fb 0%, #eef3f9 50%, #f5f7fb 100%);
+  --surface: #ffffff;
+  --surface-light: #f0f4f9;
+  --surface-hover: #e5edf5;
+  --text: #1e293b;
+  --text-secondary: #526277;
+  --text-muted: #64748b;
+  --border: #dce3ed;
+  --border-light: #c5d0df;
+  --success: #15803d;
+  --warning: #a65a00;
+  --danger: #d1224b;
+  --shadow: 0 4px 12px rgba(30, 41, 59, 0.06);
+  --shadow-lg: 0 8px 24px rgba(30, 41, 59, 0.1);
+  --shadow-glow: 0 0 20px rgba(0, 125, 163, 0.08);
+  --sidebar-shadow: 4px 0 24px rgba(30, 41, 59, 0.06);
 }
 
 body {
@@ -947,7 +796,7 @@ body {
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--sidebar-shadow);
 }
 
 .sidebar.collapsed {

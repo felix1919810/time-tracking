@@ -3,29 +3,29 @@
     <!-- 页头 -->
     <div class="reports-header">
       <div class="reports-title-wrap">
-        <div class="page-title">报表</div>
+        <div class="page-title">{{ ui("报表") }}</div>
         <div class="page-subtitle">{{ displayName }} · {{ roleLabel }}</div>
       </div>
       <!-- 查看对象 (团队管理员/管理员可见) -->
       <div v-if="canViewOthers" class="view-switch">
-        <label>查看:</label>
+        <label>{{ ui("查看:") }}</label>
         <select v-model="viewScope" @change="onScopeChange">
-          <option v-if="userRole !== 'admin'" value="self">自己 ({{ displayName }})</option>
-          <option v-if="userRole === 'team_admin'" value="team">本团队总表</option>
-          <option v-if="userRole === 'admin'" value="all">全部总表</option>
-          <option value="member">指定成员个人表</option>
+          <option v-if="userRole !== 'admin'" value="self">{{ ui("自己 (") }}{{ displayName }})</option>
+          <option v-if="userRole === 'team_admin'" value="team">{{ ui("本团队总表") }}</option>
+          <option v-if="userRole === 'admin'" value="all">{{ ui("全部总表") }}</option>
+          <option value="member">{{ ui("指定成员个人表") }}</option>
         </select>
         <div v-if="viewScope === 'member'" class="member-search-wrap">
           <input
             v-model="memberSearch"
             class="member-search-input"
-            placeholder="检索成员..."
+            :placeholder="ui(&quot;检索成员...&quot;)"
             @focus="showMemberDropdown = true"
             @blur="hideMemberDropdownLater"
           />
           <div v-if="showMemberDropdown" class="member-dropdown">
             <div class="member-option" :class="{ active: selectedUser === '' }" @mousedown="pickMember('')">
-              (全部成员)
+              {{ ui("(全部成员)") }}
             </div>
             <div
               v-for="u in filteredMembers"
@@ -37,11 +37,11 @@
               {{ u.user }}
               <span v-if="u.displayName && u.displayName !== u.user" class="member-sub">{{ u.displayName }}</span>
             </div>
-            <div v-if="filteredMembers.length === 0" class="member-empty">无匹配成员</div>
+            <div v-if="filteredMembers.length === 0" class="member-empty">{{ ui("无匹配成员") }}</div>
           </div>
         </div>
         <select v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="loadData">
-          <option value="">(全部团队)</option>
+          <option value="">{{ ui("(全部团队)") }}</option>
           <option v-for="t in allTeams" :key="t.name" :value="t.name">{{ t.name }}</option>
         </select>
       </div>
@@ -50,16 +50,16 @@
     <!-- ════════ 时间区间选择 ════════ -->
     <div class="period-bar">
       <div class="period-tabs">
-        <button :class="{ active: periodType === 'day' }" @click="setPeriodType('day')">日</button>
-        <button :class="{ active: periodType === 'week' }" @click="setPeriodType('week')">周</button>
-        <button :class="{ active: periodType === 'month' }" @click="setPeriodType('month')">月</button>
-        <button :class="{ active: periodType === 'custom' }" @click="setPeriodType('custom')">自定义</button>
+        <button :class="{ active: periodType === 'day' }" @click="setPeriodType('day')">{{ ui("日") }}</button>
+        <button :class="{ active: periodType === 'week' }" @click="setPeriodType('week')">{{ ui("周") }}</button>
+        <button :class="{ active: periodType === 'month' }" @click="setPeriodType('month')">{{ ui("月") }}</button>
+        <button :class="{ active: periodType === 'custom' }" @click="setPeriodType('custom')">{{ ui("自定义") }}</button>
       </div>
       <div class="period-nav">
         <button class="nav-arrow" @click="periodOffset--" :disabled="periodType === 'custom'">‹</button>
         <span class="period-label">{{ periodLabel }}</span>
         <button class="nav-arrow" @click="periodOffset++" :disabled="periodType === 'custom'">›</button>
-        <button class="today-btn" @click="goCurrent" :disabled="periodType === 'custom'">今天</button>
+        <button class="today-btn" @click="goCurrent" :disabled="periodType === 'custom'">{{ ui("今天") }}</button>
       </div>
       <!-- 自定义区间 -->
       <div v-if="periodType === 'custom'" class="custom-range">
@@ -74,28 +74,28 @@
       <div class="summary-card">
         <div class="summary-icon">⏱</div>
         <div class="summary-body">
-          <div class="summary-label">区间总工时</div>
+          <div class="summary-label">{{ ui("区间总工时") }}</div>
           <div class="summary-value">{{ fmtHM(rangeTotalMin) }}</div>
         </div>
       </div>
       <div class="summary-card">
         <div class="summary-icon">📋</div>
         <div class="summary-body">
-          <div class="summary-label">任务条目数</div>
+          <div class="summary-label">{{ ui("任务条目数") }}</div>
           <div class="summary-value">{{ rangeEntries.length }}</div>
         </div>
       </div>
       <div class="summary-card">
         <div class="summary-icon">📊</div>
         <div class="summary-body">
-          <div class="summary-label">日均工时</div>
+          <div class="summary-label">{{ ui("日均工时") }}</div>
           <div class="summary-value">{{ fmtHM(avgDailyMin) }}</div>
         </div>
       </div>
       <div class="summary-card">
         <div class="summary-icon">📅</div>
         <div class="summary-body">
-          <div class="summary-label">活跃天数</div>
+          <div class="summary-label">{{ ui("活跃天数") }}</div>
           <div class="summary-value">{{ activeDays }}</div>
         </div>
       </div>
@@ -105,17 +105,17 @@
     <div class="reports-grid">
       <!-- 分类占比表 -->
       <div class="reports-section">
-        <div class="section-title">分类工时占比</div>
+        <div class="section-title">{{ ui("分类工时占比") }}</div>
         <div class="cat-table">
           <div class="cat-row cat-header">
-            <div class="cat-col-name">分类</div>
-            <div class="cat-col-hours">工时</div>
+            <div class="cat-col-name">{{ ui("分类") }}</div>
+            <div class="cat-col-hours">{{ ui("工时") }}</div>
             <div class="cat-col-percent">%</div>
           </div>
           <div v-for="c in categoryStats" :key="c.name" class="cat-row">
             <div class="cat-col-name">
               <span class="cat-dot" :style="{ background: c.color }"></span>
-              {{ c.name }}
+              {{ tr(c.name) }}
             </div>
             <div class="cat-col-hours">{{ fmtHM(c.minutes) }}</div>
             <div class="cat-col-percent">{{ c.percent }}%</div>
@@ -123,13 +123,13 @@
               <div class="cat-bar-fill" :style="{ width: c.percent + '%', background: c.color }"></div>
             </div>
           </div>
-          <div v-if="categoryStats.length === 0" class="cat-empty">暂无数据</div>
+          <div v-if="categoryStats.length === 0" class="cat-empty">{{ ui("暂无数据") }}</div>
         </div>
       </div>
 
       <!-- 每日趋势图 -->
       <div class="reports-section">
-        <div class="section-title">每日工时趋势</div>
+        <div class="section-title">{{ ui("每日工时趋势") }}</div>
         <div class="chart-canvas-wrap">
           <canvas ref="trendChart"></canvas>
         </div>
@@ -139,53 +139,54 @@
     <!-- ════════ 明细表格 ════════ -->
     <div class="reports-section detail-section">
       <div class="section-title-row">
-        <div class="section-title">明细</div>
+        <div class="section-title">{{ ui("明细") }}</div>
         <div class="action-btns">
           <button class="export-btn" @click="exportCSV" :disabled="rangeEntries.length === 0">
-            ⬇ 导出 CSV
+            {{ ui("⬇ 导出 CSV") }}
           </button>
           <button class="export-btn" @click="downloadTemplate">
-            ⬇ 下载导入模板
+            {{ ui("⬇ 下载导入模板") }}
           </button>
           <button class="export-btn" @click="showImport = !showImport">
-            ⬆ 导入数据
+            {{ ui("⬆ 导入数据") }}
           </button>
         </div>
       </div>
+      <p class="edit-original-hint">{{ ui('CSV 导出保留任务内容原文；导入支持中英文列名。') }}</p>
       <!-- 导入区域 -->
       <div v-if="showImport" class="import-area">
         <div class="import-hint">
-          1. 下载导入模板<br>
-          2. 按模板格式填写数据（日期、成员、任务名称、任务分类、国家、任务开始时间、任务结束时间、工时、备注）<br>
-          3. 选择文件后点击"开始导入"
+          {{ ui("1. 下载导入模板") }}<br>
+          {{ ui("2. 按模板格式填写数据（日期、成员、任务名称、任务分类、国家、任务开始时间、任务结束时间、工时、备注）") }}<br>
+          {{ ui("3. 选择文件后点击\"开始导入\"") }}
         </div>
         <div class="import-actions">
           <input ref="fileInput" type="file" accept=".csv,.xlsx" class="import-file" @change="onFilePick" />
           <button class="export-btn" @click="doImport" :disabled="!pendingRows || importing">
-            {{ importing ? '导入中...' : '开始导入' }}
+            {{ importing ? ui("导入中...") : ui("开始导入") }}
           </button>
         </div>
         <div v-if="importMsg" class="import-msg" :class="importMsgType">{{ importMsg }}</div>
         <div v-if="pendingRows" class="import-preview">
-          预览：共 {{ pendingRows.length }} 条，<button class="link-btn" @click="pendingRows = null">取消</button>
+          {{ ui("预览：共") }} {{ pendingRows.length }} {{ ui("条，") }}<button class="link-btn" @click="pendingRows = null">{{ ui("取消") }}</button>
           <div class="preview-table">
             <div class="preview-row preview-header">
-              <div>日期</div><div>成员</div><div>任务名称</div><div>分类</div><div>工时</div>
+              <div>{{ ui("日期") }}</div><div>{{ ui("成员") }}</div><div>{{ ui("任务名称") }}</div><div>{{ ui("分类") }}</div><div>{{ ui("工时") }}</div>
             </div>
             <div v-for="(r, i) in pendingRows.slice(0, 5)" :key="i" class="preview-row">
-              <div>{{ r['日期'] }}</div><div>{{ r['成员'] }}</div><div>{{ r['任务名称'] }}</div><div>{{ r['任务分类'] }}</div><div>{{ r['工时'] }}</div>
+              <div>{{ r['日期'] }}</div><div>{{ r['成员'] }}</div><div>{{ tr(r['任务名称']) }}</div><div>{{ tr(r['任务分类']) }}</div><div>{{ r['工时'] }}</div>
             </div>
-            <div v-if="pendingRows.length > 5" class="preview-more">... 还有 {{ pendingRows.length - 5 }} 条</div>
+            <div v-if="pendingRows.length > 5" class="preview-more">{{ ui("... 还有") }} {{ pendingRows.length - 5 }} {{ ui("条") }}</div>
           </div>
         </div>
       </div>
       <div class="detail-table">
         <div class="detail-row detail-header">
-          <div class="detail-col" @click="sortBy('date')">日期 {{ sortArrow('date') }}</div>
-          <div class="detail-col" v-if="canViewOthers" @click="sortBy('user')">成员 {{ sortArrow('user') }}</div>
-          <div class="detail-col" @click="sortBy('category')">分类 {{ sortArrow('category') }}</div>
-          <div class="detail-col" @click="sortBy('description')">描述 {{ sortArrow('description') }}</div>
-          <div class="detail-col detail-col-hours" @click="sortBy('minutes')">时长 {{ sortArrow('minutes') }}</div>
+          <div class="detail-col" @click="sortBy('date')">{{ ui("日期") }} {{ sortArrow('date') }}</div>
+          <div class="detail-col" v-if="canViewOthers" @click="sortBy('user')">{{ ui("成员") }} {{ sortArrow('user') }}</div>
+          <div class="detail-col" @click="sortBy('category')">{{ ui("分类") }} {{ sortArrow('category') }}</div>
+          <div class="detail-col" @click="sortBy('description')">{{ ui("描述") }} {{ sortArrow('description') }}</div>
+          <div class="detail-col detail-col-hours" @click="sortBy('minutes')">{{ ui("时长") }} {{ sortArrow('minutes') }}</div>
         </div>
         <template v-for="e in sortedEntries" :key="e.record_id">
           <div class="detail-row" :class="{ expanded: expandedId === e.record_id }" @click="toggleExpand(e.record_id)">
@@ -193,36 +194,45 @@
             <div class="detail-col" v-if="canViewOthers">{{ e.fields['user'] || '-' }}</div>
             <div class="detail-col">
               <span class="cat-dot" :style="{ background: categoryColor(e.fields['category']) }"></span>
-              {{ e.fields['category'] || '-' }}
+              {{ tr(e.fields['category'] || '-') }}
             </div>
-            <div class="detail-col">{{ e.fields['description'] || '-' }}</div>
+            <div class="detail-col">{{ tr(e.fields['description'] || '-') }}</div>
             <div class="detail-col detail-col-hours">{{ fmtHM(e.fields['时长(秒)'] ? e.fields['时长(秒)'] / 60 : entryDur(e)) }}</div>
           </div>
           <div v-if="expandedId === e.record_id" class="detail-expanded">
             <div class="detail-grid">
-              <div class="detail-field"><span class="detail-label">日期</span><span class="detail-value">{{ fmtFullDate(e.fields['start_time']) }}</span></div>
-              <div class="detail-field"><span class="detail-label">成员</span><span class="detail-value">{{ e.fields['user'] || '-' }}</span></div>
-              <div class="detail-field"><span class="detail-label">任务名称</span><span class="detail-value">{{ e.fields['description'] || '-' }}</span></div>
-              <div class="detail-field"><span class="detail-label">任务分类</span><span class="detail-value">{{ e.fields['category'] || '-' }}</span></div>
-              <div class="detail-field"><span class="detail-label">国家</span><span class="detail-value">{{ e.fields['country'] || '-' }}</span></div>
-              <div class="detail-field"><span class="detail-label">开始时间</span><span class="detail-value">{{ fmtFullTime(e.fields['start_time']) }}</span></div>
-              <div class="detail-field"><span class="detail-label">结束时间</span><span class="detail-value">{{ fmtFullTime(e.fields['end_time']) }}</span></div>
-              <div class="detail-field"><span class="detail-label">工时</span><span class="detail-value">{{ fmtHM(e.fields['时长(秒)'] ? e.fields['时长(秒)'] / 60 : entryDur(e)) }}</span></div>
-              <div class="detail-field detail-field-full"><span class="detail-label">备注</span><span class="detail-value">{{ e.fields['备注'] || e.fields['remark'] || '-' }}</span></div>
+              <div class="detail-field"><span class="detail-label">{{ ui("日期") }}</span><span class="detail-value">{{ fmtFullDate(e.fields['start_time']) }}</span></div>
+              <div class="detail-field"><span class="detail-label">{{ ui("成员") }}</span><span class="detail-value">{{ e.fields['user'] || '-' }}</span></div>
+              <div class="detail-field"><span class="detail-label">{{ ui("任务名称") }}</span><span class="detail-value">{{ tr(e.fields['description'] || '-') }}</span></div>
+              <div class="detail-field"><span class="detail-label">{{ ui("任务分类") }}</span><span class="detail-value">{{ tr(e.fields['category'] || '-') }}</span></div>
+              <div class="detail-field"><span class="detail-label">{{ ui("国家") }}</span><span class="detail-value">{{ countryName(e.fields['country'] || '-') }}</span></div>
+              <div class="detail-field"><span class="detail-label">{{ ui("开始时间") }}</span><span class="detail-value">{{ fmtFullTime(e.fields['start_time']) }}</span></div>
+              <div class="detail-field"><span class="detail-label">{{ ui("结束时间") }}</span><span class="detail-value">{{ fmtFullTime(e.fields['end_time']) }}</span></div>
+              <div class="detail-field"><span class="detail-label">{{ ui("工时") }}</span><span class="detail-value">{{ fmtHM(e.fields['时长(秒)'] ? e.fields['时长(秒)'] / 60 : entryDur(e)) }}</span></div>
+              <div class="detail-field detail-field-full"><span class="detail-label">{{ ui("备注") }}</span><span class="detail-value">{{ tr(e.fields['notes'] || e.fields['备注'] || e.fields['remark'] || '-') }}</span></div>
             </div>
           </div>
         </template>
-        <div v-if="sortedEntries.length === 0" class="cat-empty">暂无数据</div>
+        <div v-if="sortedEntries.length === 0" class="cat-empty">{{ ui("暂无数据") }}</div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject, nextTick } from 'vue'
+import { ui, locale, setLang, countryName, countryMatches, localDate } from '../i18n.js'
+import { useContentTranslation } from '../lib/content-translation.js'
+const { tr, translationVersion } = useContentTranslation()
+import { originalCountryName } from '../i18n.js'
+import { encodeCSV } from '../lib/csv.js'
+import { durationMinutes, filterScopedEntries } from '../lib/entries.js'
+import { readJSON } from '../lib/storage.js'
+import { ref, computed, onMounted, onUnmounted, watch, inject, nextTick } from 'vue'
 import Chart from 'chart.js/auto'
 
+const clockNow = inject('clockNow')
 const http = inject('http')
+const entryStore = inject('entryStore')
 const userName = inject('userName')
 const userRole = inject('userRole')
 const displayName = inject('displayName')
@@ -246,9 +256,9 @@ const showMemberDropdown = ref(false)
 const canViewOthers = computed(() => userRole.value === 'admin' || userRole.value === 'team_admin')
 const roleLabel = computed(() => {
   const r = userRole.value
-  if (r === 'admin') return '管理员'
-  if (r === 'team_admin') return '团队管理员'
-  return '成员'
+  if (r === 'admin') return ui("管理员")
+  if (r === 'team_admin') return ui("团队管理员")
+  return ui("成员")
 })
 
 // 管理员默认看全部总表
@@ -289,7 +299,7 @@ const periodRange = computed(() => {
     const e = customEnd.value ? new Date(customEnd.value + 'T23:59:59') : null
     return { start: s, end: e }
   }
-  const now = new Date()
+  const now = new Date(clockNow.value)
   let start, end
   if (periodType.value === 'day') {
     start = new Date(now); start.setDate(now.getDate() + periodOffset.value); start.setHours(0,0,0,0)
@@ -308,11 +318,11 @@ const periodRange = computed(() => {
 
 const periodLabel = computed(() => {
   const { start, end } = periodRange.value
-  if (!start || !end) return '自定义区间'
+  if (!start || !end) return ui("自定义区间")
   const f = (d) => `${d.getMonth()+1}/${d.getDate()}`
-  if (periodType.value === 'day') return `${start.getFullYear()}年${start.getMonth()+1}月${start.getDate()}日`
-  if (periodType.value === 'week') return `周 ${f(start)} - ${f(end)}`
-  if (periodType.value === 'month') return `${start.getFullYear()}年${start.getMonth()+1}月`
+  if (periodType.value === 'day') return ui("{0}年{1}月{2}日", [start.getFullYear(), start.getMonth()+1, start.getDate()])
+  if (periodType.value === 'week') return ui("周 {0} - {1}", [f(start), f(end)])
+  if (periodType.value === 'month') return ui("{0}年{1}月", [start.getFullYear(), start.getMonth()+1])
   return `${f(start)} - ${f(end)}`
 })
 
@@ -321,7 +331,7 @@ function setPeriodType(t) {
   periodOffset.value = 0
   if (t === 'custom') {
     // 默认本周
-    const now = new Date()
+    const now = new Date(clockNow.value)
     const day = now.getDay() || 7
     const monday = new Date(now); monday.setDate(now.getDate() - day + 1)
     const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
@@ -346,13 +356,7 @@ function fmtDateISO(d) {
 }
 
 // ───── 工时计算 ─────
-function entryDur(e) {
-  const s = new Date(e.fields['start_time'])
-  const en = new Date(e.fields['end_time'])
-  const min = Math.max(0, (en - s) / 60000)
-  // 过滤异常时长: 超过 24h (1440min) 的条目视为忘记停止计时, 忽略
-  return min > 1440 ? 0 : min
-}
+function entryDur(e) { return durationMinutes(e, clockNow.value) }
 
 function fmtHM(min) {
   if (min == null || isNaN(min)) return '0h 0m'
@@ -514,46 +518,46 @@ const sortedEntries = computed(() => {
 function exportCSV() {
   const list = sortedEntries.value
   if (list.length === 0) return
-  const header = ['日期', '成员', '任务名称', '任务分类', '国家', '任务开始时间', '任务结束时间', '工时', '备注']
+  const header = ['日期', '成员', '任务名称', '任务分类', '国家', '任务开始时间', '任务结束时间', '工时', '备注'].map(key => ui(key))
   const rows = list.map(e => {
-    const minutes = Math.round(entryDur(e))
+    const minutes = entryDur(e)
     const hours = (minutes / 60).toFixed(2)
     return [
       fmtFullDate(e.fields['start_time']),
       e.fields['user'] || '',
-      (e.fields['description'] || '').replace(/"/g, '""'),
-      (e.fields['category'] || '').replace(/"/g, '""'),
-      (e.fields['country'] || '').replace(/"/g, '""'),
+      e.fields['description'] || '',
+      e.fields['category'] || '',
+      e.fields['country'] || '',
       fmtFullTime(e.fields['start_time']),
       fmtFullTime(e.fields['end_time']),
       hours,
-      (e.fields['备注'] || e.fields['remark'] || '').replace(/"/g, '""'),
+      e.fields['notes'] || e.fields['备注'] || e.fields['remark'] || '',
     ]
   })
-  const csv = [header, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+  const csv = encodeCSV([header, ...rows])
   // 加 BOM 让 Excel 正确识别 UTF-8
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `报表_${periodLabel.value}.csv`
+  a.download = ui("报表_{0}.csv", [periodLabel.value])
   a.click()
   URL.revokeObjectURL(url)
 }
 
 // ───── 下载导入模板 ─────
 function downloadTemplate() {
-  const header = ['日期', '成员', '任务名称', '任务分类', '国家', '任务开始时间', '任务结束时间', '工时', '备注']
+  const header = ['日期', '成员', '任务名称', '任务分类', '国家', '任务开始时间', '任务结束时间', '工时', '备注'].map(key => ui(key))
   const sample = [
     ['2026-08-30', 'testuser113', '修复登录bug', '开发', '中国', '2026-08-30 09:00:00', '2026-08-30 11:30:00', '2.5', '紧急修复'],
     ['2026-08-30', 'testuser114', '需求评审', '会议', '中国', '2026-08-30 14:00:00', '2026-08-30 15:00:00', '1', ''],
   ]
-  const csv = [header, ...sample].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+  const csv = encodeCSV([header, ...sample])
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = '工时导入模板.csv'
+  a.download = ui("工时导入模板.csv")
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -578,12 +582,14 @@ function onFilePick(e) {
       if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1)
       const rows = parseCSV(text)
       if (rows.length === 0) {
-        importMsg.value = '文件为空或格式错误'
+        importMsg.value = ui("文件为空或格式错误")
         importMsgType.value = 'error'
         pendingRows.value = null
         return
       }
-      const header = rows[0].map(h => h.trim())
+      const columns = ['日期', '成员', '任务名称', '任务分类', '国家', '任务开始时间', '任务结束时间', '工时', '备注']
+      const english = ['Date', 'Member', 'Task title', 'Task category', 'Country', 'Task start time', 'Task end time', 'Hours', 'Notes']
+      const header = rows[0].map(h => { const name = h.trim(); const index = english.findIndex(e => e.toLowerCase() === name.toLowerCase()); return index < 0 ? name : columns[index] })
       const dataRows = rows.slice(1).filter(r => r.some(c => c.trim() !== ''))
       // 映射成对象数组
       const mapped = dataRows.map(r => {
@@ -592,10 +598,10 @@ function onFilePick(e) {
         return obj
       })
       pendingRows.value = mapped
-      importMsg.value = `已解析 ${mapped.length} 条数据，点击"开始导入"`
+      importMsg.value = ui("已解析 {0} 条数据，点击\"开始导入\"", [mapped.length])
       importMsgType.value = 'success'
     } catch (err) {
-      importMsg.value = '解析失败: ' + err.message
+      importMsg.value = ui("解析失败: ") + err.message
       importMsgType.value = 'error'
       pendingRows.value = null
     }
@@ -640,7 +646,7 @@ async function doImport() {
       user: r['成员'] || r['用户'] || '',
       description: r['任务名称'] || r['描述'] || '',
       category: r['任务分类'] || r['分类'] || '',
-      country: r['国家'] || '',
+      country: originalCountryName(r['国家'] || ''),
       startTime: r['任务开始时间'] || r['开始时间'] || '',
       endTime: r['任务结束时间'] || r['结束时间'] || '',
       hours: r['工时'] || '',
@@ -656,10 +662,10 @@ async function doImport() {
     })
     if (res.failed > 0 && res.success === 0) {
       // 全部失败 (通常是权限不合规)
-      importMsg.value = '导入失败：' + (res.errors?.[0] || '身份不合规')
+      importMsg.value = ui("导入失败：") + (res.errors?.[0] || ui("身份不合规"))
       importMsgType.value = 'error'
     } else {
-      importMsg.value = `导入成功：${res.success || 0} 条，失败：${res.failed || 0} 条`
+      importMsg.value = ui("导入成功：{0} 条，失败：{1} 条", [res.success || 0, res.failed || 0])
       importMsgType.value = 'success'
       pendingRows.value = null
       if (fileInput.value) fileInput.value.value = ''
@@ -670,7 +676,7 @@ async function doImport() {
       }, 2000)
     }
   } catch (e) {
-    importMsg.value = '导入失败: ' + e.message
+    importMsg.value = ui("导入失败: ") + e.message
     importMsgType.value = 'error'
   } finally {
     importing.value = false
@@ -686,18 +692,21 @@ function renderTrendChart() {
   if (trendInstance) trendInstance.destroy()
 
   const { labels, data } = dailyTrend.value
+  const colors = getComputedStyle(document.documentElement)
+  const primary = colors.getPropertyValue('--primary').trim()
+  const textSecondary = colors.getPropertyValue('--text-secondary').trim()
   trendInstance = new Chart(trendChart.value, {
     type: 'line',
     data: {
       labels,
       datasets: [{
-        label: '工时(小时)',
+        label: ui('工时(小时)'),
         data,
-        borderColor: '#00d4ff',
+        borderColor: primary,
         backgroundColor: 'rgba(0, 212, 255, 0.15)',
         fill: true,
         tension: 0.35,
-        pointBackgroundColor: '#00d4ff',
+        pointBackgroundColor: primary,
         pointRadius: 4,
         pointHoverRadius: 6,
       }],
@@ -712,17 +721,19 @@ function renderTrendChart() {
       scales: {
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#64748b', callback: (v) => v + 'h' },
+          grid: { color: colors.getPropertyValue('--border').trim() },
+          ticks: { color: textSecondary, callback: (v) => v + 'h' },
         },
         x: {
           grid: { display: false },
-          ticks: { color: '#64748b' },
+          ticks: { color: textSecondary },
         },
       },
     },
   })
 }
+
+watch(locale, () => renderAll())
 
 function renderAll() {
   nextTick(() => {
@@ -762,7 +773,7 @@ async function loadTeamMembers() {
       ])
       let items = data.items || []
       teamMembersCache = items.map(m => ({
-        user: m.display_name || m.username,
+        user: m.username || m.display_name,
         displayName: m.display_name || m.username,
         team: m.team,
       }))
@@ -784,34 +795,25 @@ async function loadTeamMembers() {
   return teamMembersLoading
 }
 
+function applyEntries(allItems = entryStore.items.value) {
+  entries.value = filterScopedEntries(allItems, {
+    role: userRole.value, user: userName.value, name: displayName.value,
+    scope: viewScope.value, selectedUser: selectedUser.value, selectedTeam: selectedTeam.value,
+    team: userTeam.value, members: teamMembers.value,
+  })
+}
+watch(entryStore.items, () => { applyEntries(); renderAll() })
+
 async function loadData() {
+  applyEntries()
   try {
     const [data] = await Promise.all([
-      http('/entries?page_size=500'),
+      entryStore.load(),
       loadTeamMembers(),
     ])
-    const allItems = data.items || []
+    const allItems = data || []
 
-    const scope = viewScope.value
-    if (scope === 'self') {
-      const names = new Set([userName.value, displayName.value].filter(Boolean))
-      entries.value = names.size ? allItems.filter(e => names.has(e.fields.user)) : []
-    } else if (scope === 'member') {
-      const name = selectedUser.value || userName.value
-      entries.value = name ? allItems.filter(e => e.fields.user === name) : []
-    } else if (scope === 'team') {
-      const usersInTeam = new Set(
-        teamMembers.value.filter(m => m.team === userTeam.value).map(m => m.user)
-      )
-      entries.value = allItems.filter(e => usersInTeam.has(e.fields.user))
-    } else if (scope === 'all' && selectedTeam.value) {
-      const usersInTeam = new Set(
-        teamMembers.value.filter(m => m.team === selectedTeam.value).map(m => m.user)
-      )
-      entries.value = allItems.filter(e => usersInTeam.has(e.fields.user))
-    } else {
-      entries.value = allItems
-    }
+    applyEntries(allItems)
     renderAll()
   } catch (e) {
     console.error('加载失败:', e)
@@ -835,6 +837,8 @@ onMounted(() => {
   }
   loadData()
 })
+watch(clockNow, () => renderAll())
+onUnmounted(() => { for (const chart of [trendInstance]) chart?.destroy() })
 </script>
 
 <style scoped>
