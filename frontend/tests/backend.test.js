@@ -24,7 +24,7 @@ function backend() {
     return {data:{code:0,data:{record:entry}}}
   }
   axios.post=async()=>{tokenCalls++;return {data:{tenant_access_token:'mock-token',expire:7200}}}
-  const context={require:name=>name==='express'?express:name==='cors'?()=>()=>{}:name==='axios'?axios:name==='./translation.cjs'?require('../api-deploy/translation.cjs'):['path','crypto','https','zlib'].includes(name)?require(name):name==='iconv-lite'?{decode:b=>b.toString()}:(()=>{throw Error('Unexpected dependency '+name)})(),__dirname:'mock-public',process:{env:{}},Buffer,URLSearchParams,console:{log(){},error(){}},module:{exports:{}},Date}
+  const context={require:name=>name==='express'?express:name==='cors'?()=>()=>{}:name==='axios'?axios:name==='./auth.cjs'?require('../api-deploy/auth.cjs'):name==='./translation.cjs'?require('../api-deploy/translation.cjs'):['path','crypto','https','zlib'].includes(name)?require(name):name==='iconv-lite'?{decode:b=>b.toString()}:(()=>{throw Error('Unexpected dependency '+name)})(),__dirname:'mock-public',process:{env:{}},Buffer,URLSearchParams,console:{log(){},error(){}},module:{exports:{}},Date}
   vm.runInNewContext(fs.readFileSync(new URL('../api-deploy/index.js',import.meta.url),'utf8'),context)
   async function call(method,path,body={},query={}) {
     let status=200,data

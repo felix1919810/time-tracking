@@ -338,5 +338,13 @@
   "请选择两个不同对象，或填写两个有效且不同的时间段。": "Select two different objects, or enter two valid and different date ranges.",
   "工时差值（A − B）": "Time difference (A − B)",
   "相对 B": "Relative to B",
-  "B 为零，无法计算百分比": "B is zero; percentage is unavailable"
+  "B 为零，无法计算百分比": "B is zero; percentage is unavailable",
+  "飞书账号": "Feishu account",
+  "已绑定飞书账号": "Feishu account linked",
+  "绑定后可使用飞书登录，保留现有历史记录": "Link your Feishu account to sign in while keeping your existing records",
+  "重新验证并绑定飞书": "Verify and relink Feishu",
+  "绑定飞书账号": "Link Feishu account",
+  "登录已失效，请重新登录": "Your session has expired. Please log in again.",
+  "飞书登录未完成，请重新点击登录": "Feishu sign-in was not completed. Please try again.",
+  "飞书账号未绑定，请先使用账号密码登录并在设置中绑定": "Your Feishu account is not linked. Log in with your password and link it in Settings."
 }

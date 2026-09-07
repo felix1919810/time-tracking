@@ -5,15 +5,20 @@ export function createHttp({ base, fetchImpl = globalThis.fetch, now = Date.now,
   function clear() { generation++; cache.clear(); pending.clear() }
 
   async function request(url, options) {
+    const session = globalThis.localStorage?.getItem('tt_session')
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeout)
     try {
       const res = await fetchImpl(url, {
         method: options.method || 'GET',
-        headers: { 'Content-Type': 'application/json', ...options.headers },
+        headers: { 'Content-Type': 'application/json', ...(session ? {Authorization: 'Bearer ' + session} : {}), ...options.headers },
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
         signal: controller.signal,
       })
+      if (res.status === 401 && session === globalThis.localStorage?.getItem('tt_session') && !['/login','/feishu-auth','/auth/feishu/start'].includes(new URL(url).pathname)) {
+        globalThis.localStorage?.removeItem('tt_session')
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('auth-expired'))
+      }
       const data = await res.json().catch(() => null)
       if (!res.ok || data?.ok === false && options.method && options.method !== 'GET') {
         const error = new Error(message(data?.error || data?.message || `HTTP ${res.status}`))

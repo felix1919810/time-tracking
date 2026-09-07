@@ -8,6 +8,12 @@
       </div>
     </div>
 
+    <section class="settings-section">
+      <div class="section-title">{{ ui('飞书账号') }}</div>
+      <div class="section-body"><p>{{ feishuUserId ? ui('已绑定飞书账号') : ui('绑定后可使用飞书登录，保留现有历史记录') }}</p>
+        <button class="btn btn-primary" @click="redirectToFeishuAuth('bind')">{{ feishuUserId ? ui('重新验证并绑定飞书') : ui('绑定飞书账号') }}</button>
+      </div>
+    </section>
     <section class="settings-section" aria-labelledby="language-title">
       <div id="language-title" class="section-title">{{ ui('语言') }}</div>
       <div class="section-body">
@@ -208,6 +214,8 @@ const themeOptions = [
 ]
 
 const http = inject('http')
+const feishuUserId = inject('feishuUserId')
+const redirectToFeishuAuth = inject('redirectToFeishuAuth')
 const userName = inject('userName')
 const userRole = inject('userRole')
 const displayName = inject('displayName')

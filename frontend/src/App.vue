@@ -208,11 +208,14 @@ provide('clockNow', clockNow)
 let clockInterval
 onMounted(() => { clockInterval = setInterval(() => { clockNow.value = Date.now() }, 60000) })
 onUnmounted(() => clearInterval(clockInterval))
+function onAuthExpired() { clearSession(); loginError.value = ui('登录已失效，请重新登录') }
+onMounted(() => window.addEventListener('auth-expired', onAuthExpired))
+onUnmounted(() => window.removeEventListener('auth-expired', onAuthExpired))
 async function retryEntries() { try { await entryStore.load() } catch {} }
 
 // ───── 登录状态 ─────
-const userName = ref(localStorage.getItem('tt_user') || '')
-const userRole = ref(localStorage.getItem('tt_role') || '')
+const userName = ref('')
+const userRole = ref('')
 const displayName = ref(localStorage.getItem('tt_display_name') || '')
 const userTeam = ref(localStorage.getItem('tt_team') || '')
 const feishuUserId = ref(localStorage.getItem('tt_feishu_id') || '')
@@ -227,45 +230,42 @@ const FEISHU_H5_APP_ID = 'cli_aa07f5b29ef89bd1'
 // 飞书 v2 oauth2 全流程:
 //   授权端点: https://accounts.feishu.cn/open-apis/authen/v1/authorize
 //   换token:  https://open.feishu.cn/open-apis/authen/v2/oauth/token (SCF后端)
-function redirectToFeishuAuth() {
-  const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname)
-  const authUrl = `https://accounts.feishu.cn/open-apis/authen/v1/authorize?client_id=${FEISHU_H5_APP_ID}&response_type=code&redirect_uri=${redirectUri}`
-  window.location.href = authUrl
+async function redirectToFeishuAuth(action = 'login') {
+  if (authLoading.value) return
+  authLoading.value = true
+  try {
+    const res = await http('/auth/feishu/start', {method:'POST', body:{redirect_uri:window.location.origin + window.location.pathname, action:typeof action === 'string' ? action : 'login'}})
+    sessionStorage.setItem('tt_oauth_state', res.state)
+    window.location.assign(res.url)
+  } catch(e) { loginError.value = e.message; alert(e.message); authLoading.value = false }
 }
-
-// 检测 URL 是否有 code 参数(飞书重定向回来), 自动登录
+function applySession(res) {
+  if (res.session_token) localStorage.setItem('tt_session', res.session_token)
+  userName.value = res.user
+  userRole.value = res.role
+  displayName.value = res.display_name || res.user
+  userTeam.value = res.team || ''
+  feishuUserId.value = res.feishu_user_id || ''
+  for(const [key,value] of Object.entries({tt_user:userName.value,tt_role:userRole.value,tt_display_name:displayName.value,tt_team:userTeam.value,tt_feishu_id:feishuUserId.value}))localStorage.setItem(key,value)
+  showLogin.value = false
+}
 async function tryFeishuAuth() {
   const url = new URL(window.location.href)
-  const code = url.searchParams.get('code')
-  if (!code) return false
-
+  const code = url.searchParams.get('code'), state = url.searchParams.get('state')
+  if (!code && !url.searchParams.has('error')) return false
+  const expected = sessionStorage.getItem('tt_oauth_state')
+  sessionStorage.removeItem('tt_oauth_state')
+  for(const key of ['code','state','error','error_description'])url.searchParams.delete(key)
+  window.history.replaceState({},'',url.toString())
+  authLoading.value = true
   try {
-    const res = await http('/feishu-auth?code=' + encodeURIComponent(code))
-    if (res.ok) {
-      // 飞书免登成功
-      userName.value = res.user
-      userRole.value = res.role
-      displayName.value = res.display_name
-      userTeam.value = res.team || ''
-      feishuUserId.value = res.feishu_user_id || ''
-      localStorage.setItem('tt_user', res.user)
-      localStorage.setItem('tt_role', res.role)
-      localStorage.setItem('tt_display_name', res.display_name)
-      localStorage.setItem('tt_team', res.team || '')
-      localStorage.setItem('tt_feishu_id', res.feishu_user_id || '')
-      showLogin.value = false
-      // 清掉 URL 里的 code 参数
-      url.searchParams.delete('code')
-      window.history.replaceState({}, '', url.toString())
-      return true
-    } else {
-      // 飞书账号未绑定, 提示用户去网页端绑定
-      console.warn('飞书免登失败:', res.error)
-    }
-  } catch (e) {
-    console.warn('飞书免登异常:', e.message)
-  }
-  return false
+    if (!code || !state || state !== expected) throw Error(ui('飞书登录未完成，请重新点击登录'))
+    const res = await http('/feishu-auth', {method:'POST', body:{code,state}})
+    if (!res.ok) throw Error(res.error || ui('飞书账号未绑定，请先使用账号密码登录并在设置中绑定'))
+    applySession(res)
+    return true
+  } catch(e) { loginError.value = e.message; return false }
+  finally { authLoading.value = false }
 }
 
 const isAdmin = computed(() => userRole.value === 'admin')
@@ -309,6 +309,7 @@ async function confirmLogin() {
   try {
     const res = await http('/login', { method: 'POST', body: { username: u, password: p } })
     if (!res.ok) { loginError.value = res.error || ui("登录失败"); return }
+    if (res.session_token) localStorage.setItem('tt_session', res.session_token)
     userName.value = res.user
     userRole.value = res.role
     displayName.value = res.display_name || res.user
@@ -346,6 +347,7 @@ async function doRegister() {
     const res = await http('/register', { method: 'POST', body: { invite_code: invite, username: u, password: p, display_name: dn } })
     if (!res.ok) { regError.value = res.error || ui("注册失败"); return }
     // 注册成功，自动登录
+    if (res.session_token) localStorage.setItem('tt_session', res.session_token)
     userName.value = res.user
     userRole.value = res.role
     displayName.value = res.display_name || res.user
@@ -372,6 +374,11 @@ async function doRegister() {
 
 function logout() {
   if (!confirm(ui("确定退出登录？"))) return
+  clearSession()
+}
+function clearSession() {
+  localStorage.removeItem('tt_session')
+  sessionStorage.setItem('tt_feishu_auto', '1')
   timer.reset()
   entryStore.clear()
   http.clear()
@@ -563,7 +570,15 @@ provide('showUserName', showUserName)
 // 所以这里要在 onMounted 里主动恢复
 onMounted(async () => {
   // 飞书 H5 免登: 检测 URL 是否有 code 参数(飞书重定向回来)
-  await tryFeishuAuth()
+  const hasCallback = new URL(window.location.href).searchParams.has('code') || new URL(window.location.href).searchParams.has('error')
+  if (hasCallback) await tryFeishuAuth()
+  else if (localStorage.getItem('tt_session')) {
+    try { applySession(await http('/auth/me')) } catch(e) { loginError.value = e.message }
+  }
+  if (!userName.value && !hasCallback && !localStorage.getItem('tt_session') && /Lark|Feishu/i.test(navigator.userAgent) && !sessionStorage.getItem('tt_feishu_auto')) {
+    sessionStorage.setItem('tt_feishu_auto','1')
+    await redirectToFeishuAuth()
+  }
   // 如果已登录(从 localStorage 恢复), 但计时器没恢复, 主动调 restoreActiveTimer
   if (userName.value && !activeTimer.value) {
     await restoreActiveTimer()

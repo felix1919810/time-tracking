@@ -10,7 +10,7 @@ const path = require('node:path')
     page.setDefaultTimeout(12000)
     page.on('pageerror', error=>errors.push(error.message))
     page.on('dialog', dialog=>dialog.accept())
-    let running=null, documentLoads=0, failTranslation=false
+    let running=null, documentLoads=0, failTranslation=false, serverRole='admin'
     const start=new Date();start.setHours(9,0,0,0)
     const entries=[
       {record_id:'cn',fields:{user:'alice',description:'客户沟通',category:'会议',country:'中国',notes:'第一行备注\n第二行备注',start_time:+start,end_time:+start+3600000}},
@@ -23,7 +23,7 @@ const path = require('node:path')
       if(!url.hostname.endsWith('.tencentscf.com'))return route.abort()
       const body=request.postDataJSON(),method=request.method();let data={},status=200
       if(method==='OPTIONS')data={}
-      else if(url.pathname==='/login')data={ok:true,user:'alice',display_name:'Alice',role:'admin',team:'测试团队'}
+      else if(url.pathname==='/login' || url.pathname==='/auth/me')data={ok:true,user:'alice',display_name:'Alice',role:serverRole,team:'测试团队',session_token:'mock-session'}
       else if(url.pathname==='/entries')data={items:entries}
       else if(url.pathname==='/categories')data={items:[{record_id:'c1',name:'会议',color:'#10b981',team:'测试团队'},{record_id:'c2',name:'培训',color:'#6366f1',team:'测试团队'}]}
       else if(url.pathname==='/teams')data={items:[{record_id:'t1',name:'测试团队'}]}
@@ -138,7 +138,8 @@ const path = require('node:path')
     await page.getByText('修改标题',{exact:true}).waitFor()
     await page.screenshot({path:path.join(__dirname,'../../artifacts/i18n-fallback.png'),animations:'disabled'})
     failTranslation=false
-    await page.evaluate(()=>{localStorage.setItem('tt_role','member');localStorage.setItem('tt_current_page','day')})
+    serverRole='member'
+    await page.evaluate(()=>{localStorage.setItem('tt_role','admin');localStorage.setItem('tt_current_page','day')})
     await page.reload();await page.locator('.day-view').waitFor()
     await page.locator('.timer-start').click()
     await page.getByPlaceholder('What are you working on?').fill('持续计时')
@@ -157,7 +158,8 @@ const path = require('node:path')
     assert.deepEqual(await page.locator('.dow').allTextContents(),['Mon','Tue','Wed','Thu','Fri','Sat','Sun'])
     await page.screenshot({path:path.join(__dirname,'../../artifacts/i18n-week.png'),animations:'disabled'})
     await page.locator('.timer-stop').click();await page.locator('.timer-start').waitFor()
-    await page.evaluate(()=>{localStorage.setItem('tt_role','team_admin');localStorage.setItem('tt_current_page','settings')})
+    serverRole='team_admin'
+    await page.evaluate(()=>{localStorage.setItem('tt_role','admin');localStorage.setItem('tt_current_page','settings')})
     await page.reload();await page.locator('.settings-view').waitFor()
     assert.equal(await page.getByRole('button',{name:'Create team',exact:true}).count(),0)
     assert.equal(await page.getByRole('textbox',{name:'Original category name'}).count(),2)

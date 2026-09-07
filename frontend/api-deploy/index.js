@@ -115,6 +115,10 @@ function getCtx(req) {
 app.get('/', (req, res) => res.json({ ok: true, msg: 'time-track-api running', version: 'v3-fields-fix' }))
 
 // 测试路由：绕过 lark()，直接调飞书
+const { installAuth } = require('./auth.cjs')
+installAuth(app, { lark, appToken: DEFAULT_APP_TOKEN, userTable: DEFAULT_USER_TABLE, timeTable: DEFAULT_TIME_TABLE, categoryTable: DEFAULT_CATEGORY_TABLE, secret: () => { if (!FEISHU_H5_APP_SECRET) throw Error('Missing session signing secret'); return FEISHU_H5_APP_SECRET }, appId: () => FEISHU_H5_APP_ID })
+function escapeFilter(value) { return JSON.stringify(String(value || '')).slice(1, -1) }
+
 app.post('/test-direct', async (req, res) => {
   try {
     const token = await getTenantToken()
@@ -146,7 +150,7 @@ app.post('/login', async (req, res) => {
     const userTableId = req.query.user_table_id || DEFAULT_USER_TABLE
 
     // 用飞书 filter 查匹配记录
-    const filter = `AND(CurrentValue.[用户名]="${username}",CurrentValue.[密码]="${password}")`
+    const filter = `AND(CurrentValue.[用户名]="${escapeFilter(username)}",CurrentValue.[密码]="${escapeFilter(password)}")`
     const params = new URLSearchParams({ page_size: '5', filter })
     const data = await lark(`/bitable/v1/apps/${appToken}/tables/${userTableId}/records?${params}`)
     const items = data.data.items || []
@@ -197,7 +201,7 @@ app.post('/register', async (req, res) => {
     }
 
     // 2. 查用户名是否已存在
-    const userFilter = `CurrentValue.[用户名]="${username}"`
+    const userFilter = `CurrentValue.[用户名]="${escapeFilter(username)}"`
     const uParams = new URLSearchParams({ page_size: '5', filter: userFilter })
     const uData = await lark(`/bitable/v1/apps/${appToken}/tables/${userTableId}/records?${uParams}`)
     if ((uData.data.items || []).length > 0) {
@@ -228,7 +232,7 @@ app.post('/change-password', async (req, res) => {
     const userTableId = req.query.user_table_id || DEFAULT_USER_TABLE
 
     // 1. 查用户记录，验证原密码
-    const filter = `AND(CurrentValue.[用户名]="${username}",CurrentValue.[密码]="${old_password}")`
+    const filter = `AND(CurrentValue.[用户名]="${escapeFilter(username)}",CurrentValue.[密码]="${escapeFilter(old_password)}")`
     const params = new URLSearchParams({ page_size: '5', filter })
     const data = await lark(`/bitable/v1/apps/${appToken}/tables/${userTableId}/records?${params}`)
     const items = data.data.items || []
@@ -261,7 +265,7 @@ app.post('/update-profile', async (req, res) => {
     const userTableId = req.query.user_table_id || DEFAULT_USER_TABLE
 
     // 1. 查用户记录
-    const filter = `CurrentValue.[用户名]="${username}"`
+    const filter = `CurrentValue.[用户名]="${escapeFilter(username)}"`
     const params = new URLSearchParams({ page_size: '5', filter })
     const data = await lark(`/bitable/v1/apps/${appToken}/tables/${userTableId}/records?${params}`)
     const items = data.data.items || []
@@ -292,7 +296,7 @@ app.get('/entries', async (req, res) => {
     if (user) {
       // 飞书 filter 语法：CurrentValue.[字段名]="值"
       // 工时表字段名已改英文，用户字段为 user
-      const filter = `CurrentValue.[user]="${user}"`
+      const filter = `CurrentValue.[user]="${escapeFilter(user)}"`
       params.set('filter', filter)
     }
     const data = await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records?${params}`)
@@ -373,7 +377,7 @@ app.get('/timer/active', async (req, res) => {
     if (!user) return res.status(400).json({ error: 'user 必填' })
 
     // 查该用户 end_time 为空的记录
-    const filter = `AND(CurrentValue.[user]="${user}", CurrentValue.[end_time]="")`
+    const filter = `AND(CurrentValue.[user]="${escapeFilter(user)}", CurrentValue.[end_time]="")`
     const params = new URLSearchParams({ page_size: '5', filter })
     const data = await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records?${params}`)
     const items = data.data.items || []
@@ -699,7 +703,7 @@ app.get('/teams/members', async (req, res) => {
     const { team } = req.query
     const params = new URLSearchParams({ page_size: '200' })
     if (team) {
-      params.set('filter', `CurrentValue.[团队]="${team}"`)
+      params.set('filter', `CurrentValue.[团队]="${escapeFilter(team)}"`)
     }
     const data = await lark(`/bitable/v1/apps/${appToken}/tables/${DEFAULT_USER_TABLE}/records?${params}`)
     const items = (data.data.items || []).map(i => {
@@ -739,7 +743,7 @@ app.get('/categories', async (req, res) => {
     const { team } = req.query
     const params = new URLSearchParams({ page_size: '200' })
     if (team) {
-      params.set('filter', `CurrentValue.[团队]="${team}"`)
+      params.set('filter', `CurrentValue.[团队]="${escapeFilter(team)}"`)
     }
     const data = await lark(`/bitable/v1/apps/${appToken}/tables/${DEFAULT_CATEGORY_TABLE}/records?${params}`)
     const items = (data.data.items || []).map(i => ({
@@ -871,7 +875,7 @@ app.get('/feishu-jsapi-sign', async (req, res) => {
 
 // GET /feishu-auth?code=xxx → 用 code 换 user_id, 再匹配用户表
 // 返回: { ok, user, role, display_name, team, feishu_user_id }
-app.get('/feishu-auth', async (req, res) => {
+app.post('/feishu-auth', async (req, res) => {
   try {
     const { code } = req.query
     if (!code) return res.status(400).json({ error: 'code 必填' })
@@ -887,7 +891,7 @@ app.get('/feishu-auth', async (req, res) => {
           client_id: FEISHU_H5_APP_ID,
           client_secret: FEISHU_H5_APP_SECRET,
           code,
-          redirect_uri: 'https://felix1919810.github.io/time-tracking/',
+          redirect_uri: req.query.redirect_uri,
         },
         { timeout: 10000 }
       )
@@ -932,7 +936,7 @@ app.get('/feishu-auth', async (req, res) => {
 
     // 3. 查用户表, 匹配 feishu_user_id 字段
     const tenantToken = await getTenantToken()
-    const filter = `CurrentValue.[feishu_user_id]="${feishuUserId}"`
+    const filter = `CurrentValue.[feishu_user_id]="${escapeFilter(feishuUserId)}"`
     const params = new URLSearchParams({ page_size: '5', filter })
     const userQuery = await axios.get(
       `https://open.feishu.cn/open-apis/bitable/v1/apps/${DEFAULT_APP_TOKEN}/tables/${DEFAULT_USER_TABLE}/records?${params}`,
@@ -975,7 +979,7 @@ app.post('/feishu-bind', async (req, res) => {
 
     // 1. 查用户表里有没有这个 username
     const tenantToken = await getTenantToken()
-    const filter = `CurrentValue.[用户名]="${username}"`
+    const filter = `CurrentValue.[用户名]="${escapeFilter(username)}"`
     const params = new URLSearchParams({ page_size: '5', filter })
     const userQuery = await axios.get(
       `https://open.feishu.cn/open-apis/bitable/v1/apps/${DEFAULT_APP_TOKEN}/tables/${DEFAULT_USER_TABLE}/records?${params}`,
@@ -988,7 +992,7 @@ app.post('/feishu-bind', async (req, res) => {
     const recordId = userItems[0].record_id
 
     // 2. 检查这个 feishu_user_id 是否已被其他人绑定
-    const filter2 = `CurrentValue.[feishu_user_id]="${feishu_user_id}"`
+    const filter2 = `CurrentValue.[feishu_user_id]="${escapeFilter(feishu_user_id)}"`
     const params2 = new URLSearchParams({ page_size: '5', filter: filter2 })
     const dupQuery = await axios.get(
       `https://open.feishu.cn/open-apis/bitable/v1/apps/${DEFAULT_APP_TOKEN}/tables/${DEFAULT_USER_TABLE}/records?${params2}`,
