@@ -29,3 +29,30 @@
 .app select { background-size:19px 19px; background-position:right 9px center; font-weight:500; }
 @media(prefers-reduced-motion:reduce) { .app *, .app *::before,.app *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
 @media(max-width:650px) { .app .summary-card { padding:16px; }.app .action-btns { flex-wrap:wrap; gap:8px; }.app .reports-header { gap:12px; }.app .reports-grid { gap:14px; } }
+
+@media(max-width:768px) {
+ .app .layout { --sidebar-width:60px!important; }
+ .app .sidebar { width:60px; }
+ .app .sidebar-header { padding:20px 12px; }
+ .app .sidebar-brand { font-size:0; letter-spacing:0; }
+ .app .sidebar-brand .app-icon { font-size:22px; margin:0; }
+ .app .sidebar-nav { padding:10px 6px; }
+ .app .nav-item { padding:12px; justify-content:center; }
+ .app .nav-label,.app .sidebar-footer .language-picker,.app .sidebar-footer .user-info,.app .collapse-btn { display:none; }
+ .app .sidebar-footer { padding:10px 5px; }
+ .app .logout-btn { padding:8px 2px; font-size:11px; }
+ .app .main-content { min-width:0; padding:108px 12px 24px; }
+ .app .reports { padding:0; }
+ .app .period-bar,.app .reports-header,.app .section-title-row { flex-wrap:wrap; gap:12px; }
+ .app .period-tabs { flex-wrap:wrap; }
+ .app .report-filters { gap:12px; }
+ .app .comparison { padding:14px; }
+ .app .reports-section { padding:14px; }
+ .app .summary-cards { gap:10px; }
+ .app .summary-icon { display:none; }
+ .app .summary-value { font-size:22px; }
+ .app .top-switch-bar { padding:4px 8px; }
+ .app .switch-btn { padding:6px; }
+}
+
+@media(max-width:768px) { .app .reports-grid { grid-template-columns:minmax(0,1fr); } .app .reports-section { min-width:0; } .app .cat-col-name { min-width:0; overflow-wrap:anywhere; } }

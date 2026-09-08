@@ -15,12 +15,12 @@
           <span class="timer-desc">{{ tr(activeTimer.description || '(无描述)') }}</span>
           <span class="timer-cat" :style="{ color: activeTimer.color }">{{ tr(activeTimer.category) }}</span>
           <span class="timer-elapsed">{{ timerElapsedText }}</span>
-          <button class="timer-stop" :disabled="timerStopping || timerRestoring" :aria-busy="timerStopping" @click="stopActiveTimer" :title="ui(&quot;完成计时&quot;)">⏹</button>
+          <button class="timer-stop" :disabled="timerStopping || timerRestoring" :aria-busy="timerStopping" @click="stopActiveTimer" :title="ui(&quot;完成计时&quot;)"><AppIcon name="stop" /></button>
         </template>
         <template v-else>
-          <span class="timer-idle">⏱</span>
+          <span class="timer-idle"><AppIcon name="clock" /></span>
           <span class="timer-idle-text">{{ ui("未计时") }}</span>
-          <button class="timer-start" :disabled="timerRestoring" @click="openStartTimer" :title="ui(&quot;开始计时&quot;)">{{ ui("▶ 开始") }}</button>
+          <button class="timer-start" :disabled="timerRestoring" @click="openStartTimer" :title="ui(&quot;开始计时&quot;)"><AppIcon name="play" />{{ ui("▶ 开始") }}</button>
         </template>
       </div>
       <div class="toolbar-right">
@@ -120,7 +120,7 @@
       <div class="modal-card">
         <div class="modal-header">
           <div class="modal-title">{{ ui("开始计时") }}</div>
-          <button class="modal-close" @click="showStartModal = false">×</button>
+          <button class="modal-close" :aria-label="ui('关闭')" @click="showStartModal = false"><AppIcon name="close" /></button>
         </div>
         <div class="modal-body">
           <div class="form-field">
@@ -154,7 +154,7 @@
       <div class="modal-card">
         <div class="modal-header">
           <div><div class="modal-title">{{ ui("编辑条目") }}</div><p class="edit-original-hint">{{ ui("编辑时显示并保存原文") }}</p></div>
-          <button class="modal-close" @click="showEditModal = false">×</button>
+          <button class="modal-close" @click="showEditModal = false"><AppIcon name="close" /></button>
         </div>
         <div class="modal-body">
           <div class="form-field">
@@ -189,7 +189,7 @@
         <div class="modal-footer">
           <button class="btn btn-danger" @click="deleteEntry">{{ ui("删除") }}</button>
           <button class="btn btn-secondary" @click="showEditModal = false">{{ ui("取消") }}</button>
-          <button class="btn btn-primary" @click="saveEdit">{{ ui("保存") }}</button>
+          <button class="btn btn-primary" @click="saveEdit" :disabled="savingEdit">{{ ui("保存") }}</button>
         </div>
       </div>
     </div>
@@ -667,13 +667,12 @@ async function saveEdit() {
   }
   const changed = { ...oldEntry, fields }
   entryStore.update(changed)
-  showEditModal.value = false
   try {
     const result = await http('/entries/' + rid, { method: 'PUT', body: { fields: {
       description: fields.description, category: fields.category, start_time: fields.start_time,
       end_time: fields.end_time, country: fields.country, notes: fields.notes,
     } } })
-    if (userName.value === mountedAccount) entryStore.update(result.record || changed)
+    if (userName.value === mountedAccount) { entryStore.update(result.record || changed); showEditModal.value = false }
   } catch (e) {
     if (userName.value === mountedAccount) entryStore.update(oldEntry)
     alert(ui("保存失败，已恢复原记录：") + e.message)

@@ -17,7 +17,7 @@ const path = require('node:path')
     const today = new Date(); today.setHours(9,0,0,0)
     let rows = Array.from({length:500},(_,i)=>({record_id:'old-'+i,fields:{user:'alice',description:'历史记录'+i,category:'会议',start_time:today.getTime()-86400000*40,end_time:today.getTime()-86400000*40+60000}}))
     rows.push({record_id:'second-page',fields:{user:'alice',description:'第二页验证记录',category:'会议',start_time:today.getTime(),end_time:today.getTime()+3600000,country:'中国',notes:'备注验证'}})
-    let running = null, failStop = false, failWrite = false
+    let running = null, failStop = false, failWrite = false, signedIn = 'alice'
     await page.route('**/*', async route => {
       const url=new URL(route.request().url())
       if(url.hostname==='127.0.0.1') return route.continue()
@@ -26,7 +26,7 @@ const path = require('node:path')
       requests.push(method+' '+url.pathname+url.search)
       let data, status=200
       if(method==='OPTIONS') data={}
-      else if(url.pathname==='/login') data={ok:true,user:body.username,display_name:body.username==='alice'?'Alice':'Bob',role:'member',team:'测试团队'}
+      else if(url.pathname==='/login' || url.pathname==='/auth/me') { signedIn=body?.username || signedIn; data={ok:true,user:signedIn,display_name:signedIn==='alice'?'Alice':'Bob',role:'member',team:'测试团队',session_token:'mock-session'} }
       else if(url.pathname==='/entries' && method==='GET') data={items:url.searchParams.has('page_token')?rows.slice(500):rows.slice(0,500),has_more:!url.searchParams.has('page_token')&&rows.length>500,page_token:'page-2'}
       else if(url.pathname==='/categories') data={items:[{name:'会议',color:'#10b981',team:'测试团队'}]}
       else if(url.pathname==='/teams') data={items:[{name:'测试团队'}]}
@@ -78,6 +78,8 @@ const path = require('node:path')
     await page.getByRole('button',{name:'保存',exact:true}).click()
     await page.getByText('第二页验证记录',{exact:true}).first().waitFor()
     assert(notices.some(m=>m.includes('保存失败')))
+    assert.equal(await page.locator('.modal-mask input').first().inputValue(),'应当回滚的修改')
+    await page.getByRole('button',{name:'取消',exact:true}).click()
     await page.getByText('第二页验证记录',{exact:true}).first().click()
     await page.getByRole('button',{name:'删除',exact:true}).click()
     await page.getByText('第二页验证记录',{exact:true}).first().waitFor()
@@ -116,7 +118,7 @@ const path = require('node:path')
     }
     await page.locator('.nav-item').filter({hasText:'设置'}).click()
     await page.getByRole('radio',{name:'深色模式'}).check()
-    assert.deepEqual(await readTheme(),{theme:'dark',saved:'dark',scheme:'dark',surface:'rgb(19, 24, 38)'})
+    assert.deepEqual(await readTheme(),{theme:'dark',saved:'dark',scheme:'dark',surface:'rgb(20, 28, 40)'})
     await page.reload()
     await page.getByRole('radio',{name:'深色模式'}).waitFor()
     assert(await page.getByRole('radio',{name:'深色模式'}).isChecked())

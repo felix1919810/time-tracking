@@ -1,7 +1,7 @@
 <template>
  <div class="modal-mask archive-mask" @click.self="$emit('close')">
   <section class="modal-card archive-card" role="dialog" aria-modal="true" :aria-label="ui(recordId ? '修改历史' : '最近删除')">
-   <header class="modal-header"><div><div class="archive-eyebrow">TIME TRACKING / RECORDS</div><h2 class="modal-title">{{ ui(recordId ? '修改历史' : '最近删除') }}</h2></div><button class="modal-close" @click="$emit('close')" :aria-label="ui('关闭')">×</button></header>
+   <header class="modal-header"><div><div class="archive-eyebrow">TIME TRACKING / RECORDS</div><h2 class="modal-title">{{ ui(recordId ? '修改历史' : '最近删除') }}</h2></div><button class="modal-close" @click="$emit('close')" :aria-label="ui('关闭')"><AppIcon name="close" /></button></header>
    <div class="modal-body archive-body">
     <p class="archive-hint">{{ ui(recordId ? '仅记录功能上线后的修改，不支持一键回退。' : '删除的记录不计入报表，可在删除后 30 天内恢复。') }}</p>
     <p v-if="error" class="archive-error" role="alert">{{ error }} <button class="btn btn-secondary" @click="load">{{ ui('重试') }}</button></p>

@@ -4,7 +4,7 @@
     <div v-if="showLogin" class="auth-mask">
       <div class="auth-card">
         <LanguagePicker />
-        <div class="auth-logo">⏱</div>
+        <div class="auth-logo"><AppIcon name="clock" /></div>
         <div class="auth-title">{{ showRegister ? ui("注册新账号") : ui("欢迎使用 Time Tracking") }}</div>
 
         <!-- 登录表单 -->
@@ -23,7 +23,7 @@
           </button>
           <div class="auth-divider"><span>{{ ui("或") }}</span></div>
           <button class="auth-btn feishu-btn" @click="redirectToFeishuAuth">
-            {{ ui("🚀 飞书一键登录") }}
+            <AppIcon name="link" />{{ ui("🚀 飞书一键登录") }}
           </button>
           <div class="auth-switch">
             {{ ui("没有账号？") }}<a @click="toggleRegister">{{ ui("立即注册") }}</a>
@@ -68,8 +68,8 @@
       <!-- 侧边栏 -->
       <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
         <div class="sidebar-header">
-          <span v-if="!sidebarCollapsed" class="sidebar-brand">⏱ Time Tracking</span>
-          <span v-else class="sidebar-brand-icon">⏱</span>
+          <span v-if="!sidebarCollapsed" class="sidebar-brand"><AppIcon name="clock" />Time Tracking</span>
+          <span v-else class="sidebar-brand-icon"><AppIcon name="clock" /></span>
         </div>
 
         <nav class="sidebar-nav">
@@ -81,7 +81,7 @@
             @click="!item.noNav && (currentPage = item.key)"
             :title="ui(item.label)"
           >
-            <span class="nav-icon">{{ item.icon }}</span>
+            <span class="nav-icon"><AppIcon :name="item.icon" /></span>
             <span v-if="!sidebarCollapsed" class="nav-label">{{ ui(item.label) }}</span>
           </button>
         </nav>
@@ -95,8 +95,8 @@
               <div class="user-role">{{ roleLabel }}</div>
             </div>
           </div>
-          <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
-            {{ sidebarCollapsed ? '▶' : ui("◀ 收起") }}
+          <button :aria-label="sidebarCollapsed ? ui('展开侧栏') : ui('◀ 收起')" class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+            <AppIcon :name="sidebarCollapsed ? 'chevron-right' : 'chevron-left'" /><span v-if="!sidebarCollapsed">{{ ui('◀ 收起') }}</span>
           </button>
           <button v-if="!sidebarCollapsed" class="logout-btn" @click="logout">{{ ui("退出登录") }}</button>
         </div>
@@ -113,14 +113,14 @@
               :class="{ open: showCalendarDropdown }"
               @click.stop="showCalendarDropdown = !showCalendarDropdown"
               :title="ui(&quot;切换周/日视图&quot;)"
-            >▾</button>
+            ><AppIcon name="chevron-down" /></button>
             <button
               class="switch-btn"
               :class="{ active: currentPage === 'week' || currentPage === 'day' }"
               @click="currentPage = calendarMode"
               :title="ui(&quot;日历视图&quot;)"
             >
-              <span class="switch-icon">📅</span>
+              <span class="switch-icon"><AppIcon name="calendar" /></span>
               <span class="switch-label">{{ ui("日历视图") }}</span>
               <span class="switch-sub">({{ calendarMode === 'week' ? ui("周") : ui("日") }})</span>
             </button>
@@ -130,14 +130,14 @@
                 :class="{ active: calendarMode === 'week' }"
                 @click="calendarMode = 'week'; currentPage = 'week'; showCalendarDropdown = false"
               >
-                <span>📅</span> {{ ui("周视图") }}
+                <span><AppIcon name="calendar" /></span> {{ ui("周视图") }}
               </div>
               <div
                 class="dropdown-item"
                 :class="{ active: calendarMode === 'day' }"
                 @click="calendarMode = 'day'; currentPage = 'day'; showCalendarDropdown = false"
               >
-                <span>📆</span> {{ ui("日视图") }}
+                <span><AppIcon name="calendar" /></span> {{ ui("日视图") }}
               </div>
             </div>
           </div>
@@ -149,7 +149,7 @@
             @click="currentPage = 'list'"
             :title="ui(&quot;列表视图&quot;)"
           >
-            <span class="switch-icon">📋</span>
+            <span class="switch-icon"><AppIcon name="list" /></span>
             <span class="switch-label">{{ ui("列表视图") }}</span>
           </button>
         </div>
@@ -439,10 +439,10 @@ const navItems = computed(() => {
   // 周/日/列表都属于"视图", 点击不跳转
   const isView = currentPage.value === 'week' || currentPage.value === 'day' || currentPage.value === 'list'
   return [
-    { key: isView ? currentPage.value : 'week', icon: '📊', label: '视图', noNav: isView },
-    { key: 'dashboard', icon: '📈', label: '仪表盘' },
-    { key: 'reports', icon: '📄', label: '报表' },
-    { key: 'settings', icon: '⚙', label: '设置' },
+    { key: isView ? currentPage.value : 'week', icon: 'grid', label: '视图', noNav: isView },
+    { key: 'dashboard', icon: 'chart', label: '仪表盘' },
+    { key: 'reports', icon: 'report', label: '报表' },
+    { key: 'settings', icon: 'settings', label: '设置' },
   ]
 })
 

@@ -11,7 +11,7 @@ function backend() {
   const routes=new Map(), writes=[]
   let entry={record_id:'r',fields:{start_time:100000,end_time:160000}}
   let tokenCalls=0
-  const app={use(){},listen(){}}
+  const app={set(){},use(){},listen(){}}
   for(const method of ['get','post','put','delete','patch'])app[method]=(path,fn)=>routes.set(method+' '+path,fn)
   const express=()=>app;express.json=()=>()=>{}
   express.static=()=>()=>{}

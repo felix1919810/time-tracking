@@ -101,7 +101,7 @@
               <div class="team-name">{{ t.name }}</div>
               <div v-if="t.description" class="team-desc">{{ t.description }}</div>
             </div>
-            <button class="btn-icon danger" @click="removeTeam(t)" :title="ui(&quot;删除团队&quot;)">×</button>
+            <button class="btn-icon danger" @click="removeTeam(t)" :title="ui(&quot;删除团队&quot;)"><AppIcon name="close" /></button>
           </div>
 
           <!-- 该团队的成员列表 -->
@@ -113,7 +113,7 @@
                 <option value="member">{{ ui("成员") }}</option>
                 <option value="team_admin">{{ ui("团队管理员") }}</option>
               </select>
-              <button class="btn-icon danger" @click="removeMemberFromTeam(m)" :title="ui(&quot;移出团队&quot;)">×</button>
+              <button class="btn-icon danger" @click="removeMemberFromTeam(m)" :title="ui(&quot;移出团队&quot;)"><AppIcon name="close" /></button>
             </div>
             <div v-if="membersInTeam(t.name).length === 0" class="empty-hint">
               {{ ui("该团队暂无成员，从下方\"未分配成员\"点击加入") }}

@@ -49,31 +49,31 @@
 
     <!-- ════════ 分区 1: 固定指标 (不受日期选择影响) ════════ -->
     <div class="dash-section section-fixed">
-      <div class="section-title">{{ ui("📊 当前工时快览") }}</div>
+      <div class="section-title"><AppIcon name="chart" />{{ ui("📊 当前工时快览") }}</div>
       <div class="stat-grid">
         <div class="stat-card">
-          <div class="stat-icon">📅</div>
+          <div class="stat-icon"><AppIcon name="calendar" /></div>
           <div class="stat-body">
             <div class="stat-label">{{ ui("今日工时") }}</div>
             <div class="stat-value">{{ fmtHM(todayMin) }}</div>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">📆</div>
+          <div class="stat-icon"><AppIcon name="calendar" /></div>
           <div class="stat-body">
             <div class="stat-label">{{ ui("本周累计") }}</div>
             <div class="stat-value">{{ fmtHM(weekMin) }}</div>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">🗓</div>
+          <div class="stat-icon"><AppIcon name="calendar" /></div>
           <div class="stat-body">
             <div class="stat-label">{{ ui("本月累计") }}</div>
             <div class="stat-value">{{ fmtHM(monthMin) }}</div>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon">✓</div>
+          <div class="stat-icon"><AppIcon name="check" /></div>
           <div class="stat-body">
             <div class="stat-label">{{ ui("本月任务数") }}</div>
             <div class="stat-value">{{ monthTaskCount }}</div>
@@ -86,7 +86,7 @@
     <div class="dash-section section-dynamic">
       <!-- 日期选择栏 (属于变化模块) -->
       <div class="dynamic-header">
-        <div class="section-title">{{ ui("📈 时段分析") }}</div>
+        <div class="section-title"><AppIcon name="chart" />{{ ui("📈 时段分析") }}</div>
         <div class="period-nav">
           <div class="period-tabs">
             <button :class="{ active: period === 'day' }" @click="setPeriod('day')">{{ ui("日") }}</button>

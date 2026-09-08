@@ -82,28 +82,28 @@
     <!-- ════════ 汇总卡片 ════════ -->
     <div class="summary-cards">
       <div class="summary-card">
-        <div class="summary-icon">⏱</div>
+        <div class="summary-icon"><AppIcon name="clock" /></div>
         <div class="summary-body">
           <div class="summary-label">{{ ui("区间总工时") }}</div>
           <div class="summary-value">{{ fmtHM(rangeTotalMin) }}</div>
         </div>
       </div>
       <div class="summary-card">
-        <div class="summary-icon">📋</div>
+        <div class="summary-icon"><AppIcon name="list" /></div>
         <div class="summary-body">
           <div class="summary-label">{{ ui("任务条目数") }}</div>
           <div class="summary-value">{{ rangeEntries.length }}</div>
         </div>
       </div>
       <div class="summary-card">
-        <div class="summary-icon">📊</div>
+        <div class="summary-icon"><AppIcon name="chart" /></div>
         <div class="summary-body">
           <div class="summary-label">{{ ui("日均工时") }}</div>
           <div class="summary-value">{{ fmtHM(avgDailyMin) }}</div>
         </div>
       </div>
       <div class="summary-card">
-        <div class="summary-icon">📅</div>
+        <div class="summary-icon"><AppIcon name="calendar" /></div>
         <div class="summary-body">
           <div class="summary-label">{{ ui("活跃天数") }}</div>
           <div class="summary-value">{{ activeDays }}</div>
@@ -153,13 +153,13 @@
         <div class="action-btns">
           <button class="export-btn" @click="openArchive()">{{ ui('最近删除') }}</button>
           <button class="export-btn" @click="exportCSV" :disabled="rangeEntries.length === 0">
-            {{ ui("⬇ 导出 CSV") }}
+            <AppIcon name="download" />{{ ui("⬇ 导出 CSV") }}
           </button>
           <button class="export-btn" @click="downloadTemplate">
-            {{ ui("⬇ 下载导入模板") }}
+            <AppIcon name="download" />{{ ui("⬇ 下载导入模板") }}
           </button>
           <button class="export-btn" @click="showImport = !showImport">
-            {{ ui("⬆ 导入数据") }}
+            <AppIcon name="upload" />{{ ui("⬆ 导入数据") }}
           </button>
         </div>
       </div>
@@ -191,7 +191,7 @@
           </div>
         </div>
       </div>
-      <div class="detail-table">
+      <div class="detail-table" :class="{ 'has-members': canViewOthers }">
         <div class="detail-row detail-header">
           <div class="detail-col" @click="sortBy('date')">{{ ui("日期") }} {{ sortArrow('date') }}</div>
           <div class="detail-col" v-if="canViewOthers" @click="sortBy('user')">{{ ui("成员") }} {{ sortArrow('user') }}</div>
@@ -234,7 +234,7 @@
       <div class="modal-card">
         <div class="modal-header">
           <div><div class="modal-title">{{ ui("编辑条目") }}</div><p class="edit-original-hint">{{ ui("编辑时显示并保存原文") }}</p></div>
-          <button class="modal-close" @click="showEditModal = false">×</button>
+          <button class="modal-close" :aria-label="ui('关闭')" @click="showEditModal = false"><AppIcon name="close" /></button>
         </div>
         <div class="modal-body">
           <div class="form-field">
@@ -384,13 +384,12 @@ async function saveEdit() {
   }
   const changed = { ...oldEntry, fields }
   entryStore.update(changed)
-  showEditModal.value = false
   try {
     const result = await http('/entries/' + rid, { method: 'PUT', body: { fields: {
       description: fields.description, category: fields.category, start_time: fields.start_time,
       end_time: fields.end_time, country: fields.country, notes: fields.notes,
     } } })
-    if (userName.value === mountedAccount) entryStore.update(result.record || changed)
+    if (userName.value === mountedAccount) { entryStore.update(result.record || changed); showEditModal.value = false }
   } catch (e) {
     if (userName.value === mountedAccount) entryStore.update(oldEntry)
     alert(ui("保存失败，已恢复原记录：") + e.message)
@@ -1493,12 +1492,14 @@ onUnmounted(() => { for (const chart of [trendInstance]) chart?.destroy() })
 
 .detail-row {
   display: grid;
-  grid-template-columns: 80px 100px 1fr 120px 80px;
+  grid-template-columns: 80px minmax(100px, 1fr) minmax(160px, 2fr) 80px;
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
   align-items: center;
 }
+
+.detail-table.has-members .detail-row { grid-template-columns: 80px 100px minmax(100px, 1fr) minmax(160px, 2fr) 80px; }
 
 .detail-row:last-child { border-bottom: none; }
 
@@ -1561,8 +1562,7 @@ onUnmounted(() => { for (const chart of [trendInstance]) chart?.destroy() })
   .summary-cards { grid-template-columns: 1fr 1fr; }
   .reports-grid { grid-template-columns: 1fr; }
   .period-label { min-width: 100px; }
-  .detail-row { grid-template-columns: 60px 1fr 80px; gap: 8px; }
-  .detail-row .detail-col:nth-child(2),
-  .detail-row .detail-col:nth-child(4) { display: none; }
+  .detail-table { overflow-x: auto; }
+  .detail-row { min-width: 540px; gap: 8px; }
 }
 </style>

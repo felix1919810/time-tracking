@@ -6,6 +6,8 @@ const axios = require('axios')
 const cors = require('cors')
 
 const app = express()
+app.set('case sensitive routing', true)
+app.set('strict routing', true)
 app.use(cors())
 app.use(express.json())
 
@@ -1030,10 +1032,8 @@ app.post('/translate', async (req, res) => {
   }
 })
 
-// SPA catch-all: 非 API 路径都返回 index.html
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'))
-})
+// Views are selected in-app; unknown API paths must not fall back to HTML.
+app.use((req, res) => res.status(404).json({ error: '接口不存在' }))
 
 // ───── 启动 ─────
 const port = process.env.PORT || 9000
