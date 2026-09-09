@@ -12,7 +12,7 @@ test('real Express routing does not allow case or slash variants to bypass autho
  const axios=async c=>{
   if(c.method!=='GET'&&!c.url.includes('/records/search?')){writes++;const body=JSON.parse(c.data.toString());if(c.url.includes('/tblKmai7bKF54DYx/'))Object.assign(user.fields,body.fields);return {data:{code:0,data:{record:{},records:(body.records||[]).map((r,i)=>({...r,record_id:'new'+i}))}}}}
   const users=c.url.includes('/tblKmai7bKF54DYx/')
-  return {data:{code:0,data:users?{items:[user]}:{items:[{record_id:'own',fields:{user:'alice'}},{record_id:'other',fields:{user:'bob'}}],record:{record_id:'other',fields:{user:'bob',start_time:1,end_time:2}}}}}
+  return {data:{code:0,data:users?{items:[user]}:{items:[{record_id:'own',fields:{user:[{text:'alice',type:'text'}]}},{record_id:'other',fields:{user:[{text:'bob',type:'text'}]}}],record:{record_id:'other',fields:{user:'bob',start_time:1,end_time:2}}}}}
  }
  axios.post=async()=>({data:{tenant_access_token:'fake',expire:7200}})
  vm.runInNewContext(fs.readFileSync(new URL('../api-deploy/index.js',import.meta.url),'utf8'),{require:n=>n==='express'?express:n==='axios'?axios:require(n),__dirname:'nonexistent-public',process:{env:{FEISHU_H5_APP_SECRET:'test-secret'}},Buffer,URLSearchParams,Date,console:{log(){},error(){}},module:{exports:{}}})

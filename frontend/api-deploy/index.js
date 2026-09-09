@@ -107,7 +107,7 @@ async function larkRequest(path, method = 'GET', body = null) {
   const r = await axios(config)
   const data = r.data
   if (data.code !== 0) throw Object.assign(new Error(`飞书 API 错误 ${data.code}: ${data.msg || ''}`), {code:'FEISHU_'+data.code,providerCode:data.code})
-  return data
+  return path.includes('/tables/'+DEFAULT_TIME_TABLE+'/records') ? require('./entry-record.cjs').normalizeEntryResponse(data) : data
 }
 
 function getCtx(req) {

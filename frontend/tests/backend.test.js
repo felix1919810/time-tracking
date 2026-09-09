@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url)
 // or real records are used; listening and all outbound calls are replaced.
 function backend() {
   const routes=new Map(), writes=[]
-  let entry={record_id:'r',fields:{start_time:100000,end_time:160000}}
+  let entry={record_id:'r',fields:{user:[{text:'alice',type:'text'}],description:[{text:'First',type:'text'},{text:'\nSecond',type:'text'}],notes:[{text:'Notes',type:'text'}],start_time:100000,end_time:160000}}
   let tokenCalls=0
   const app={set(){},use(){},listen(){}}
   for(const method of ['get','post','put','delete','patch'])app[method]=(path,fn)=>routes.set(method+' '+path,fn)
@@ -24,7 +24,7 @@ function backend() {
     return {data:{code:0,data:{record:entry}}}
   }
   axios.post=async()=>{tokenCalls++;return {data:{tenant_access_token:'mock-token',expire:7200}}}
-  const context={require:name=>name==='express'?express:name==='cors'?()=>()=>{}:name==='axios'?axios:name==='./read-transport.cjs'?require('../api-deploy/read-transport.cjs'):name==='./passwords.cjs'?require('../api-deploy/passwords.cjs'):name==='./input-security.cjs'?require('../api-deploy/input-security.cjs'):name==='./import.cjs'?require('../api-deploy/import.cjs'):name==='./history.cjs'?require('../api-deploy/history.cjs'):name==='./auth.cjs'?require('../api-deploy/auth.cjs'):name==='./translation.cjs'?require('../api-deploy/translation.cjs'):['path','crypto','https','zlib'].includes(name)?require(name):name==='iconv-lite'?{decode:b=>b.toString()}:(()=>{throw Error('Unexpected dependency '+name)})(),__dirname:'mock-public',process:{env:{}},Buffer,URLSearchParams,console:{log(){},error(){}},module:{exports:{}},Date}
+  const context={require:name=>name==='express'?express:name==='cors'?()=>()=>{}:name==='axios'?axios:name==='./entry-record.cjs'?require('../api-deploy/entry-record.cjs'):name==='./read-transport.cjs'?require('../api-deploy/read-transport.cjs'):name==='./passwords.cjs'?require('../api-deploy/passwords.cjs'):name==='./input-security.cjs'?require('../api-deploy/input-security.cjs'):name==='./import.cjs'?require('../api-deploy/import.cjs'):name==='./history.cjs'?require('../api-deploy/history.cjs'):name==='./auth.cjs'?require('../api-deploy/auth.cjs'):name==='./translation.cjs'?require('../api-deploy/translation.cjs'):['path','crypto','https','zlib'].includes(name)?require(name):name==='iconv-lite'?{decode:b=>b.toString()}:(()=>{throw Error('Unexpected dependency '+name)})(),__dirname:'mock-public',process:{env:{}},Buffer,URLSearchParams,console:{log(){},error(){}},module:{exports:{}},Date}
   vm.runInNewContext(fs.readFileSync(new URL('../api-deploy/index.js',import.meta.url),'utf8'),context)
   async function call(method,path,body={},query={}) {
     let status=200,data
@@ -38,6 +38,9 @@ test('SCF条目接口返回下一页游标',async()=>{
   const api=backend(),res=await api.call('get','/entries')
   assert.equal(res.data.page_token,'next-page')
   assert.equal(res.data.has_more,true)
+  assert.equal(res.data.items[0].fields.user,'alice')
+  assert.equal(res.data.items[0].fields.description,'First\nSecond')
+  const filtered=await api.call('get','/entries',{}, {user:'alice'});assert.equal(filtered.data.items.length,1)
 })
 test('重复停止已完成记录保持原结束时间和工时',async()=>{
   const api=backend()
