@@ -377,5 +377,17 @@
   "成员导入权限": "Member import access",
   "管理角色默认可导入；普通成员需单独授权，授权后仅可导入自己的记录。": "Administrators can import by default. Members require permission and may import only their own records.",
   "允许 {0} 导入": "Allow {0} to import",
-  "CSV 引号未闭合，请检查文件": "Unclosed CSV quote. Please check the file."
+  "CSV 引号未闭合，请检查文件": "Unclosed CSV quote. Please check the file.",
+  "确认删除这条记录？删除后 30 天内可在最近删除中恢复。": "Delete this record? You can restore it from Recently deleted within 30 days.",
+  "可直接勾选成员主动授权，无需等待申请。": "Grant access directly by selecting a member; no request is required.",
+  "待审批": "Pending approval",
+  "拒绝申请": "Reject request",
+  "允许导入": "Allow import",
+  "暂无可管理的成员": "No members available to manage",
+  "导入权限": "Import access",
+  "已获得导入权限": "Import access granted",
+  "申请已提交，等待管理员或团队管理员审批": "Request submitted. Awaiting approval from an administrator or team administrator.",
+  "申请导入权限": "Request import access",
+  "新密码需为 12 至 256 位": "New password must be 12–256 characters",
+  "密码已更新，请重新登录": "Password updated. Please sign in again"
 }

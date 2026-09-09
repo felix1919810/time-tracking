@@ -30,6 +30,8 @@ const path = require('node:path')
       else if(url.pathname==='/entries/trash/restore')data={ok:true,record:{record_id:'trash',fields:{user:'alice',description:'Restored task',category:'会议',start_time:'2000-01-01T09:00:00Z',end_time:'2000-01-01T10:00:00Z',deleted_at:null}}}
       else if(url.pathname==='/entries/batch'){writes.push({import:body});data={success:body.rows.length,failed:0,records:[]}}
       else if(url.pathname.endsWith('/import-permission')){writes.push({permission:body});data={ok:true,can_import:body.can_import}}
+      else if(url.pathname==='/import-permission/request'){writes.push({requestImport:true});data={ok:true,can_import:false,import_requested:true}}
+      else if(url.pathname.startsWith('/entries/') && method==='DELETE'){writes.push({deleted:url.pathname});data={ok:true}}
       else if(url.pathname==='/entries')data={items:entries}
       else if(url.pathname==='/categories')data={items:[{record_id:'c1',name:'会议',color:'#10b981',team:'测试团队'},{record_id:'c2',name:'培训',color:'#6366f1',team:'测试团队'}]}
       else if(url.pathname==='/teams')data={items:[{record_id:'t1',name:'测试团队'}]}
@@ -190,11 +192,23 @@ const path = require('node:path')
     assert.deepEqual(await page.locator('.dow').allTextContents(),['Mon','Tue','Wed','Thu','Fri','Sat','Sun'])
     await page.screenshot({path:path.join(__dirname,'../../artifacts/i18n-week.png'),animations:'disabled'})
     await page.locator('.timer-stop').click();await page.locator('.timer-start').waitFor()
+    await nav('Settings')
+    await page.getByRole('button',{name:'Request import access',exact:true}).click()
+    await page.getByText('Request submitted. Awaiting approval from an administrator or team administrator.',{exact:true}).waitFor()
+    assert(writes.some(w=>w.requestImport))
     serverRole='team_admin'
     await page.evaluate(()=>{localStorage.setItem('tt_role','admin');localStorage.setItem('tt_current_page','settings')})
     await page.reload();await page.locator('.settings-view').waitFor()
     assert.equal(await page.getByRole('button',{name:'Create team',exact:true}).count(),0)
     assert.equal(await page.getByRole('textbox',{name:'Original category name'}).count(),2)
+    await page.getByRole('checkbox',{name:'Allow Bob to import',exact:true}).check()
+    assert(writes.at(-1).permission.can_import)
+    await nav('Reports')
+    await page.locator('.detail-row').filter({hasText:'Bob task'}).click()
+    await page.getByRole('button',{name:'Edit entry',exact:true}).click()
+    await page.getByRole('button',{name:'Delete',exact:true}).click()
+    await page.locator('.modal-mask').waitFor({state:'hidden'})
+    assert.equal(writes.at(-1).deleted,'/entries/bob')
     await page.setViewportSize({width:390,height:844})
     await nav('Reports')
     await page.locator('.reports').waitFor()

@@ -34,6 +34,13 @@ function normalizeRows(rows,auth,canUser){
 }
 function installImport(app,{lark,appToken,timeTable,userTable}){
  const base=table=>'/bitable/v1/apps/'+appToken+'/tables/'+table+'/records'
+ app.post('/import-permission/request',async(req,res)=>{
+  try {
+   if(req.auth.can_import)return res.json({ok:true,can_import:true,import_requested:false})
+   if(!req.auth.record.fields.import_requested)await lark(base(userTable)+'/'+encodeURIComponent(req.auth.record_id),'PUT',{fields:{import_requested:true}})
+   res.json({ok:true,can_import:false,import_requested:true})
+  }catch{res.status(503).json({error:'申请提交失败，请重试'})}
+ })
  app.post('/members/:id/import-permission',async(req,res)=>{
   try{
    const auth=req.auth,target=auth.all.find(u=>u.record_id===req.params.id)
@@ -41,7 +48,7 @@ function installImport(app,{lark,appToken,timeTable,userTable}){
    if(!['admin','team_admin'].includes(auth.role)||auth.role==='team_admin'&&(!auth.team||scalar(target.fields['团队'])!==auth.team))return res.status(403).json({error:'无权设置该成员的导入权限'})
    if(['admin','team_admin'].includes(scalar(target.fields['角色'])))return res.status(400).json({error:'管理角色默认可导入，无需单独授权'})
    if(typeof req.body.can_import!=='boolean')return res.status(400).json({error:'导入权限必须为布尔值'})
-   await lark(base(userTable)+'/'+encodeURIComponent(target.record_id),'PUT',{fields:{can_import:req.body.can_import}})
+   await lark(base(userTable)+'/'+encodeURIComponent(target.record_id),'PUT',{fields:{can_import:req.body.can_import,import_requested:false}})
    res.json({ok:true,can_import:req.body.can_import})
   }catch(e){res.status(503).json({error:'权限保存失败，请重试'})}
  })

@@ -275,6 +275,7 @@
           </div>
         </div>
         <div class="modal-footer">
+          <button class="btn btn-danger" @click="deleteReportEntry" :disabled="savingEdit">{{ ui('删除') }}</button>
           <button class="btn btn-secondary" @click="showEditModal = false">{{ ui("取消") }}</button>
           <button class="btn btn-primary" @click="saveEdit" :disabled="savingEdit">{{ ui("保存") }}</button>
         </div>
@@ -372,6 +373,16 @@ function fromLocalDatetime(s) {
 }
 
 const savingEdit = ref(false)
+async function deleteReportEntry() {
+  if(savingEdit.value) return
+  const rid=editForm.value.record_id
+  if(!confirm(ui('确认删除这条记录？删除后 30 天内可在最近删除中恢复。')))return
+  savingEdit.value=true
+  try {
+    await http('/entries/'+encodeURIComponent(rid),{method:'DELETE'})
+    if(userName.value===mountedAccount){entryStore.remove(rid);showEditModal.value=false}
+  }catch(e){alert(ui('删除失败: ')+e.message)}finally{savingEdit.value=false}
+}
 async function saveEdit() {
   if (savingEdit.value) return
   if (!validEditRange(editForm.value.startTime, editForm.value.endTime)) {

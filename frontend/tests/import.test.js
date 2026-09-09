@@ -17,4 +17,13 @@ test('import grants are limited to management roles and team scope',async()=>{
  assert.equal((await call('team_admin','A','a',true)).status,200)
  assert.equal((await call('admin','','b',false)).status,200)
  assert.equal(writes.length,2);assert.equal(writes[1][2].fields.can_import,false)
+ assert.equal(writes[0][2].fields.import_requested,false)
+})
+
+test('member can request only their own import access; repeated pending request does not write again',async()=>{
+ const routes={},writes=[],record={fields:{}};installImport({post:(p,f)=>routes[p]=f},{lark:async(...a)=>{writes.push(a);record.fields.import_requested=true;return {data:{}}},appToken:'app',userTable:'users',timeTable:'time'})
+ const req={auth:{record,record_id:'self',can_import:false},body:{record_id:'other',can_import:true}}
+ const res={status(){return this},json(){}}
+ await routes['/import-permission/request'](req,res);await routes['/import-permission/request'](req,res)
+ assert.equal(writes.length,1);assert(writes[0][0].endsWith('/self'));assert.deepEqual(writes[0][2].fields,{import_requested:true})
 })

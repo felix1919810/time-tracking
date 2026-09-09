@@ -142,8 +142,15 @@
 
     <section v-if="userRole === 'admin' || userRole === 'team_admin'" class="settings-section">
       <div class="section-title">{{ ui('成员导入权限') }}</div><div class="section-body"><p class="section-hint">{{ ui('管理角色默认可导入；普通成员需单独授权，授权后仅可导入自己的记录。') }}</p>
-      <label v-for="m in teamMembersList.filter(m => !['admin','team_admin'].includes(m.role))" :key="m.record_id" class="import-permission-row"><span>{{ m.display_name || m.username }} <small>{{ m.username }}</small></span><input type="checkbox" :checked="m.can_import === true" :disabled="permissionSaving === m.record_id" :aria-label="ui('允许 {0} 导入', [m.display_name || m.username])" @change="setImportPermission(m, $event)" /></label>
+      <p class="section-hint">{{ ui('可直接勾选成员主动授权，无需等待申请。') }}</p>
+      <div v-for="m in teamMembersList.filter(m => !['admin','team_admin'].includes(m.role))" :key="m.record_id" class="import-permission-row"><span>{{ m.display_name || m.username }} <small>{{ m.username }}</small><small v-if="m.import_requested">{{ ui('待审批') }}</small></span><div><button v-if="m.import_requested" class="btn btn-secondary" :disabled="!!permissionSaving" @click="denyImportRequest(m)">{{ ui('拒绝申请') }}</button><label>{{ ui('允许导入') }} <input type="checkbox" :checked="m.can_import === true" :disabled="!!permissionSaving" :aria-label="ui('允许 {0} 导入', [m.display_name || m.username])" @change="setImportPermission(m, $event)" /></label></div></div>
+      <p v-if="!teamMembersList.length" class="section-hint">{{ permissionError || ui('暂无可管理的成员') }}</p>
       </div>
+    </section>
+    <section v-else class="settings-section">
+      <div class="section-title">{{ ui('导入权限') }}</div>
+      <div class="section-body"><p>{{ ownImport.can_import ? ui('已获得导入权限') : ownImport.import_requested ? ui('申请已提交，等待管理员或团队管理员审批') : ui('导入需管理员或团队管理员授权') }}</p>
+      <button v-if="!ownImport.can_import" class="btn btn-primary" :disabled="permissionLoading || ownImport.import_requested" @click="requestImportPermission">{{ ui('申请导入权限') }}</button><p v-if="permissionError" class="error-msg">{{ permissionError }}</p></div>
     </section>
     <!-- 分类管理 -->
     <div class="settings-section">
@@ -389,6 +396,7 @@ async function saveProfile() {
 }
 
 // ───── 修改密码 ─────
+const logout = inject('logout')
 const passwordForm = ref({
   oldPassword: '',
   newPassword: '',
@@ -411,8 +419,8 @@ async function changePassword() {
     passwordError.value = ui("两次新密码不一致")
     return
   }
-  if (newPassword.length < 4) {
-    passwordError.value = ui("新密码至少 4 位")
+  if (newPassword.length < 12 || newPassword.length > 256) {
+    passwordError.value = ui("新密码需为 12 至 256 位")
     return
   }
 
@@ -429,7 +437,7 @@ async function changePassword() {
     if (res.ok) {
       passwordSuccess.value = ui("密码修改成功 ✓")
       passwordForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
-      setTimeout(() => { passwordSuccess.value = '' }, 3000)
+      if(res.reauthenticate){alert(ui('密码已更新，请重新登录'));logout()}
     } else {
       passwordError.value = res.error || ui("修改失败")
     }
@@ -466,20 +474,39 @@ async function loadTeams() {
 }
 
 const permissionSaving = ref('')
+const permissionError = ref(''), permissionLoading = ref(true)
+const ownImport = ref({can_import:false,import_requested:false})
+async function loadImportPermission() {
+  try { ownImport.value = await http('/auth/me') }
+  catch(e){permissionError.value=e.message}
+  finally{permissionLoading.value=false}
+}
+async function requestImportPermission() {
+  if(permissionLoading.value||ownImport.value.import_requested)return
+  permissionLoading.value=true;permissionError.value=''
+  try {ownImport.value=await http('/import-permission/request',{method:'POST',body:{}})}
+  catch(e){permissionError.value=e.message}finally{permissionLoading.value=false}
+}
+async function denyImportRequest(member) {
+  if(permissionSaving.value)return
+  permissionSaving.value=member.record_id
+  try {await http('/members/'+encodeURIComponent(member.record_id)+'/import-permission',{method:'POST',body:{can_import:false}});member.import_requested=false;member.can_import=false}
+  catch(e){alert(e.message)}finally{permissionSaving.value=''}
+}
 async function setImportPermission(member, event) {
   const enabled = event.target.checked
   permissionSaving.value = member.record_id
-  try { await http('/members/' + encodeURIComponent(member.record_id) + '/import-permission', {method:'POST',body:{can_import:enabled}}); member.can_import=enabled }
+  try { await http('/members/' + encodeURIComponent(member.record_id) + '/import-permission', {method:'POST',body:{can_import:enabled}}); member.can_import=enabled; member.import_requested=false }
   catch(e) { alert(e.message); await loadAllMembers() }
   finally { event.target.checked = member.can_import === true; permissionSaving.value='' }
 }
 async function loadAllMembers() {
-  if (userRole.value !== 'admin') return
+  if (!['admin','team_admin'].includes(userRole.value)) return
   try {
     const res = await http('/teams/members')
     teamMembersList.value = res.items || []
   } catch (e) {
-    console.error('加载成员失败:', e)
+    permissionError.value=e.message
   }
 }
 
@@ -561,6 +588,7 @@ const unassignedMembers = computed(() => {
 
 // ───── 初始化 ─────
 onMounted(() => {
+  loadImportPermission()
   loadTeams()
   loadAllMembers()
 })

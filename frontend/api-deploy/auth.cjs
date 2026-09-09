@@ -5,6 +5,7 @@ function installAuth(app, config) {
  const base = table => '/bitable/v1/apps/' + appToken + '/tables/' + table + '/records'
  const fail = (status,message) => Object.assign(new Error(message),{status})
  const attempts = new Map()
+ let loginWindow = {count:0,until:0}
  const signature = text => crypto.createHmac('sha256', config.secret()).update(text).digest('base64url')
  function sign(data, ttl = 43200000) { const body=Buffer.from(JSON.stringify({...data,exp:Date.now()+ttl})).toString('base64url');return body+'.'+signature(body) }
  function verify(token,purpose) {
@@ -21,7 +22,7 @@ function installAuth(app, config) {
   do {const d=await lark(base(userTable)+'?page_size=500'+(cursor?'&page_token='+encodeURIComponent(cursor):''));items.push(...(d.data.items||[]));cursor=d.data.has_more?d.data.page_token:'';if(d.data.has_more&&!cursor)throw fail(503,'成员数据加载不完整')}while(cursor)
   return items
  }
- const identity = record => ({record_id:record.record_id,user:scalar(record.fields['用户名']),display_name:scalar(record.fields['姓名']) || scalar(record.fields['用户名']),role:['admin','team_admin'].includes(scalar(record.fields['角色'])) ? scalar(record.fields['角色']) : 'member',team:scalar(record.fields['团队']),feishu_user_id:scalar(record.fields.feishu_user_id),can_import:['admin','team_admin'].includes(scalar(record.fields['角色'])) || record.fields.can_import===true})
+ const identity = record => ({record_id:record.record_id,user:scalar(record.fields['用户名']),display_name:scalar(record.fields['姓名']) || scalar(record.fields['用户名']),role:['admin','team_admin'].includes(scalar(record.fields['角色'])) ? scalar(record.fields['角色']) : 'member',team:scalar(record.fields['团队']),feishu_user_id:scalar(record.fields.feishu_user_id),import_requested:record.fields.import_requested===true,can_import:['admin','team_admin'].includes(scalar(record.fields['角色'])) || record.fields.can_import===true})
  const version = record => signature(JSON.stringify([record.fields['密码'],record.fields.feishu_user_id]))
  async function authenticate(req) {
   const claims=verify(req.headers.authorization?.replace(/^Bearer /,''),'session')
@@ -55,13 +56,15 @@ function installAuth(app, config) {
    res.setHeader('Cache-Control','no-store')
    if(Object.keys(req.query).some(k=>/token|table_id/.test(k) && k!=='page_token'))throw fail(403,'不允许指定数据表')
    const path=req.path, method=req.method
-   if (['/login','/register'].includes(path) && method==='POST') {
+   if (['/login','/register','/change-password'].includes(path) && method==='POST') {
+    if(loginWindow.until<=Date.now())loginWindow={count:0,until:Date.now()+60000}
+    if(++loginWindow.count>120)throw fail(429,'操作过于频繁，请稍后重试')
     const key=signature(String(req.body?.username || ''))
     const now=Date.now(), item=attempts.get(key)
     const current=item && item.until>now ? item : {count:0,until:now+60000}
     if(++current.count>20)throw fail(429,'操作过于频繁，请稍后重试')
     attempts.set(key,current)
-    if(attempts.size>5000)for(const [k,v] of attempts)if(v.until<=now)attempts.delete(k)
+    if(attempts.size>5000){for(const [k,v] of attempts)if(v.until<=now)attempts.delete(k);if(attempts.size>5000)throw fail(429,'操作过于频繁，请稍后重试')}
    }
    if(path==='/test-direct')throw fail(403,'接口已关闭')
    if(path==='/feishu-auth') {
@@ -98,7 +101,7 @@ function installAuth(app, config) {
    const json=res.json.bind(res)
    res.json= function(data) {
     if(auth && path==='/entries' && method==='GET' && Array.isArray(data.items)) {data.items=data.items.filter(e=>!e.fields.deleted_at && canUser(auth,e.fields.user));delete data.total}
-    if(auth && path==='/teams/members' && Array.isArray(data.items))data.items=data.items.filter(u=>canUser(auth,u.username)).map(u=>({...u,can_import:auth.all.find(r=>r.record_id===u.record_id)?.fields.can_import===true,feishu_user_id:u.record_id===auth.record_id||auth.role==='admin'?u.feishu_user_id:''}))
+    if(auth && path==='/teams/members' && Array.isArray(data.items))data.items=data.items.filter(u=>canUser(auth,u.username)).map(u=>({...u,can_import:auth.all.find(r=>r.record_id===u.record_id)?.fields.can_import===true,import_requested:auth.all.find(r=>r.record_id===u.record_id)?.fields.import_requested===true,feishu_user_id:u.record_id===auth.record_id||auth.role==='admin'?u.feishu_user_id:''}))
     if(['/login','/register','/feishu-auth'].includes(path) && (data.ok || path==='/feishu-auth' && data.feishu_user_id)) {
      ;(async()=>{
       if(path==='/feishu-auth' && req.oauth?.sub){

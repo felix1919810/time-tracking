@@ -303,7 +303,7 @@ async function confirmLogin() {
   if (authLoading.value) return
   loginError.value = ''
   const u = loginUser.value.trim()
-  const p = loginPass.value.trim()
+  const p = loginPass.value
   if (!u || !p) { loginError.value = ui("用户名和密码必填"); return }
   authLoading.value = true
   try {
@@ -338,9 +338,10 @@ async function doRegister() {
   const invite = regInvite.value.trim()
   const u = regUser.value.trim()
   const dn = regDisplayName.value.trim()
-  const p = regPass.value.trim()
-  const p2 = regPass2.value.trim()
+  const p = regPass.value
+  const p2 = regPass2.value
   if (!invite || !u || !p || !p2) { regError.value = ui("所有字段都必填"); return }
+  if (p.length < 12 || p.length > 256) { regError.value = ui("新密码需为 12 至 256 位"); return }
   if (p !== p2) { regError.value = ui("两次密码不一致"); return }
   authLoading.value = true
   try {

@@ -10,6 +10,7 @@ app.set('case sensitive routing', true)
 app.set('strict routing', true)
 app.use(cors())
 app.use(express.json({ limit: '2mb' }))
+require('./input-security.cjs').installInputSecurity(app)
 
 // 托管前端静态文件（和后端同一个域名，避免 COS CDN 缓存问题）
 const path = require('path')
@@ -143,118 +144,7 @@ app.post('/test-direct', async (req, res) => {
   }
 })
 
-// POST /login → 验证账号密码，返回 {ok, role, user, display_name} 或 {ok:false, error}
-app.post('/login', async (req, res) => {
-  try {
-    const { username, password } = req.body || {}
-    if (!username || !password) return res.status(400).json({ ok: false, error: '用户名和密码必填' })
-
-    const appToken = req.query.app_token || DEFAULT_APP_TOKEN
-    const userTableId = req.query.user_table_id || DEFAULT_USER_TABLE
-
-    // 用飞书 filter 查匹配记录
-    const filter = `AND(CurrentValue.[用户名]="${escapeFilter(username)}",CurrentValue.[密码]="${escapeFilter(password)}")`
-    const params = new URLSearchParams({ page_size: '5', filter })
-    const data = await lark(`/bitable/v1/apps/${appToken}/tables/${userTableId}/records?${params}`)
-    const items = data.data.items || []
-    if (items.length === 0) {
-      return res.json({ ok: false, error: '用户名或密码错误' })
-    }
-    const f = items[0].fields
-    // 角色字段可能是字符串或数组
-    let role = 'user'
-    const rawRole = f['角色']
-    if (typeof rawRole === 'string') role = rawRole
-    else if (Array.isArray(rawRole) && rawRole[0]) role = rawRole[0].text || rawRole[0].name || 'user'
-    const displayName = f['姓名'] || username
-    // 团队字段可能是字符串或数组
-    let team = ''
-    const rawTeam = f['团队']
-    if (typeof rawTeam === 'string') team = rawTeam
-    else if (Array.isArray(rawTeam) && rawTeam[0]) team = rawTeam[0].text || rawTeam[0].name || ''
-    return res.json({ ok: true, user: username, role, display_name: displayName, team, record_id: items[0].record_id })
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message })
-  }
-})
-
-// POST /register → 注册新用户（验证邀请码 + 查重 + 插用户表）
-app.post('/register', async (req, res) => {
-  try {
-    const { invite_code, username, password, display_name } = req.body || {}
-    if (!invite_code || !username || !password) {
-      return res.status(400).json({ ok: false, error: '邀请码、用户名、密码都必填' })
-    }
-
-    const appToken = req.query.app_token || DEFAULT_APP_TOKEN
-    const userTableId = req.query.user_table_id || DEFAULT_USER_TABLE
-    const settingsTableId = req.query.settings_table_id || DEFAULT_SETTINGS_TABLE
-
-    // 1. 读设置表里的邀请码
-    const settingsFilter = `CurrentValue.[设置项]="邀请码"`
-    const sParams = new URLSearchParams({ page_size: '5', filter: settingsFilter })
-    const sData = await lark(`/bitable/v1/apps/${appToken}/tables/${settingsTableId}/records?${sParams}`)
-    const sItems = sData.data.items || []
-    if (sItems.length === 0) {
-      return res.json({ ok: false, error: '系统未配置邀请码' })
-    }
-    const realInvite = sItems[0].fields['值']
-    if (realInvite !== invite_code) {
-      return res.json({ ok: false, error: '邀请码错误' })
-    }
-
-    // 2. 查用户名是否已存在
-    const userFilter = `CurrentValue.[用户名]="${escapeFilter(username)}"`
-    const uParams = new URLSearchParams({ page_size: '5', filter: userFilter })
-    const uData = await lark(`/bitable/v1/apps/${appToken}/tables/${userTableId}/records?${uParams}`)
-    if ((uData.data.items || []).length > 0) {
-      return res.json({ ok: false, error: '用户名已存在' })
-    }
-
-    // 3. 插入新用户（默认 role=user）
-    const ins = await lark(
-      `/bitable/v1/apps/${appToken}/tables/${userTableId}/records`,
-      'POST',
-      { fields: { '用户名': username, '密码': password, '角色': 'user', '姓名': display_name || username } },
-    )
-    return res.json({ ok: true, user: username, role: 'user', display_name: display_name || username })
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message })
-  }
-})
-
-// POST /change-password → 修改密码（需原密码）
-app.post('/change-password', async (req, res) => {
-  try {
-    const { username, old_password, new_password } = req.body || {}
-    if (!username || !old_password || !new_password) {
-      return res.status(400).json({ ok: false, error: '用户名、原密码、新密码都必填' })
-    }
-
-    const appToken = req.query.app_token || DEFAULT_APP_TOKEN
-    const userTableId = req.query.user_table_id || DEFAULT_USER_TABLE
-
-    // 1. 查用户记录，验证原密码
-    const filter = `AND(CurrentValue.[用户名]="${escapeFilter(username)}",CurrentValue.[密码]="${escapeFilter(old_password)}")`
-    const params = new URLSearchParams({ page_size: '5', filter })
-    const data = await lark(`/bitable/v1/apps/${appToken}/tables/${userTableId}/records?${params}`)
-    const items = data.data.items || []
-    if (items.length === 0) {
-      return res.json({ ok: false, error: '原密码错误' })
-    }
-
-    // 2. 更新密码
-    const recordId = items[0].record_id
-    await lark(
-      `/bitable/v1/apps/${appToken}/tables/${userTableId}/records/${recordId}`,
-      'PUT',
-      { fields: { '密码': new_password } },
-    )
-    return res.json({ ok: true })
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message })
-  }
-})
+require('./passwords.cjs').installPasswords(app, { lark, appToken: DEFAULT_APP_TOKEN, userTable: DEFAULT_USER_TABLE, settingsTable: DEFAULT_SETTINGS_TABLE })
 
 // POST /update-profile → 修改姓名
 app.post('/update-profile', async (req, res) => {
@@ -868,6 +758,9 @@ app.post('/translate', async (req, res) => {
 
 // Views are selected in-app; unknown API paths must not fall back to HTML.
 app.use((req, res) => res.status(404).json({ error: '接口不存在' }))
+app.use((error,req,res,next) => {
+  res.status(error.type === 'entity.too.large' ? 413 : 400).json({error:'请求格式无效或内容过大'})
+})
 
 // ───── 启动 ─────
 const port = process.env.PORT || 9000
