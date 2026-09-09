@@ -9,7 +9,9 @@ export function createEntryStore(http) {
   let session = 0
   const edits = new Map()
   let flight = null
+  let loadedAt = 0
   function update(record) {
+    loadedAt = 0
     revision++
     edits.set(record.record_id, { revision, record: JSON.parse(JSON.stringify(record)) })
     const map = new Map(items.value.map(item => [item.record_id, item]))
@@ -17,11 +19,13 @@ export function createEntryStore(http) {
     items.value = [...map.values()]
   }
   function remove(id) {
+    loadedAt = 0
     revision++
     edits.set(id, { revision, record: null })
     items.value = items.value.filter(item => item.record_id !== id)
   }
   function clear() {
+    loadedAt = 0
     revision++
     session++
     edits.clear()
@@ -30,8 +34,9 @@ export function createEntryStore(http) {
     error.value = ''
     loading.value = false
   }
-  async function load() {
+  async function load({force=false} = {}) {
     if (flight) { await flight; return items.value }
+    if(!force && loadedAt && Date.now()-loadedAt<10000)return items.value
     const version = revision
     const accountSession = session
     loading.value = true
@@ -50,7 +55,7 @@ export function createEntryStore(http) {
         }
         items.value = [...merged.values()]
       }
-      if (flight === task) error.value = ''
+      if (flight === task) {error.value = '';loadedAt=revision===version?Date.now():0}
       return items.value
     } catch (e) {
       if (flight === task) error.value = e.message

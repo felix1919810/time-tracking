@@ -211,7 +211,7 @@ onUnmounted(() => clearInterval(clockInterval))
 function onAuthExpired() { clearSession(); loginError.value = ui('登录已失效，请重新登录') }
 onMounted(() => window.addEventListener('auth-expired', onAuthExpired))
 onUnmounted(() => window.removeEventListener('auth-expired', onAuthExpired))
-async function retryEntries() { try { await entryStore.load() } catch {} }
+async function retryEntries() { try { http.clear(); await entryStore.load({force:true}) } catch {} }
 
 // ───── 登录状态 ─────
 const userName = ref('')

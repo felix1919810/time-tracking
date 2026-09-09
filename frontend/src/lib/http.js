@@ -44,7 +44,7 @@ export function createHttp({ base, fetchImpl = globalThis.fetch, now = Date.now,
       try { return await request(key, options) }
       finally { if (method !== 'GET') clear() }
     }
-    const ttl = url.pathname === '/entries' ? 5000 : 30000
+    const ttl = url.pathname === '/entries' ? 5000 : 60000
     const saved = cache.get(key)
     if (saved && now() - saved.time < ttl) return structuredClone(saved.data)
     if (pending.has(key)) return structuredClone(await pending.get(key))
@@ -70,7 +70,7 @@ export async function fetchAllEntries(http) {
   do {
     const query = new URLSearchParams({ page_size: '500' })
     if (token) query.set('page_token', token)
-    const data = await http('/entries?' + query)
+    const data = await http('/entries?' + query, {timeout:40000})
     if (!Array.isArray(data.items)) throw new Error(message("工时数据格式错误"))
     for (const item of data.items) items.set(item.record_id, item)
     if (!data.has_more) break

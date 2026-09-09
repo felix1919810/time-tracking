@@ -73,7 +73,10 @@ async function obtainTenantToken() {
   return cachedToken
 }
 
-async function lark(path, method = 'GET', body = null) {
+const lark = require('./read-transport.cjs').createReadTransport(larkRequest, {
+  cacheable: path => [DEFAULT_TEAM_TABLE,DEFAULT_CATEGORY_TABLE,DEFAULT_COUNTRY_TABLE].some(table => path.includes('/tables/'+table+'/records')),
+})
+async function larkRequest(path, method = 'GET', body = null) {
   const token = await getTenantToken()
   // 飞书日期字段需要毫秒时间戳，前端发 ISO 字符串时转换
   if (body && body.fields) {
@@ -95,7 +98,7 @@ async function lark(path, method = 'GET', body = null) {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json; charset=utf-8',
     },
-    timeout: 15000,
+    timeout: method === 'GET' ? 8000 : 15000,
   }
   if (bodyStr) {
     // 转 UTF-8 Buffer, 避免 axios 把字符串按 latin-1 发送导致中文乱码
@@ -194,7 +197,7 @@ app.get('/entries', async (req, res) => {
     }
     const data = await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records?${params}`)
     res.json({ items: data.data.items || [], total: data.data.total, has_more: data.data.has_more, page_token: data.data.page_token })
-  } catch (e) { res.status(500).json({ error: e.message }) }
+  } catch (e) { console.error('entries_read_failed', {code:e.code || 'provider_error',status:e.response?.status || 0}); res.status(503).json({ error: '工时数据源暂时繁忙，请稍后重试' }) }
 })
 
 // POST /timer/start → 开始计时，立即写库一条 end_time 为空的记录
@@ -426,13 +429,8 @@ app.delete('/teams/:id', async (req, res) => {
 // 不传 team 则返回全部用户
 app.get('/teams/members', async (req, res) => {
   try {
-    const appToken = DEFAULT_APP_TOKEN
     const { team } = req.query
-    const params = new URLSearchParams({ page_size: '200' })
-    if (team) {
-      params.set('filter', `CurrentValue.[团队]="${escapeFilter(team)}"`)
-    }
-    const data = await lark(`/bitable/v1/apps/${appToken}/tables/${DEFAULT_USER_TABLE}/records?${params}`)
+    const data = {data:{items:req.auth.all.filter(record => !team || record.fields['团队'] === team)}}
     const items = (data.data.items || []).map(i => {
       const f = i.fields
       return {
