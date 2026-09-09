@@ -8,15 +8,15 @@
       </div>
       <!-- 查看对象 (团队管理员/管理员可见) -->
       <div v-if="canViewOthers" class="view-switch">
-        <label>{{ ui("查看:") }}</label>
-        <select v-model="viewScope" @change="onScopeChange">
+        <label for="dashboard-field-1">{{ ui("查看:") }}</label>
+        <select name="dashboard-control-1" id="dashboard-field-1" v-model="viewScope" @change="onScopeChange">
           <option v-if="userRole !== 'admin'" value="self">{{ ui("自己 (") }}{{ displayName }})</option>
           <option v-if="userRole === 'team_admin'" value="team">{{ ui("本团队总表") }}</option>
           <option v-if="userRole === 'admin'" value="all">{{ ui("全部总表") }}</option>
           <option value="member">{{ ui("指定成员个人表") }}</option>
         </select>
         <div v-if="viewScope === 'member'" class="member-search-wrap">
-          <input
+          <input name="dashboard-control-2"
             v-model="memberSearch"
             class="member-search-input"
             :placeholder="ui(&quot;检索成员...&quot;)"
@@ -40,7 +40,7 @@
             <div v-if="filteredMembers.length === 0" class="member-empty">{{ ui("无匹配成员") }}</div>
           </div>
         </div>
-        <select v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="loadData">
+        <select name="dashboard-control-3" v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="loadData">
           <option value="">{{ ui("(全部团队)") }}</option>
           <option v-for="t in allTeams" :key="t.name" :value="t.name">{{ t.name }}</option>
         </select>

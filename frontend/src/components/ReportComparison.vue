@@ -1,17 +1,17 @@
 <template>
   <section class="comparison">
-    <div class="comparison-heading"><h3>{{ ui('对比分析') }}</h3><label>{{ ui('比较类型') }} <select v-model="kind" :aria-label="ui('比较类型')"><option v-for="type in types" :key="type.key" :value="type.key">{{ ui(type.label) }}</option></select></label></div>
+    <div class="comparison-heading"><h3>{{ ui('对比分析') }}</h3><label>{{ ui('比较类型') }} <select name="reportcomparison-control-1" v-model="kind" :aria-label="ui('比较类型')"><option v-for="type in types" :key="type.key" :value="type.key">{{ ui(type.label) }}</option></select></label></div>
     <p class="hint">{{ ui('比较仅使用当前查看范围内的数据；按任务开始日期归属，日均按活跃天数计算。') }}</p>
     <p class="hint" v-if="kind !== 'period'">{{ ui('比较时保留其他筛选条件，忽略所比较维度的筛选。') }}</p>
     <div class="comparison-sides">
       <div v-for="(side, index) in sides" :key="index" class="comparison-side">
         <label class="side-title">{{ index === 0 ? 'A' : 'B' }}
-          <select v-if="kind !== 'period'" v-model="side.value" :aria-label="ui('比较对象') + ' ' + (index === 0 ? 'A' : 'B')">
+          <select name="reportcomparison-control-2" v-if="kind !== 'period'" v-model="side.value" :aria-label="ui('比较对象') + ' ' + (index === 0 ? 'A' : 'B')">
             <option value="">{{ ui('请选择') }}</option>
             <option v-for="value in options" :key="value" :value="value">{{ label(value) }}</option>
           </select>
         </label>
-        <div v-if="kind === 'period'" class="date-inputs"><label>{{ ui('开始日期') }}<input type="date" v-model="side.start" :aria-label="ui('开始日期') + ' ' + index" /></label><label>{{ ui('结束日期') }}<input type="date" v-model="side.end" :aria-label="ui('结束日期') + ' ' + index" /></label></div>
+        <div v-if="kind === 'period'" class="date-inputs"><label>{{ ui('开始日期') }}<input name="reportcomparison-control-3" type="date" v-model="side.start" :aria-label="ui('开始日期') + ' ' + index" /></label><label>{{ ui('结束日期') }}<input name="reportcomparison-control-4" type="date" v-model="side.end" :aria-label="ui('结束日期') + ' ' + index" /></label></div>
         <template v-if="valid">
           <div class="hours">{{ hours(metrics[index].minutes) }}</div>
           <div class="bar-track"><div :class="['bar', {second:index === 1}]" :style="{width: barWidth(metrics[index].minutes) + '%'}"></div></div>

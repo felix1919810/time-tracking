@@ -19,7 +19,7 @@
       <div class="section-body">
         <LanguagePicker />
         <p class="section-hint">{{ ui('界面和国家名称即时切换。任务分类、标题和备注由百度翻译，原始记录保持不变。') }}</p>
-        <label class="original-toggle"><input type="checkbox" v-model="showOriginal" /> {{ ui('显示任务内容原文') }}</label>
+        <label class="original-toggle"><input name="settings-control-1" type="checkbox" v-model="showOriginal" /> {{ ui('显示任务内容原文') }}</label>
         <p class="section-hint">{{ ui('翻译暂不可用时显示原文；编辑时始终使用原文。') }}</p>
       </div>
     </section>
@@ -42,12 +42,12 @@
       <div class="section-title">{{ ui("个人信息") }}</div>
       <div class="section-body">
         <div class="form-field">
-          <label>{{ ui("登录用户名") }}</label>
-          <input :value="userName" disabled />
+          <label for="settings-field-1">{{ ui("登录用户名") }}</label>
+          <input name="settings-control-2" id="settings-field-1" :value="userName" disabled />
         </div>
         <div class="form-field">
-          <label>{{ ui("姓名") }} <span class="required">*</span></label>
-          <input v-model="profileForm.displayName" :placeholder="ui(&quot;填入工时表的姓名&quot;)" />
+          <label for="settings-field-2">{{ ui("姓名") }} <span class="required">*</span></label>
+          <input name="settings-control-3" id="settings-field-2" autocomplete="name" v-model="profileForm.displayName" :placeholder="ui(&quot;填入工时表的姓名&quot;)" />
         </div>
         <button class="btn btn-primary" @click="saveProfile" :disabled="!profileForm.displayName || profileForm.displayName === displayName">
           {{ profileLoading ? ui("保存中...") : ui("保存姓名") }}
@@ -60,16 +60,16 @@
       <div class="section-title">{{ ui("修改密码") }}</div>
       <div class="section-body">
         <div class="form-field">
-          <label>{{ ui("原密码") }} <span class="required">*</span></label>
-          <input type="password" v-model="passwordForm.oldPassword" :placeholder="ui(&quot;当前密码&quot;)" />
+          <label for="settings-field-3">{{ ui("原密码") }} <span class="required">*</span></label>
+          <input name="settings-control-4" id="settings-field-3" type="password" autocomplete="current-password" v-model="passwordForm.oldPassword" :placeholder="ui(&quot;当前密码&quot;)" />
         </div>
         <div class="form-field">
-          <label>{{ ui("新密码") }} <span class="required">*</span></label>
-          <input type="password" v-model="passwordForm.newPassword" :placeholder="ui(&quot;新密码&quot;)" />
+          <label for="settings-field-4">{{ ui("新密码") }} <span class="required">*</span></label>
+          <input name="settings-control-5" id="settings-field-4" type="password" autocomplete="new-password" v-model="passwordForm.newPassword" :placeholder="ui(&quot;新密码&quot;)" />
         </div>
         <div class="form-field">
-          <label>{{ ui("确认新密码") }} <span class="required">*</span></label>
-          <input type="password" v-model="passwordForm.confirmPassword" :placeholder="ui(&quot;再输入一遍新密码&quot;)" @keyup.enter="changePassword" />
+          <label for="settings-field-5">{{ ui("确认新密码") }} <span class="required">*</span></label>
+          <input name="settings-control-6" id="settings-field-5" type="password" autocomplete="new-password" v-model="passwordForm.confirmPassword" :placeholder="ui(&quot;再输入一遍新密码&quot;)" @keyup.enter="changePassword" />
         </div>
         <div v-if="passwordError" class="error-msg">{{ passwordError }}</div>
         <div v-if="passwordSuccess" class="success-msg">{{ passwordSuccess }}</div>
@@ -87,8 +87,8 @@
 
         <!-- 创建团队 -->
         <div class="add-cat-form" style="margin-bottom:16px;">
-          <input v-model="newTeamName" :placeholder="ui(&quot;新团队名称&quot;)" class="add-cat-input" @keyup.enter="addTeam" />
-          <input v-model="newTeamDesc" :placeholder="ui(&quot;团队描述(可选)&quot;)" class="add-cat-input" style="flex:1.5;" />
+          <input name="settings-control-7" v-model="newTeamName" :placeholder="ui(&quot;新团队名称&quot;)" class="add-cat-input" @keyup.enter="addTeam" />
+          <input name="settings-control-8" v-model="newTeamDesc" :placeholder="ui(&quot;团队描述(可选)&quot;)" class="add-cat-input" style="flex:1.5;" />
           <button class="btn btn-secondary" @click="addTeam" :disabled="!newTeamName.trim() || teamLoading">
             {{ teamLoading ? ui("添加中...") : ui("创建团队") }}
           </button>
@@ -109,7 +109,7 @@
             <div class="members-title">{{ ui("团队成员") }}</div>
             <div v-for="m in membersInTeam(t.name)" :key="m.record_id" class="member-row">
               <span class="member-name">{{ m.display_name }}</span>
-              <select :value="m.role" @change="assignMember(m.record_id, t.name, $event.target.value)" class="member-select">
+              <select name="settings-control-9" :value="m.role" @change="assignMember(m.record_id, t.name, $event.target.value)" class="member-select">
                 <option value="member">{{ ui("成员") }}</option>
                 <option value="team_admin">{{ ui("团队管理员") }}</option>
               </select>
@@ -143,7 +143,7 @@
     <section v-if="userRole === 'admin' || userRole === 'team_admin'" class="settings-section">
       <div class="section-title">{{ ui('成员导入权限') }}</div><div class="section-body"><p class="section-hint">{{ ui('管理角色默认可导入；普通成员需单独授权，授权后仅可导入自己的记录。') }}</p>
       <p class="section-hint">{{ ui('可直接勾选成员主动授权，无需等待申请。') }}</p>
-      <div v-for="m in teamMembersList.filter(m => !['admin','team_admin'].includes(m.role))" :key="m.record_id" class="import-permission-row"><span>{{ m.display_name || m.username }} <small>{{ m.username }}</small><small v-if="m.import_requested">{{ ui('待审批') }}</small></span><div><button v-if="m.import_requested" class="btn btn-secondary" :disabled="!!permissionSaving" @click="denyImportRequest(m)">{{ ui('拒绝申请') }}</button><label>{{ ui('允许导入') }} <input type="checkbox" :checked="m.can_import === true" :disabled="!!permissionSaving" :aria-label="ui('允许 {0} 导入', [m.display_name || m.username])" @change="setImportPermission(m, $event)" /></label></div></div>
+      <div v-for="m in teamMembersList.filter(m => !['admin','team_admin'].includes(m.role))" :key="m.record_id" class="import-permission-row"><span>{{ m.display_name || m.username }} <small>{{ m.username }}</small><small v-if="m.import_requested">{{ ui('待审批') }}</small></span><div><button v-if="m.import_requested" class="btn btn-secondary" :disabled="!!permissionSaving" @click="denyImportRequest(m)">{{ ui('拒绝申请') }}</button><label>{{ ui('允许导入') }} <input name="settings-control-10" type="checkbox" :checked="m.can_import === true" :disabled="!!permissionSaving" :aria-label="ui('允许 {0} 导入', [m.display_name || m.username])" @change="setImportPermission(m, $event)" /></label></div></div>
       <p v-if="!teamMembersList.length" class="section-hint">{{ permissionError || ui('暂无可管理的成员') }}</p>
       </div>
     </section>
@@ -161,8 +161,8 @@
       <div class="section-body">
         <!-- 团队选择器: 只有管理员可选任意团队, 团队管理员/成员锁定自己团队 -->
         <div v-if="userRole === 'admin'" class="form-field" style="margin-bottom:12px;">
-          <label>{{ ui("选择团队") }}</label>
-          <select v-model="selectedTeamForCategory" @change="onTeamChange" class="team-select">
+          <label for="settings-field-6">{{ ui("选择团队") }}</label>
+          <select id="settings-field-6" name="settings-control-11" v-model="selectedTeamForCategory" @change="onTeamChange" class="team-select">
             <option v-for="t in availableTeamsForCategory" :key="t.name" :value="t.name">
               {{ t.name }}
             </option>
@@ -183,11 +183,11 @@
           <div class="cat-list">
             <div v-for="cat in teamCategories" :key="cat.record_id || cat.name" class="cat-row">
               <div class="cat-color-wrap">
-                <input type="color" v-model="cat.color" @change="updateCategoryColor(cat)" class="cat-color-input" :disabled="!canManageCategories" />
+                <input name="settings-control-12" type="color" v-model="cat.color" @change="updateCategoryColor(cat)" class="cat-color-input" :disabled="!canManageCategories" />
                 <span class="cat-color-dot" :style="{ background: cat.color }"></span>
               </div>
               <div class="category-editor">
-                <input v-if="canManageCategories && cat.name !== '其他'" v-model.lazy="cat.name" @change="onCatRename(cat)" class="cat-name-input" :aria-label="ui('分类原文')" />
+                <input name="settings-control-13" v-if="canManageCategories && cat.name !== '其他'" v-model.lazy="cat.name" @change="onCatRename(cat)" class="cat-name-input" :aria-label="ui('分类原文')" />
                 <span v-else class="cat-name-input">{{ tr(cat.name) }}</span>
                 <small v-if="canManageCategories && cat.name !== '其他' && tr(cat.name) !== cat.name">{{ tr(cat.name) }}</small>
               </div>
@@ -199,8 +199,8 @@
           </div>
 
           <div v-if="canManageCategories" class="add-cat-form">
-            <input v-model="newCatName" :placeholder="ui(&quot;新分类名称&quot;)" class="add-cat-input" @keyup.enter="addCategory" />
-            <input type="color" v-model="newCatColor" class="cat-color-input" />
+            <input name="settings-control-14" v-model="newCatName" :placeholder="ui(&quot;新分类名称&quot;)" class="add-cat-input" @keyup.enter="addCategory" />
+            <input name="settings-control-15" type="color" v-model="newCatColor" class="cat-color-input" />
             <button class="btn btn-secondary" @click="addCategory" :disabled="!newCatName.trim() || catLoading">
               {{ catLoading ? ui("添加中...") : ui("添加") }}
             </button>

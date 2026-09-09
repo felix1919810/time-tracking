@@ -61,9 +61,11 @@ const path = require('node:path')
     await page.locator('.week-view').waitFor()
     const changeLanguage=lang=>page.locator('.sidebar-footer .language-picker select').selectOption(lang)
     const nav=label=>page.locator('.nav-item').filter({hasText:label}).click()
+    const checkForms=async()=>{const result=await page.evaluate(()=>({unnamed:[...document.querySelectorAll('input,select,textarea')].filter(e=>!e.id&&!e.name).map(e=>e.outerHTML.slice(0,120)),unlinked:[...document.querySelectorAll('label')].filter(e=>!e.control).map(e=>e.outerHTML.slice(0,120)),duplicateIds:[...document.querySelectorAll('[id]')].map(e=>e.id).filter((id,i,a)=>a.indexOf(id)!==i)}));assert.deepEqual(result,{unnamed:[],unlinked:[],duplicateIds:[]})}
     const missing={}
     for(const label of ['Dashboard','Reports','Settings']){
       await nav(label);await page.locator('.page-title').filter({hasText:label}).waitFor()
+      await checkForms()
       if(label==='Dashboard') {
         await page.locator('.cat-name').filter({hasText:'Meeting'}).waitFor()
         await page.locator('.cat-name').filter({hasText:'Training'}).waitFor()

@@ -25,15 +25,15 @@
       </div>
       <div class="toolbar-right">
         <div v-if="canViewOthers" class="view-switch">
-          <label>{{ ui("查看:") }}</label>
-          <select v-model="viewScope" @change="onScopeChange">
+          <label for="weekview-field-1">{{ ui("查看:") }}</label>
+          <select name="weekview-control-1" id="weekview-field-1" v-model="viewScope" @change="onScopeChange">
             <option v-if="userRole !== 'admin'" value="self">{{ ui("自己 (") }}{{ displayName }})</option>
             <option v-if="userRole === 'team_admin'" value="team">{{ ui("本团队总表") }}</option>
             <option v-if="userRole === 'admin'" value="all">{{ ui("全部总表") }}</option>
             <option value="member">{{ ui("指定成员个人表") }}</option>
           </select>
           <div v-if="viewScope === 'member'" class="member-search-wrap">
-            <input
+            <input name="weekview-control-2"
               v-model="memberSearch"
               class="member-search-input"
               :placeholder="ui(&quot;检索成员...&quot;)"
@@ -61,18 +61,18 @@
               <div v-if="filteredMembers.length === 0" class="member-empty">{{ ui("无匹配成员") }}</div>
             </div>
           </div>
-          <select v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="filterEntries">
+          <select name="weekview-control-3" v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="filterEntries">
             <option value="">{{ ui("(全部团队)") }}</option>
             <option v-for="t in allTeams" :key="t.name" :value="t.name">{{ t.name }}</option>
           </select>
         </div>
         <div class="zoom-control">
           <label class="show-name-toggle">
-            <input type="checkbox" v-model="showUserName" />
+            <input name="weekview-control-4" type="checkbox" v-model="showUserName" />
             <span>{{ ui("显示姓名") }}</span>
           </label>
           <span class="zoom-label">{{ ui("密度") }}</span>
-          <input type="range" min="32" max="240" step="16" :value="hourPx" @input="hourPx = Number($event.target.value)" />
+          <input name="weekview-control-5" type="range" min="32" max="240" step="16" :value="hourPx" @input="hourPx = Number($event.target.value)" />
           <span class="zoom-value">{{ hourPx }}px/h</span>
         </div>
       </div>
@@ -129,38 +129,38 @@
         </div>
 
         <div class="form-field">
-          <label>{{ ui("任务名") }} <span class="required">*</span></label>
-          <input v-model="timerForm.description" :placeholder="ui(&quot;你在做什么？&quot;)" autofocus />
+          <label for="weekview-field-2">{{ ui("任务名") }} <span class="required">*</span></label>
+          <input name="weekview-control-6" id="weekview-field-2" v-model="timerForm.description" :placeholder="ui(&quot;你在做什么？&quot;)" autofocus />
         </div>
 
         <div class="form-field">
-          <label>{{ ui("任务分类") }} <span class="required">*</span></label>
-          <select v-model="timerForm.category">
+          <label for="weekview-field-3">{{ ui("任务分类") }} <span class="required">*</span></label>
+          <select name="weekview-control-7" id="weekview-field-3" v-model="timerForm.category">
             <option v-for="c in teamCategories" :key="c.name" :value="c.name">{{ tr(c.name) }}</option>
           </select>
         </div>
 
         <div class="form-row">
           <div class="form-field">
-            <label>{{ ui("时区") }}</label>
-            <select v-model="timerForm.timezone">
+            <label for="weekview-field-4">{{ ui("时区") }}</label>
+            <select name="weekview-control-8" id="weekview-field-4" v-model="timerForm.timezone">
               <option v-for="tz in timezones" :key="tz.value" :value="tz.value">{{ ui(tz.label) }}</option>
             </select>
           </div>
           <div class="form-field">
-            <label>{{ ui("国家") }}</label>
-            <CountryPicker v-model="timerForm.country" :countries="allCountries" />
+            <label for="weekview-field-5">{{ ui("国家") }}</label>
+            <CountryPicker input-id="weekview-field-5" v-model="timerForm.country" :countries="allCountries" />
           </div>
         </div>
 
         <div class="form-field">
-          <label>{{ ui("姓名") }} <span class="required">*</span></label>
-          <input v-model="timerForm.displayName" />
+          <label for="weekview-field-6">{{ ui("姓名") }} <span class="required">*</span></label>
+          <input name="weekview-control-9" id="weekview-field-6" v-model="timerForm.displayName" />
         </div>
 
         <div class="form-field">
-          <label>{{ ui("备注") }}</label>
-          <textarea v-model="timerForm.notes" :placeholder="ui(&quot;可选&quot;)"></textarea>
+          <label for="weekview-field-7">{{ ui("备注") }}</label>
+          <textarea name="weekview-control-10" id="weekview-field-7" v-model="timerForm.notes" :placeholder="ui(&quot;可选&quot;)"></textarea>
         </div>
 
         <div class="modal-footer">
@@ -181,36 +181,36 @@
         </div>
 
         <div class="form-field">
-          <label>{{ ui("任务名") }}</label>
-          <input v-model="editForm.description" />
+          <label for="weekview-field-8">{{ ui("任务名") }}</label>
+          <input name="weekview-control-11" id="weekview-field-8" v-model="editForm.description" />
         </div>
 
         <div class="form-field">
-          <label>{{ ui("任务分类") }}</label>
-          <select v-model="editForm.category">
+          <label for="weekview-field-9">{{ ui("任务分类") }}</label>
+          <select name="weekview-control-12" id="weekview-field-9" v-model="editForm.category">
             <option v-for="c in teamCategories" :key="c.name" :value="c.name">{{ tr(c.name) }}</option>
           </select>
         </div>
 
         <div class="form-field">
-          <label>{{ ui("国家") }}</label>
-          <CountryPicker v-model="editForm.country" :countries="allCountries" />
+          <label for="weekview-field-10">{{ ui("国家") }}</label>
+          <CountryPicker input-id="weekview-field-10" v-model="editForm.country" :countries="allCountries" />
         </div>
 
         <div class="form-row">
           <div class="form-field">
-            <label>{{ ui("开始时间") }}</label>
-            <input type="datetime-local" v-model="editForm.startTime" />
+            <label for="weekview-field-11">{{ ui("开始时间") }}</label>
+            <input name="weekview-control-13" id="weekview-field-11" type="datetime-local" v-model="editForm.startTime" />
           </div>
           <div class="form-field">
-            <label>{{ ui("结束时间") }}</label>
-            <input type="datetime-local" v-model="editForm.endTime" />
+            <label for="weekview-field-12">{{ ui("结束时间") }}</label>
+            <input name="weekview-control-14" id="weekview-field-12" type="datetime-local" v-model="editForm.endTime" />
           </div>
         </div>
 
         <div class="form-field">
-          <label>{{ ui("备注") }}</label>
-          <textarea v-model="editForm.notes"></textarea>
+          <label for="weekview-field-13">{{ ui("备注") }}</label>
+          <textarea name="weekview-control-15" id="weekview-field-13" v-model="editForm.notes"></textarea>
         </div>
 
         <div class="modal-footer">

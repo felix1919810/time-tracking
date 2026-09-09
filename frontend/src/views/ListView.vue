@@ -25,15 +25,15 @@
       </div>
       <div class="toolbar-right">
         <div v-if="canViewOthers" class="view-switch">
-          <label>{{ ui("查看:") }}</label>
-          <select v-model="viewScope" @change="onScopeChange">
+          <label for="listview-field-1">{{ ui("查看:") }}</label>
+          <select name="listview-control-1" id="listview-field-1" v-model="viewScope" @change="onScopeChange">
             <option v-if="userRole !== 'admin'" value="self">{{ ui("自己 (") }}{{ displayName }})</option>
             <option v-if="userRole === 'team_admin'" value="team">{{ ui("本团队总表") }}</option>
             <option v-if="userRole === 'admin'" value="all">{{ ui("全部总表") }}</option>
             <option value="member">{{ ui("指定成员个人表") }}</option>
           </select>
           <div v-if="viewScope === 'member'" class="member-search-wrap">
-            <input
+            <input name="listview-control-2"
               v-model="memberSearch"
               class="member-search-input"
               :placeholder="ui(&quot;检索成员...&quot;)"
@@ -61,13 +61,13 @@
               <div v-if="filteredMembers.length === 0" class="member-empty">{{ ui("无匹配成员") }}</div>
             </div>
           </div>
-          <select v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="loadEntries">
+          <select name="listview-control-3" v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="loadEntries">
             <option value="">{{ ui("(全部团队)") }}</option>
             <option v-for="t in allTeams" :key="t.name" :value="t.name">{{ t.name }}</option>
           </select>
         </div>
         <label class="show-name-toggle">
-          <input type="checkbox" v-model="showUserName" />
+          <input name="listview-control-4" type="checkbox" v-model="showUserName" />
           <span>{{ ui("显示姓名") }}</span>
         </label>
       </div>
@@ -124,22 +124,22 @@
         </div>
         <div class="modal-body">
           <div class="form-field">
-            <label>{{ ui("任务名") }} <span class="required">*</span></label>
-            <input v-model="timerForm.description" :placeholder="ui(&quot;你在做什么？&quot;)" />
+            <label for="listview-field-2">{{ ui("任务名") }} <span class="required">*</span></label>
+            <input name="listview-control-5" id="listview-field-2" v-model="timerForm.description" :placeholder="ui(&quot;你在做什么？&quot;)" />
           </div>
           <div class="form-field">
-            <label>{{ ui("任务分类") }} <span class="required">*</span></label>
-            <select v-model="timerForm.category">
+            <label for="listview-field-3">{{ ui("任务分类") }} <span class="required">*</span></label>
+            <select name="listview-control-6" id="listview-field-3" v-model="timerForm.category">
               <option v-for="c in teamCategories" :key="c.name" :value="c.name">{{ tr(c.name) }}</option>
             </select>
           </div>
           <div class="form-field">
-            <label>{{ ui("国家") }}</label>
-            <CountryPicker v-model="timerForm.country" :countries="allCountries" />
+            <label for="listview-field-4">{{ ui("国家") }}</label>
+            <CountryPicker input-id="listview-field-4" v-model="timerForm.country" :countries="allCountries" />
           </div>
           <div class="form-field">
-            <label>{{ ui("备注") }}</label>
-            <textarea v-model="timerForm.notes" rows="2"></textarea>
+            <label for="listview-field-5">{{ ui("备注") }}</label>
+            <textarea name="listview-control-7" id="listview-field-5" v-model="timerForm.notes" rows="2"></textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -158,32 +158,32 @@
         </div>
         <div class="modal-body">
           <div class="form-field">
-            <label>{{ ui("任务名") }}</label>
-            <input v-model="editForm.description" />
+            <label for="listview-field-6">{{ ui("任务名") }}</label>
+            <input name="listview-control-8" id="listview-field-6" v-model="editForm.description" />
           </div>
           <div class="form-field">
-            <label>{{ ui("任务分类") }}</label>
-            <select v-model="editForm.category">
+            <label for="listview-field-7">{{ ui("任务分类") }}</label>
+            <select name="listview-control-9" id="listview-field-7" v-model="editForm.category">
               <option v-for="c in teamCategories" :key="c.name" :value="c.name">{{ tr(c.name) }}</option>
             </select>
           </div>
           <div class="form-field">
-            <label>{{ ui("国家") }}</label>
-            <CountryPicker v-model="editForm.country" :countries="allCountries" />
+            <label for="listview-field-8">{{ ui("国家") }}</label>
+            <CountryPicker input-id="listview-field-8" v-model="editForm.country" :countries="allCountries" />
           </div>
           <div class="form-row">
             <div class="form-field">
-              <label>{{ ui("开始时间") }}</label>
-              <input type="datetime-local" v-model="editForm.startTime" />
+              <label for="listview-field-9">{{ ui("开始时间") }}</label>
+              <input name="listview-control-10" id="listview-field-9" type="datetime-local" v-model="editForm.startTime" />
             </div>
             <div class="form-field">
-              <label>{{ ui("结束时间") }}</label>
-              <input type="datetime-local" v-model="editForm.endTime" />
+              <label for="listview-field-10">{{ ui("结束时间") }}</label>
+              <input name="listview-control-11" id="listview-field-10" type="datetime-local" v-model="editForm.endTime" />
             </div>
           </div>
           <div class="form-field">
-            <label>{{ ui("备注") }}</label>
-            <textarea v-model="editForm.notes" rows="2"></textarea>
+            <label for="listview-field-11">{{ ui("备注") }}</label>
+            <textarea name="listview-control-12" id="listview-field-11" v-model="editForm.notes" rows="2"></textarea>
           </div>
         </div>
         <div class="modal-footer">

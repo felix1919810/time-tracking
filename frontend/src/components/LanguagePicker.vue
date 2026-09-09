@@ -1,7 +1,7 @@
 <template>
   <label class="language-picker">
     <span>{{ ui('语言') }}</span>
-    <select :value="locale" :aria-label="ui('语言')" @change="setLang($event.target.value)">
+    <select name="languagepicker-control-1" :value="locale" :aria-label="ui('语言')" @change="setLang($event.target.value)">
       <option value="zh">简体中文</option>
       <option value="en">English</option>
     </select>

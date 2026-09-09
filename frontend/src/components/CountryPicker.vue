@@ -1,6 +1,6 @@
 <template>
   <div class="country-picker">
-    <input :value="open ? query : countryName(modelValue)" :placeholder="ui('检索国家...')" :aria-label="ui('国家')" :aria-expanded="open" role="combobox" aria-autocomplete="list" @input="query = $event.target.value; open = true" @focus="query = ''; open = true" @blur="close" @keydown.escape="open = false" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.enter.prevent="choose(matches[index])" />
+    <input :id="inputId" name="countrypicker-control-1" :value="open ? query : countryName(modelValue)" :placeholder="ui('检索国家...')" :aria-label="ui('国家')" :aria-expanded="open" role="combobox" aria-autocomplete="list" @input="query = $event.target.value; open = true" @focus="query = ''; open = true" @blur="close" @keydown.escape="open = false" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.enter.prevent="choose(matches[index])" />
     <div v-if="open" class="country-options" role="listbox" :aria-label="ui('国家')">
       <button v-for="(country, i) in matches" :key="country.code || country.name" type="button" role="option" :aria-selected="modelValue === country.name" :class="{ active: i === index }" @mousedown.prevent="choose(country)">
         <span>{{ countryName(country) }}</span><small>{{ country.code }}</small>
@@ -12,7 +12,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { ui, countryName, countryMatches } from '../i18n.js'
-const props = defineProps({ modelValue: { type: String, default: '' }, countries: { type: Array, default: () => [] } })
+const props = defineProps({ inputId: {type:String,default:undefined}, modelValue: { type: String, default: '' }, countries: { type: Array, default: () => [] } })
 const emit = defineEmits(['update:modelValue'])
 const open = ref(false), query = ref(''), index = ref(0)
 const matches = computed(() => props.countries.filter(c => countryMatches(c, query.value)).slice(0, 50))

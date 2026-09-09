@@ -25,15 +25,15 @@
       </div>
       <div class="toolbar-right">
         <div v-if="canViewOthers" class="view-switch">
-          <label>{{ ui("查看:") }}</label>
-          <select v-model="viewScope" @change="onScopeChange">
+          <label for="dayview-field-1">{{ ui("查看:") }}</label>
+          <select name="dayview-control-1" id="dayview-field-1" v-model="viewScope" @change="onScopeChange">
             <option v-if="userRole !== 'admin'" value="self">{{ ui("自己 (") }}{{ displayName }})</option>
             <option v-if="userRole === 'team_admin'" value="team">{{ ui("本团队总表") }}</option>
             <option v-if="userRole === 'admin'" value="all">{{ ui("全部总表") }}</option>
             <option value="member">{{ ui("指定成员个人表") }}</option>
           </select>
           <div v-if="viewScope === 'member'" class="member-search-wrap">
-            <input v-model="memberSearch" class="member-search-input" :placeholder="ui(&quot;检索成员...&quot;)" @focus="showMemberDropdown = true" @blur="hideMemberDropdownLater" />
+            <input name="dayview-control-2" v-model="memberSearch" class="member-search-input" :placeholder="ui(&quot;检索成员...&quot;)" @focus="showMemberDropdown = true" @blur="hideMemberDropdownLater" />
             <div v-if="showMemberDropdown" class="member-dropdown">
               <div class="member-option" :class="{ active: selectedUser === '' }" @mousedown="pickMember('')">{{ ui("(全部成员)") }}</div>
               <div v-for="u in filteredMembers" :key="u.user" class="member-option" :class="{ active: selectedUser === u.user }" @mousedown="pickMember(u.user)">
@@ -43,18 +43,18 @@
               <div v-if="filteredMembers.length === 0" class="member-empty">{{ ui("无匹配成员") }}</div>
             </div>
           </div>
-          <select v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="filterEntries">
+          <select name="dayview-control-3" v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="filterEntries">
             <option value="">{{ ui("(全部团队)") }}</option>
             <option v-for="t in allTeams" :key="t.name" :value="t.name">{{ t.name }}</option>
           </select>
         </div>
         <label class="show-name-toggle">
-          <input type="checkbox" v-model="showUserName" />
+          <input name="dayview-control-4" type="checkbox" v-model="showUserName" />
           <span>{{ ui("显示姓名") }}</span>
         </label>
         <div class="zoom-control">
           <span class="zoom-label">{{ ui("密度") }}</span>
-          <input type="range" min="32" max="240" step="16" :value="hourPx" @input="hourPx = Number($event.target.value)" />
+          <input name="dayview-control-5" type="range" min="32" max="240" step="16" :value="hourPx" @input="hourPx = Number($event.target.value)" />
           <span class="zoom-value">{{ hourPx }}px/h</span>
         </div>
       </div>
@@ -116,22 +116,22 @@
           <button class="modal-close" :aria-label="ui('关闭')" @click="showStartModal = false"><AppIcon name="close" /></button>
         </div>
         <div class="form-field">
-          <label>{{ ui("任务名") }} <span class="required">*</span></label>
-          <input v-model="timerForm.description" :placeholder="ui(&quot;你在做什么？&quot;)" autofocus />
+          <label for="dayview-field-2">{{ ui("任务名") }} <span class="required">*</span></label>
+          <input name="dayview-control-6" id="dayview-field-2" v-model="timerForm.description" :placeholder="ui(&quot;你在做什么？&quot;)" autofocus />
         </div>
         <div class="form-field">
-          <label>{{ ui("任务分类") }} <span class="required">*</span></label>
-          <select v-model="timerForm.category">
+          <label for="dayview-field-3">{{ ui("任务分类") }} <span class="required">*</span></label>
+          <select name="dayview-control-7" id="dayview-field-3" v-model="timerForm.category">
             <option v-for="c in teamCategories" :key="c.name" :value="c.name">{{ tr(c.name) }}</option>
           </select>
         </div>
         <div class="form-field">
-          <label>{{ ui("国家") }}</label>
-          <CountryPicker v-model="timerForm.country" :countries="allCountries" />
+          <label for="dayview-field-4">{{ ui("国家") }}</label>
+          <CountryPicker input-id="dayview-field-4" v-model="timerForm.country" :countries="allCountries" />
         </div>
         <div class="form-field">
-          <label>{{ ui("备注") }}</label>
-          <textarea v-model="timerForm.notes" :placeholder="ui(&quot;可选&quot;)"></textarea>
+          <label for="dayview-field-5">{{ ui("备注") }}</label>
+          <textarea name="dayview-control-8" id="dayview-field-5" v-model="timerForm.notes" :placeholder="ui(&quot;可选&quot;)"></textarea>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="showStartModal = false">{{ ui("取消") }}</button>
@@ -148,32 +148,32 @@
           <button class="modal-close" @click="showEditModal = false"><AppIcon name="close" /></button>
         </div>
         <div class="form-field">
-          <label>{{ ui("任务名") }}</label>
-          <input v-model="editForm.description" />
+          <label for="dayview-field-6">{{ ui("任务名") }}</label>
+          <input name="dayview-control-9" id="dayview-field-6" v-model="editForm.description" />
         </div>
         <div class="form-field">
-          <label>{{ ui("任务分类") }}</label>
-          <select v-model="editForm.category">
+          <label for="dayview-field-7">{{ ui("任务分类") }}</label>
+          <select name="dayview-control-10" id="dayview-field-7" v-model="editForm.category">
             <option v-for="c in teamCategories" :key="c.name" :value="c.name">{{ tr(c.name) }}</option>
           </select>
         </div>
         <div class="form-field">
-          <label>{{ ui("国家") }}</label>
-          <CountryPicker v-model="editForm.country" :countries="allCountries" />
+          <label for="dayview-field-8">{{ ui("国家") }}</label>
+          <CountryPicker input-id="dayview-field-8" v-model="editForm.country" :countries="allCountries" />
         </div>
         <div class="form-row">
           <div class="form-field">
-            <label>{{ ui("开始时间") }}</label>
-            <input type="datetime-local" v-model="editForm.startTime" />
+            <label for="dayview-field-9">{{ ui("开始时间") }}</label>
+            <input name="dayview-control-11" id="dayview-field-9" type="datetime-local" v-model="editForm.startTime" />
           </div>
           <div class="form-field">
-            <label>{{ ui("结束时间") }}</label>
-            <input type="datetime-local" v-model="editForm.endTime" />
+            <label for="dayview-field-10">{{ ui("结束时间") }}</label>
+            <input name="dayview-control-12" id="dayview-field-10" type="datetime-local" v-model="editForm.endTime" />
           </div>
         </div>
         <div class="form-field">
-          <label>{{ ui("备注") }}</label>
-          <textarea v-model="editForm.notes" rows="2"></textarea>
+          <label for="dayview-field-11">{{ ui("备注") }}</label>
+          <textarea name="dayview-control-13" id="dayview-field-11" v-model="editForm.notes" rows="2"></textarea>
         </div>
         <div class="modal-footer">
           <button class="btn btn-danger" @click="deleteEntry">{{ ui("删除") }}</button>

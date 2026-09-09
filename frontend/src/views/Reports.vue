@@ -8,15 +8,15 @@
       </div>
       <!-- 查看对象 (团队管理员/管理员可见) -->
       <div v-if="canViewOthers" class="view-switch">
-        <label>{{ ui("查看:") }}</label>
-        <select v-model="viewScope" @change="onScopeChange">
+        <label for="reports-field-1">{{ ui("查看:") }}</label>
+        <select name="reports-control-1" id="reports-field-1" v-model="viewScope" @change="onScopeChange">
           <option v-if="userRole !== 'admin'" value="self">{{ ui("自己 (") }}{{ displayName }})</option>
           <option v-if="userRole === 'team_admin'" value="team">{{ ui("本团队总表") }}</option>
           <option v-if="userRole === 'admin'" value="all">{{ ui("全部总表") }}</option>
           <option value="member">{{ ui("指定成员个人表") }}</option>
         </select>
         <div v-if="viewScope === 'member'" class="member-search-wrap">
-          <input
+          <input name="reports-control-2"
             v-model="memberSearch"
             class="member-search-input"
             :placeholder="ui(&quot;检索成员...&quot;)"
@@ -40,7 +40,7 @@
             <div v-if="filteredMembers.length === 0" class="member-empty">{{ ui("无匹配成员") }}</div>
           </div>
         </div>
-        <select v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="loadData">
+        <select name="reports-control-3" v-if="viewScope === 'all' && userRole === 'admin'" v-model="selectedTeam" @change="loadData">
           <option value="">{{ ui("(全部团队)") }}</option>
           <option v-for="t in allTeams" :key="t.name" :value="t.name">{{ t.name }}</option>
         </select>
@@ -63,15 +63,15 @@
       </div>
       <!-- 自定义区间 -->
       <div v-if="periodType === 'custom'" class="custom-range">
-        <input type="date" v-model="customStart" @change="onCustomChange" />
+        <input name="reports-control-4" type="date" v-model="customStart" @change="onCustomChange" />
         <span>~</span>
-        <input type="date" v-model="customEnd" @change="onCustomChange" />
+        <input name="reports-control-5" type="date" v-model="customEnd" @change="onCustomChange" />
       </div>
     </div>
 
     <div class="report-filters">
       <label v-for="field in filterFields" :key="field.key">{{ ui(field.label) }}
-        <select v-model="reportFilters[field.key]" :aria-label="ui(field.label)">
+        <select name="reports-control-6" v-model="reportFilters[field.key]" :aria-label="ui(field.label)">
           <option value="">{{ ui('全部') }}</option>
           <option v-for="value in filterOptions(field.key)" :key="value" :value="value">{{ field.key === 'country' ? countryName(value) : field.key === 'category' ? tr(value) : value }}</option>
         </select>
@@ -142,7 +142,7 @@
         <div class="section-title-row"><div class="section-title">{{ ui("每日工时趋势") }}</div><div v-if="canViewOthers" class="trend-tabs"><button class="export-btn" :aria-pressed="trendMode === 'total'" @click="trendMode = 'total'">{{ ui('汇总趋势') }}</button><button class="export-btn" :aria-pressed="trendMode === 'members'" @click="trendMode = 'members'">{{ ui('成员趋势') }}</button></div></div>
         <div v-if="trendMode === 'members' && canViewOthers" class="trend-members">
           <div class="trend-controls"><button class="link-btn" @click="hiddenTrendMembers = []">{{ ui('全选成员') }}</button><button class="link-btn" @click="hiddenTrendMembers = trendMembers.map(m => m.key)">{{ ui('取消全选') }}</button></div>
-          <label v-for="m in trendMembers" :key="m.key"><input type="checkbox" :checked="!hiddenTrendMembers.includes(m.key)" @change="toggleTrendMember(m.key)" /><span class="cat-dot" :style="{background:memberColor(m.key)}"></span>{{ m.label }}</label>
+          <label v-for="m in trendMembers" :key="m.key"><input name="reports-control-7" type="checkbox" :checked="!hiddenTrendMembers.includes(m.key)" @change="toggleTrendMember(m.key)" /><span class="cat-dot" :style="{background:memberColor(m.key)}"></span>{{ m.label }}</label>
           <p v-if="!trendMembers.length">{{ ui('暂无数据') }}</p>
           <p v-else-if="hiddenTrendMembers.length === trendMembers.length">{{ ui('请选择至少一位成员查看趋势') }}</p>
         </div>
@@ -180,7 +180,7 @@
           {{ ui("3. 选择文件后点击\"开始导入\"") }}
         </div>
         <div class="import-actions">
-          <input ref="fileInput" type="file" accept=".csv" class="import-file" @change="onFilePick" />
+          <input name="reports-control-8" ref="fileInput" type="file" accept=".csv" class="import-file" @change="onFilePick" />
           <button class="export-btn" @click="doImport" :disabled="!pendingRows || importing">
             {{ importing ? ui("导入中...") : ui("开始导入") }}
           </button>
@@ -246,32 +246,32 @@
         </div>
         <div class="modal-body">
           <div class="form-field">
-            <label>{{ ui("任务名") }}</label>
-            <input v-model="editForm.description" />
+            <label for="reports-field-2">{{ ui("任务名") }}</label>
+            <input name="reports-control-9" id="reports-field-2" v-model="editForm.description" />
           </div>
           <div class="form-field">
-            <label>{{ ui("任务分类") }}</label>
-            <select v-model="editForm.category">
+            <label for="reports-field-3">{{ ui("任务分类") }}</label>
+            <select name="reports-control-10" id="reports-field-3" v-model="editForm.category">
               <option v-for="c in editCategories" :key="c.name" :value="c.name">{{ tr(c.name) }}</option>
             </select>
           </div>
           <div class="form-field">
-            <label>{{ ui("国家") }}</label>
-            <CountryPicker v-model="editForm.country" :countries="allCountries" />
+            <label for="reports-field-4">{{ ui("国家") }}</label>
+            <CountryPicker input-id="reports-field-4" v-model="editForm.country" :countries="allCountries" />
           </div>
           <div class="form-row">
             <div class="form-field">
-              <label>{{ ui("开始时间") }}</label>
-              <input type="datetime-local" v-model="editForm.startTime" />
+              <label for="reports-field-5">{{ ui("开始时间") }}</label>
+              <input name="reports-control-11" id="reports-field-5" type="datetime-local" v-model="editForm.startTime" />
             </div>
             <div class="form-field">
-              <label>{{ ui("结束时间") }}</label>
-              <input type="datetime-local" v-model="editForm.endTime" />
+              <label for="reports-field-6">{{ ui("结束时间") }}</label>
+              <input name="reports-control-12" id="reports-field-6" type="datetime-local" v-model="editForm.endTime" />
             </div>
           </div>
           <div class="form-field">
-            <label>{{ ui("备注") }}</label>
-            <textarea v-model="editForm.notes" rows="2"></textarea>
+            <label for="reports-field-7">{{ ui("备注") }}</label>
+            <textarea name="reports-control-13" id="reports-field-7" v-model="editForm.notes" rows="2"></textarea>
           </div>
         </div>
         <div class="modal-footer">

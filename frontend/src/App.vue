@@ -10,12 +10,12 @@
         <!-- 登录表单 -->
         <template v-if="!showRegister">
           <div class="auth-field">
-            <label>{{ ui("用户名") }}</label>
-            <input v-model="loginUser" :placeholder="ui(&quot;您的用户名&quot;)" autofocus @keyup.enter="$refs.passInput.focus()" />
+            <label for="app-field-1">{{ ui("用户名") }}</label>
+            <input name="app-control-1" id="app-field-1" autocomplete="username" v-model="loginUser" :placeholder="ui(&quot;您的用户名&quot;)" autofocus @keyup.enter="$refs.passInput.focus()" />
           </div>
           <div class="auth-field">
-            <label>{{ ui("密码") }}</label>
-            <input ref="passInput" type="password" v-model="loginPass" :placeholder="ui(&quot;您的密码&quot;)" @keyup.enter="confirmLogin" />
+            <label for="app-field-2">{{ ui("密码") }}</label>
+            <input name="app-control-2" id="app-field-2" ref="passInput" type="password" autocomplete="current-password" v-model="loginPass" :placeholder="ui(&quot;您的密码&quot;)" @keyup.enter="confirmLogin" />
           </div>
           <div v-if="loginError" class="auth-err">{{ ui(loginError) }}</div>
           <button class="auth-btn" @click="confirmLogin" :disabled="authLoading">
@@ -33,24 +33,24 @@
         <!-- 注册表单 -->
         <template v-else>
           <div class="auth-field">
-            <label>{{ ui("邀请码") }}</label>
-            <input v-model="regInvite" :placeholder="ui(&quot;管理员发给您的邀请码&quot;)" autofocus />
+            <label for="app-field-3">{{ ui("邀请码") }}</label>
+            <input name="app-control-3" id="app-field-3" v-model="regInvite" :placeholder="ui(&quot;管理员发给您的邀请码&quot;)" autofocus />
           </div>
           <div class="auth-field">
-            <label>{{ ui("姓名") }}</label>
-            <input v-model="regDisplayName" :placeholder="ui(&quot;您的姓名（如 Jenny Chee）&quot;)" />
+            <label for="app-field-4">{{ ui("姓名") }}</label>
+            <input name="app-control-4" id="app-field-4" autocomplete="name" v-model="regDisplayName" :placeholder="ui(&quot;您的姓名（如 Jenny Chee）&quot;)" />
           </div>
           <div class="auth-field">
-            <label>{{ ui("用户名") }}</label>
-            <input v-model="regUser" :placeholder="ui(&quot;登录用户名&quot;)" />
+            <label for="app-field-5">{{ ui("用户名") }}</label>
+            <input name="app-control-5" id="app-field-5" autocomplete="username" v-model="regUser" :placeholder="ui(&quot;登录用户名&quot;)" />
           </div>
           <div class="auth-field">
-            <label>{{ ui("密码") }}</label>
-            <input type="password" v-model="regPass" :placeholder="ui(&quot;设置密码&quot;)" />
+            <label for="app-field-6">{{ ui("密码") }}</label>
+            <input name="app-control-6" id="app-field-6" type="password" autocomplete="new-password" v-model="regPass" :placeholder="ui(&quot;设置密码&quot;)" />
           </div>
           <div class="auth-field">
-            <label>{{ ui("确认密码") }}</label>
-            <input type="password" v-model="regPass2" :placeholder="ui(&quot;再输入一遍密码&quot;)" @keyup.enter="doRegister" />
+            <label for="app-field-7">{{ ui("确认密码") }}</label>
+            <input name="app-control-7" id="app-field-7" type="password" autocomplete="new-password" v-model="regPass2" :placeholder="ui(&quot;再输入一遍密码&quot;)" @keyup.enter="doRegister" />
           </div>
           <div v-if="regError" class="auth-err">{{ ui(regError) }}</div>
           <button class="auth-btn" @click="doRegister" :disabled="authLoading">
