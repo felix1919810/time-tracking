@@ -29,3 +29,12 @@ test('recent entries reuse memory; force refresh, mutations and account clearing
  store.update({record_id:'r',fields:{}});await store.load();assert.equal(calls,3)
  store.clear();await store.load();assert.equal(calls,4)
 })
+test('Feishu data-not-ready retries reads once',async()=>{
+ let calls=0,delay=0;const read=createReadTransport(async()=>{if(++calls===1)throw Object.assign(Error('Data not ready'),{providerCode:1254607});return {data:{items:[]}}},{wait:async ms=>{delay=ms}})
+ await read('/entries');assert.equal(calls,2);assert.equal(delay,1000)
+})
+test('POST record search is a read; different request bodies never share results',async()=>{
+ let calls=0;const read=createReadTransport(async(path,method,body)=>{calls++;await Promise.resolve();return {data:body}})
+ const [a,b,c]=await Promise.all([read('/records/search?page_size=500','POST',{field_names:['user']}),read('/records/search?page_size=500','POST',{field_names:['user']}),read('/records/search?page_size=500','POST',{field_names:['notes']})])
+ assert.equal(calls,2);assert.deepEqual(a,b);assert.notDeepEqual(a,c)
+})

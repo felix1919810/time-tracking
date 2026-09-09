@@ -10,7 +10,7 @@ test('real Express routing does not allow case or slash variants to bypass autho
  const user={record_id:'u1',fields:{用户名:'alice',姓名:'Alice',密码:'p',角色:'member',团队:'A'}}
  let writes=0
  const axios=async c=>{
-  if(c.method!=='GET'){writes++;const body=JSON.parse(c.data.toString());if(c.url.includes('/tblKmai7bKF54DYx/'))Object.assign(user.fields,body.fields);return {data:{code:0,data:{record:{},records:(body.records||[]).map((r,i)=>({...r,record_id:'new'+i}))}}}}
+  if(c.method!=='GET'&&!c.url.includes('/records/search?')){writes++;const body=JSON.parse(c.data.toString());if(c.url.includes('/tblKmai7bKF54DYx/'))Object.assign(user.fields,body.fields);return {data:{code:0,data:{record:{},records:(body.records||[]).map((r,i)=>({...r,record_id:'new'+i}))}}}}
   const users=c.url.includes('/tblKmai7bKF54DYx/')
   return {data:{code:0,data:users?{items:[user]}:{items:[{record_id:'own',fields:{user:'alice'}},{record_id:'other',fields:{user:'bob'}}],record:{record_id:'other',fields:{user:'bob',start_time:1,end_time:2}}}}}
  }

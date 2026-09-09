@@ -98,7 +98,7 @@ async function larkRequest(path, method = 'GET', body = null) {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json; charset=utf-8',
     },
-    timeout: method === 'GET' ? 8000 : 15000,
+    timeout: 15000,
   }
   if (bodyStr) {
     // 转 UTF-8 Buffer, 避免 axios 把字符串按 latin-1 发送导致中文乱码
@@ -106,7 +106,7 @@ async function larkRequest(path, method = 'GET', body = null) {
   }
   const r = await axios(config)
   const data = r.data
-  if (data.code !== 0) throw new Error(`飞书 API 错误 ${data.code}: ${data.msg || ''}`)
+  if (data.code !== 0) throw Object.assign(new Error(`飞书 API 错误 ${data.code}: ${data.msg || ''}`), {code:'FEISHU_'+data.code,providerCode:data.code})
   return data
 }
 
@@ -189,14 +189,8 @@ app.get('/entries', async (req, res) => {
     const { page_size = 100, page_token, user } = req.query
     const params = new URLSearchParams({ page_size: String(Math.min(500, Math.max(1, Number(page_size) || 100))) })
     if (page_token) params.set('page_token', page_token)
-    if (user) {
-      // 飞书 filter 语法：CurrentValue.[字段名]="值"
-      // 工时表字段名已改英文，用户字段为 user
-      const filter = `CurrentValue.[user]="${escapeFilter(user)}"`
-      params.set('filter', filter)
-    }
-    const data = await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records?${params}`)
-    res.json({ items: data.data.items || [], total: data.data.total, has_more: data.data.has_more, page_token: data.data.page_token })
+    const data = await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records/search?${params}`, 'POST', {field_names:['user','description','category','country','notes','start_time','end_time','deleted_at'],automatic_fields:false})
+    res.json({ items: (data.data.items || []).filter(record => !user || record.fields.user === user), total: data.data.total, has_more: data.data.has_more, page_token: data.data.page_token })
   } catch (e) { console.error('entries_read_failed', {code:e.code || 'provider_error',status:e.response?.status || 0}); res.status(503).json({ error: '工时数据源暂时繁忙，请稍后重试' }) }
 })
 

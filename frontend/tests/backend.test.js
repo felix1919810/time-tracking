@@ -16,7 +16,7 @@ function backend() {
   const express=()=>app;express.json=()=>()=>{}
   express.static=()=>()=>{}
   const axios=async config=>{
-    if(config.method==='GET'&&config.url.includes('/records?'))return {data:{code:0,data:{items:[entry],has_more:true,page_token:'next-page'}}}
+    if(config.url.includes('/records/search?')||config.method==='GET'&&config.url.includes('/records?'))return {data:{code:0,data:{items:[entry],has_more:true,page_token:'next-page'}}}
     if(config.method==='GET')return {data:{code:0,data:{record:entry}}}
     writes.push(config)
     const body=JSON.parse(config.data.toString())
