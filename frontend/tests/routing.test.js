@@ -10,7 +10,7 @@ test('real Express routing does not allow case or slash variants to bypass autho
  const user={record_id:'u1',fields:{用户名:'alice',姓名:'Alice',密码:'p',角色:'member',团队:'A'}}
  let writes=0
  const axios=async c=>{
-  if(c.method!=='GET'){writes++;return {data:{code:0,data:{record:{}}}}}
+  if(c.method!=='GET'){writes++;const body=JSON.parse(c.data.toString());return {data:{code:0,data:{record:{},records:(body.records||[]).map((r,i)=>({...r,record_id:'new'+i}))}}}}
   const users=c.url.includes('/tblKmai7bKF54DYx/')
   return {data:{code:0,data:users?{items:[user]}:{items:[{record_id:'own',fields:{user:'alice'}},{record_id:'other',fields:{user:'bob'}}],record:{record_id:'other',fields:{user:'bob',start_time:1,end_time:2}}}}}
  }
@@ -25,5 +25,14 @@ test('real Express routing does not allow case or slash variants to bypass autho
   for(const path of ['/Entries/other','/entries/other/','/Teams/members']){const r=await fetch(base+path,{method:'PUT',headers,body:JSON.stringify({fields:{description:'attack'}})});assert.equal(r.status,404,path)}
   const denied=await fetch(base+'/entries/other',{method:'PUT',headers,body:JSON.stringify({fields:{description:'attack'}})});assert.equal(denied.status,403)
   assert.equal(writes,0)
+  const body=JSON.stringify({rows:[{user:'alice',description:'Imported',startTime:'2026-09-09 09:00:00',hours:'1'}]})
+  assert.equal((await fetch(base+'/entries/batch',{method:'POST',headers,body})).status,403)
+  user.fields.can_import=true
+  const imported=await fetch(base+'/entries/batch',{method:'POST',headers,body});assert.equal(imported.status,200);assert.equal((await imported.json()).success,1)
+  user.fields.can_import=false
+  assert.equal((await fetch(base+'/entries/batch',{method:'POST',headers,body})).status,403)
+  user.fields.角色='team_admin'
+  assert.equal((await fetch(base+'/entries/batch',{method:'POST',headers,body})).status,200)
+  assert.equal(writes,2)
  } finally {server.closeAllConnections();await new Promise(r=>server.close(r))}
 })

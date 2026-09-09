@@ -140,6 +140,11 @@
       </div>
     </div>
 
+    <section v-if="userRole === 'admin' || userRole === 'team_admin'" class="settings-section">
+      <div class="section-title">{{ ui('成员导入权限') }}</div><div class="section-body"><p class="section-hint">{{ ui('管理角色默认可导入；普通成员需单独授权，授权后仅可导入自己的记录。') }}</p>
+      <label v-for="m in teamMembersList.filter(m => !['admin','team_admin'].includes(m.role))" :key="m.record_id" class="import-permission-row"><span>{{ m.display_name || m.username }} <small>{{ m.username }}</small></span><input type="checkbox" :checked="m.can_import === true" :disabled="permissionSaving === m.record_id" :aria-label="ui('允许 {0} 导入', [m.display_name || m.username])" @change="setImportPermission(m, $event)" /></label>
+      </div>
+    </section>
     <!-- 分类管理 -->
     <div class="settings-section">
       <div class="section-title">
@@ -460,6 +465,14 @@ async function loadTeams() {
   }
 }
 
+const permissionSaving = ref('')
+async function setImportPermission(member, event) {
+  const enabled = event.target.checked
+  permissionSaving.value = member.record_id
+  try { await http('/members/' + encodeURIComponent(member.record_id) + '/import-permission', {method:'POST',body:{can_import:enabled}}); member.can_import=enabled }
+  catch(e) { alert(e.message); await loadAllMembers() }
+  finally { event.target.checked = member.can_import === true; permissionSaving.value='' }
+}
 async function loadAllMembers() {
   if (userRole.value !== 'admin') return
   try {
@@ -554,6 +567,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.import-permission-row {display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.import-permission-row small {color:var(--text-secondary);margin-left:8px}
 .settings-view {
   max-width: 720px;
   margin: 0 auto;

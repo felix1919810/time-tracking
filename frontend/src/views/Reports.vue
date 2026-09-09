@@ -139,7 +139,13 @@
 
       <!-- 每日趋势图 -->
       <div class="reports-section">
-        <div class="section-title">{{ ui("每日工时趋势") }}</div>
+        <div class="section-title-row"><div class="section-title">{{ ui("每日工时趋势") }}</div><div v-if="canViewOthers" class="trend-tabs"><button class="export-btn" :aria-pressed="trendMode === 'total'" @click="trendMode = 'total'">{{ ui('汇总趋势') }}</button><button class="export-btn" :aria-pressed="trendMode === 'members'" @click="trendMode = 'members'">{{ ui('成员趋势') }}</button></div></div>
+        <div v-if="trendMode === 'members' && canViewOthers" class="trend-members">
+          <div class="trend-controls"><button class="link-btn" @click="hiddenTrendMembers = []">{{ ui('全选成员') }}</button><button class="link-btn" @click="hiddenTrendMembers = trendMembers.map(m => m.key)">{{ ui('取消全选') }}</button></div>
+          <label v-for="m in trendMembers" :key="m.key"><input type="checkbox" :checked="!hiddenTrendMembers.includes(m.key)" @change="toggleTrendMember(m.key)" /><span class="cat-dot" :style="{background:memberColor(m.key)}"></span>{{ m.label }}</label>
+          <p v-if="!trendMembers.length">{{ ui('暂无数据') }}</p>
+          <p v-else-if="hiddenTrendMembers.length === trendMembers.length">{{ ui('请选择至少一位成员查看趋势') }}</p>
+        </div>
         <div class="chart-canvas-wrap">
           <canvas ref="trendChart"></canvas>
         </div>
@@ -158,21 +164,23 @@
           <button class="export-btn" @click="downloadTemplate">
             <AppIcon name="download" />{{ ui("⬇ 下载导入模板") }}
           </button>
-          <button class="export-btn" @click="showImport = !showImport">
+          <button v-if="importAllowed" class="export-btn" @click="showImport = !showImport">
             <AppIcon name="upload" />{{ ui("⬆ 导入数据") }}
           </button>
         </div>
       </div>
       <p class="edit-original-hint">{{ ui('CSV 导出保留任务内容原文；导入支持中英文列名。') }}</p>
       <!-- 导入区域 -->
-      <div v-if="showImport" class="import-area">
+      <p v-if="!importAllowed" class="edit-original-hint">{{ ui('导入需管理员或团队管理员授权') }}</p>
+      <div v-if="showImport && importAllowed" class="import-area">
+        <p class="import-hint">{{ ui('支持 CSV，每次最多 500 条；时间按北京时间解析。Excel 请另存为 CSV。') }}</p>
         <div class="import-hint">
           {{ ui("1. 下载导入模板") }}<br>
           {{ ui("2. 按模板格式填写数据（日期、成员、任务名称、任务分类、国家、任务开始时间、任务结束时间、工时、备注）") }}<br>
           {{ ui("3. 选择文件后点击\"开始导入\"") }}
         </div>
         <div class="import-actions">
-          <input ref="fileInput" type="file" accept=".csv,.xlsx" class="import-file" @change="onFilePick" />
+          <input ref="fileInput" type="file" accept=".csv" class="import-file" @change="onFilePick" />
           <button class="export-btn" @click="doImport" :disabled="!pendingRows || importing">
             {{ importing ? ui("导入中...") : ui("开始导入") }}
           </button>
@@ -289,7 +297,7 @@ import ReportComparison from '../components/ReportComparison.vue'
 import RecordArchive from '../components/RecordArchive.vue'
 const showArchive = ref(false), archiveRecord = ref('')
 function openArchive(id = '') { archiveRecord.value = id; showArchive.value = true }
-import { filterReportEntries } from '../lib/report-analysis.js'
+import { filterReportEntries, memberDailySeries } from '../lib/report-analysis.js'
 import CountryPicker from '../components/CountryPicker.vue'
 
 const clockNow = inject('clockNow')
@@ -728,13 +736,16 @@ function downloadTemplate() {
 const showImport = ref(false)
 const fileInput = ref(null)
 const pendingRows = ref(null)
+const importAllowed = ref(['admin','team_admin'].includes(userRole.value))
 const importing = ref(false)
 const importMsg = ref('')
 const importMsgType = ref('')
 
 function onFilePick(e) {
   const file = e.target.files[0]
+  pendingRows.value = null
   if (!file) return
+  if (!/\.csv$/i.test(file.name)) { importMsg.value = ui('请选择 CSV 文件，Excel 请先另存为 CSV'); importMsgType.value = 'error'; return }
   importMsg.value = ''
   const reader = new FileReader()
   reader.onload = (ev) => {
@@ -759,6 +770,8 @@ function onFilePick(e) {
         header.forEach((h, i) => { obj[h] = (r[i] || '').trim() })
         return obj
       })
+      if (!mapped.length || mapped.length > 500) throw Error(ui('每次请选择 1 至 500 条记录'))
+      if (!header.includes('任务名称') || !(header.includes('日期') || header.includes('任务开始时间'))) throw Error(ui('表头不完整，请使用导入模板'))
       pendingRows.value = mapped
       importMsg.value = ui("已解析 {0} 条数据，点击\"开始导入\"", [mapped.length])
       importMsgType.value = 'success'
@@ -793,12 +806,13 @@ function parseCSV(text) {
       } else cell += ch
     }
   }
+  if (inQuote) throw Error(ui('CSV 引号未闭合，请检查文件'))
   if (cell !== '' || row.length > 0) { row.push(cell); rows.push(row) }
   return rows
 }
 
 async function doImport() {
-  if (!pendingRows.value || pendingRows.value.length === 0) return
+  if (importing.value || !importAllowed.value || !pendingRows.value || pendingRows.value.length === 0) return
   importing.value = true
   importMsg.value = ''
   try {
@@ -815,7 +829,7 @@ async function doImport() {
       notes: r['备注'] || r['remark'] || '',
     }))
     const res = await http('/entries/batch', {
-      method: 'POST',
+      method: 'POST', timeout: 50000,
       body: {
         rows: mappedRows,
         username: userName.value,
@@ -831,6 +845,7 @@ async function doImport() {
       importMsgType.value = 'success'
       pendingRows.value = null
       if (fileInput.value) fileInput.value.value = ''
+      for (const record of res.records || []) entryStore.update(record)
       await loadData()
       // 飞书 batch_create 后立即 search 可能有索引延迟, 延迟 2s 再加载一次确保拿到新数据
       setTimeout(async () => {
@@ -848,6 +863,33 @@ async function doImport() {
 // ───── 趋势图 ─────
 const trendChart = ref(null)
 let trendInstance = null
+const trendMode = ref('total')
+const hiddenTrendMembers = ref([])
+function trendIdentity(name) {
+  const matches = teamMembers.value.filter(m => [m.username,m.user,m.displayName].includes(name))
+  const m = matches.length === 1 ? matches[0] : null
+  return {key:m?.username || m?.user || name, label:m?.displayName || name}
+}
+const trendMembers = computed(() => {
+  const map = new Map()
+  const roster = filterScopedEntries(teamMembers.value.map(m => ({fields:{user:m.user}})), {
+    role:userRole.value, user:userName.value, name:displayName.value, scope:viewScope.value,
+    selectedUser:selectedUser.value, selectedTeam:selectedTeam.value, team:userTeam.value, members:teamMembers.value,
+  })
+  for (const e of roster) { const m=trendIdentity(e.fields.user); if(m.key)map.set(m.key,m) }
+  for (const e of entries.value) { const m=trendIdentity(e.fields.user); if(m.key)map.set(m.key,m) }
+  return [...map.values()].sort((a,b)=>a.label.localeCompare(b.label))
+})
+function memberColor(name) { let hash=0; for(const c of name)hash=(hash*31+c.charCodeAt(0))>>>0;return 'hsl('+(hash%360)+', 65%, 55%)' }
+function toggleTrendMember(key) { hiddenTrendMembers.value = hiddenTrendMembers.value.includes(key) ? hiddenTrendMembers.value.filter(k=>k!==key) : [...hiddenTrendMembers.value,key] }
+watch([viewScope,selectedUser,selectedTeam],()=>{hiddenTrendMembers.value=[]})
+watch([trendMode,hiddenTrendMembers,trendMembers],()=>renderAll(),{deep:true})
+const memberTrendDatasets = computed(() => {
+  const dates=[];const {start,end}=periodRange.value;if(!start||!end)return []
+  for(const d=new Date(start);d<=end;d.setDate(d.getDate()+1))dates.push(fmtDateISO(d))
+  const selected = trendMembers.value.filter(m=>!hiddenTrendMembers.value.includes(m.key))
+  return memberDailySeries(rangeEntries.value,dates,selected,name=>trendIdentity(name).key,clockNow.value).map(m=>({label:m.label,data:m.data,borderColor:memberColor(m.key),backgroundColor:memberColor(m.key),fill:false,tension:.25,pointRadius:dates.length>40?0:2,pointHoverRadius:5}))
+})
 
 function renderTrendChart() {
   if (!trendChart.value) return
@@ -861,7 +903,7 @@ function renderTrendChart() {
     type: 'line',
     data: {
       labels,
-      datasets: [{
+      datasets: trendMode.value === 'members' && canViewOthers.value ? memberTrendDatasets.value : [{
         label: ui('工时(小时)'),
         data,
         borderColor: primary,
@@ -878,7 +920,7 @@ function renderTrendChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (ctx) => fmtHM(ctx.parsed.y * 60) } },
+        tooltip: { callbacks: { label: (ctx) => (trendMode.value === 'members' ? ctx.dataset.label + ': ' : '') + fmtHM(ctx.parsed.y * 60) } },
       },
       scales: {
         y: {
@@ -999,6 +1041,7 @@ onMounted(() => {
     viewScope.value = 'self'
   }
   loadData()
+  http('/auth/me').then(data => { importAllowed.value = !!data.can_import || ['admin','team_admin'].includes(data.role) }).catch(() => {})
   http('/countries?page_size=300').then(data => { allCountries.value = data.items || [] }).catch(console.error)
 })
 watch(clockNow, () => renderAll())
@@ -1006,6 +1049,9 @@ onUnmounted(() => { for (const chart of [trendInstance]) chart?.destroy() })
 </script>
 
 <style scoped>
+.trend-tabs,.trend-controls {display:flex;gap:8px;flex-wrap:wrap}.trend-tabs [aria-pressed="true"] {border-color:var(--primary);color:var(--primary)}
+.trend-members {display:flex;flex-wrap:wrap;gap:10px;max-height:160px;overflow:auto;margin:12px 0;font-size:12px}.trend-members label {display:flex;align-items:center;gap:5px}.trend-controls {width:100%}
+
 .report-filters { display:flex; flex-wrap:wrap; gap:16px; align-items:end; margin:16px 0; }
 .report-filters label { display:grid; gap:6px; font-size:13px; }
 .report-filters select { padding:8px; max-width:260px; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:6px; }

@@ -21,7 +21,7 @@ function installAuth(app, config) {
   do {const d=await lark(base(userTable)+'?page_size=500'+(cursor?'&page_token='+encodeURIComponent(cursor):''));items.push(...(d.data.items||[]));cursor=d.data.has_more?d.data.page_token:'';if(d.data.has_more&&!cursor)throw fail(503,'成员数据加载不完整')}while(cursor)
   return items
  }
- const identity = record => ({record_id:record.record_id,user:scalar(record.fields['用户名']),display_name:scalar(record.fields['姓名']) || scalar(record.fields['用户名']),role:['admin','team_admin'].includes(scalar(record.fields['角色'])) ? scalar(record.fields['角色']) : 'member',team:scalar(record.fields['团队']),feishu_user_id:scalar(record.fields.feishu_user_id)})
+ const identity = record => ({record_id:record.record_id,user:scalar(record.fields['用户名']),display_name:scalar(record.fields['姓名']) || scalar(record.fields['用户名']),role:['admin','team_admin'].includes(scalar(record.fields['角色'])) ? scalar(record.fields['角色']) : 'member',team:scalar(record.fields['团队']),feishu_user_id:scalar(record.fields.feishu_user_id),can_import:['admin','team_admin'].includes(scalar(record.fields['角色'])) || record.fields.can_import===true})
  const version = record => signature(JSON.stringify([record.fields['密码'],record.fields.feishu_user_id]))
  async function authenticate(req) {
   const claims=verify(req.headers.authorization?.replace(/^Bearer /,''),'session')
@@ -78,11 +78,11 @@ function installAuth(app, config) {
     if(req.body?.fields && Object.hasOwn(req.body.fields,'deleted_at'))throw fail(403,'删除状态只能通过删除或恢复操作修改')
     const own=()=>{req.body.username=auth.user}
     if(['/change-password','/update-profile'].includes(path))own()
-    if(path==='/entries/batch'){req.body.username=auth.user;req.body.role=auth.role;for(const row of req.body.rows||[])if(!canUser(auth,row['成员'] || auth.user))throw fail(403,'无权导入该成员数据')}
+    if(path==='/entries/batch' && !auth.can_import)throw fail(403,'尚未获得导入权限，请联系管理员或团队管理员')
     if(path==='/timer/start'){req.body.user=auth.user}
     if(path==='/timer/active' && !canUser(auth,req.query.user))throw fail(403,'无权查看该成员数据')
     if(path==='/entries' && method==='POST' && !canUser(auth,req.body.fields?.user))throw fail(403,'无权创建该成员记录')
-    const id=path==='/timer/stop'?req.body.record_id:path==='/entry'?req.query.id:/^\/entries\/[^/]+$/.test(path)?path.split('/')[2]:null
+    const id=path==='/timer/stop'?req.body.record_id:path==='/entry'?req.query.id:path!=='/entries/batch' && /^\/entries\/[^/]+$/.test(path)?path.split('/')[2]:null
     if(id && method!=='GET') {
      const data=await lark(base(timeTable)+'/'+encodeURIComponent(id))
      if(!canUser(auth,data.data.record.fields.user))throw fail(403,'无权修改该记录')
@@ -98,7 +98,7 @@ function installAuth(app, config) {
    const json=res.json.bind(res)
    res.json= function(data) {
     if(auth && path==='/entries' && method==='GET' && Array.isArray(data.items)) {data.items=data.items.filter(e=>!e.fields.deleted_at && canUser(auth,e.fields.user));delete data.total}
-    if(auth && path==='/teams/members' && Array.isArray(data.items))data.items=data.items.filter(u=>canUser(auth,u.username)).map(u=>({...u,feishu_user_id:u.record_id===auth.record_id||auth.role==='admin'?u.feishu_user_id:''}))
+    if(auth && path==='/teams/members' && Array.isArray(data.items))data.items=data.items.filter(u=>canUser(auth,u.username)).map(u=>({...u,can_import:auth.all.find(r=>r.record_id===u.record_id)?.fields.can_import===true,feishu_user_id:u.record_id===auth.record_id||auth.role==='admin'?u.feishu_user_id:''}))
     if(['/login','/register','/feishu-auth'].includes(path) && (data.ok || path==='/feishu-auth' && data.feishu_user_id)) {
      ;(async()=>{
       if(path==='/feishu-auth' && req.oauth?.sub){

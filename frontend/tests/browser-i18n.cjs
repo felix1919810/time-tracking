@@ -14,6 +14,7 @@ const path = require('node:path')
     const start=new Date();start.setHours(9,0,0,0)
     const entries=[
       {record_id:'cn',fields:{user:'alice',description:'客户沟通',category:'会议',country:'中国',notes:'第一行备注\n第二行备注',start_time:+start,end_time:+start+3600000}},
+      {record_id:'bob',fields:{user:'bob',description:'Bob task',category:'Other',country:'中国',notes:'',start_time:+start,end_time:+start+1800000}},
       {record_id:'en',fields:{user:'alice',description:'Client review',category:'培训',country:'美国',notes:'English notes',start_time:+start+7200000,end_time:+start+9000000}},
     ]
     const dictionary={'客户沟通':'Client discussion','会议':'Meeting','培训':'Training','第一行备注\n第二行备注':'First line of notes\nSecond line of notes','Client review':'客户评审','English notes':'英文备注','持续计时':'Ongoing task','修改标题':'Edited title','新备注':'New notes'}
@@ -27,10 +28,12 @@ const path = require('node:path')
       else if(url.pathname==='/entries/deleted')data={items:[{record_id:'trash',fields:{user:'alice',description:'Deleted task',category:'会议',start_time:'2000-01-01T09:00:00Z',end_time:'2000-01-01T10:00:00Z',deleted_at:Date.now()}}]}
       else if(url.pathname.endsWith('/history'))data={items:[{record_id:'log',actor:'alice',action:'edit',occurred_at:Date.now(),status:'committed',before:{description:'Previous title'},after:{description:'客户沟通'}}]}
       else if(url.pathname==='/entries/trash/restore')data={ok:true,record:{record_id:'trash',fields:{user:'alice',description:'Restored task',category:'会议',start_time:'2000-01-01T09:00:00Z',end_time:'2000-01-01T10:00:00Z',deleted_at:null}}}
+      else if(url.pathname==='/entries/batch'){writes.push({import:body});data={success:body.rows.length,failed:0,records:[]}}
+      else if(url.pathname.endsWith('/import-permission')){writes.push({permission:body});data={ok:true,can_import:body.can_import}}
       else if(url.pathname==='/entries')data={items:entries}
       else if(url.pathname==='/categories')data={items:[{record_id:'c1',name:'会议',color:'#10b981',team:'测试团队'},{record_id:'c2',name:'培训',color:'#6366f1',team:'测试团队'}]}
       else if(url.pathname==='/teams')data={items:[{record_id:'t1',name:'测试团队'}]}
-      else if(url.pathname==='/teams/members')data={items:[{record_id:'u1',username:'alice',display_name:'Alice',team:'测试团队',role:'member'}]}
+      else if(url.pathname==='/teams/members')data={items:[{record_id:'u1',username:'alice',display_name:'Alice',team:'测试团队',role:'member',can_import:false},{record_id:'u2',username:'bob',display_name:'Bob',team:'测试团队',role:'member',can_import:false}]}
       else if(url.pathname==='/countries')data={items:[{record_id:'cn',name:'中国',code:'CN'},{record_id:'us',name:'美国',code:'US'}]}
       else if(url.pathname==='/timer/active')data=running?{active:true,...running}:{active:false}
       else if(url.pathname==='/timer/start') {
@@ -64,6 +67,20 @@ const path = require('node:path')
         await page.locator('.cat-name').filter({hasText:'Training'}).waitFor()
       }
       if(label==='Reports'){
+        await page.getByRole('button',{name:'Member trends',exact:true}).click()
+        await page.locator('.trend-members label').filter({hasText:'Alice'}).waitFor()
+        assert.equal(await page.locator('.trend-members input:checked').count(),2)
+        await page.locator('.trend-members label').filter({hasText:'Bob'}).locator('input').uncheck()
+        assert.equal(await page.locator('.trend-members input:checked').count(),1)
+        await page.getByRole('button',{name:'Deselect all',exact:true}).click()
+        await page.getByText('Select at least one member to show trends.',{exact:true}).waitFor()
+        await page.getByRole('button',{name:'Select all members',exact:true}).click()
+        await page.getByRole('button',{name:'Import data',exact:true}).click()
+        await page.locator('.import-file').setInputFiles({name:'sample.csv',mimeType:'text/csv',buffer:Buffer.from('Date,Member,Task title,Task category,Country,Task start time,Task end time,Hours,Notes\n2000-01-01,alice,Import test,Other,China,2000-01-01 09:00:00,2000-01-01 10:00:00,1,test')})
+        await page.getByRole('button',{name:'Start import',exact:true}).click()
+        await page.waitForFunction(()=>document.querySelector('.import-msg')?.textContent.includes('1'))
+        assert.equal(writes.find(w=>w.import).import.rows[0].user,'alice')
+        await page.getByRole('button',{name:'Import data',exact:true}).click()
         await page.getByText('Client discussion',{exact:true}).first().waitFor()
         await page.locator('.detail-row').filter({hasText:'Client discussion'}).click()
         await page.getByText('First line of notes\nSecond line of notes',{exact:true}).waitFor()
@@ -105,6 +122,9 @@ const path = require('node:path')
         assert((await page.locator('.difference').innerText()).includes('B is zero'))
       }
       if(label==='Settings'){
+        await page.getByRole('checkbox',{name:'Allow Bob to import',exact:true}).check()
+        await page.waitForFunction(()=>!document.querySelector('.import-permission-row input:disabled'))
+        assert.equal(writes.find(w=>w.permission).permission.can_import,true)
         await page.getByRole('radio',{name:'Light mode'}).check()
         await page.getByText('Meeting',{exact:true}).first().waitFor()
       }

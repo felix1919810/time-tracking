@@ -363,5 +363,19 @@
   "删除状态": "Deletion status",
   "已删除": "Deleted",
   "正常": "Active",
-  "展开侧栏": "Expand sidebar"
+  "展开侧栏": "Expand sidebar",
+  "导入需管理员或团队管理员授权": "An administrator or team administrator must grant import access.",
+  "支持 CSV，每次最多 500 条；时间按北京时间解析。Excel 请另存为 CSV。": "CSV only, up to 500 rows per import. Dates use Beijing time. Save Excel files as CSV first.",
+  "请选择 CSV 文件，Excel 请先另存为 CSV": "Please select a CSV file. Save your Excel workbook as CSV first.",
+  "每次请选择 1 至 500 条记录": "Select between 1 and 500 rows per import.",
+  "表头不完整，请使用导入模板": "Required columns are missing. Please use the import template.",
+  "汇总趋势": "Total trend",
+  "成员趋势": "Member trends",
+  "全选成员": "Select all members",
+  "取消全选": "Deselect all",
+  "请选择至少一位成员查看趋势": "Select at least one member to show trends.",
+  "成员导入权限": "Member import access",
+  "管理角色默认可导入；普通成员需单独授权，授权后仅可导入自己的记录。": "Administrators can import by default. Members require permission and may import only their own records.",
+  "允许 {0} 导入": "Allow {0} to import",
+  "CSV 引号未闭合，请检查文件": "Unclosed CSV quote. Please check the file."
 }

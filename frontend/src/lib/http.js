@@ -7,7 +7,7 @@ export function createHttp({ base, fetchImpl = globalThis.fetch, now = Date.now,
   async function request(url, options) {
     const session = globalThis.localStorage?.getItem('tt_session')
     const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeout)
+    const timer = setTimeout(() => controller.abort(), options.timeout || timeout)
     try {
       const res = await fetchImpl(url, {
         method: options.method || 'GET',
