@@ -6,7 +6,7 @@ function harness() {
  const users=[{record_id:'a',fields:{用户名:'alice',姓名:'Alice',密码:'p',角色:'member',团队:'one'}},{record_id:'b',fields:{用户名:'bob',密码:'p',角色:'member',团队:'two'}},{record_id:'c',fields:{用户名:'boss',密码:'p',角色:'admin',团队:'one'}}]
  let middleware;const routes={};const app={post:(p,f)=>routes[p]=f,use:f=>middleware=f};const writes=[],reads=[]
  const lark=async(path,method,body)=>{
-  if(method){writes.push({path,method,body});return {data:{}}}
+  if(method){writes.push({path,method,body});const record=users.find(u=>path.endsWith('/'+u.record_id));if(record)Object.assign(record.fields,body.fields);return {data:{}}}
   reads.push(path)
   if(path.includes('/users/'))return {data:{items:users}}
   return {data:{record:{fields:{user:'bob',团队:'two'}}}}
@@ -31,6 +31,44 @@ test('authorized writes fetch the entry once alongside fresh membership and expo
  assert.equal(h.reads.filter(p=>p.includes('/time/')).length,1)
  h.users[2].fields.停用=true
  assert.equal((await h.call('/timer/stop',{method:'POST',token,body:{record_id:'r'}})).status,401)
+})
+
+test('Feishu recovery is purpose-bound, expires, hashes passwords and revokes old sessions',async()=>{
+ const h=harness();h.users[0].fields.feishu_user_id='verified-alice'
+ const old=await h.login()
+ const start=await h.call('/auth/feishu/start',{method:'POST',body:{action:'reset',redirect_uri:'https://felix1919810.github.io/time-tracking/'}})
+ const result=await h.call('/feishu-auth',{method:'POST',body:{state:start.data.state,code:'provider-code'},output:{ok:true,user:'bob',feishu_user_id:'verified-alice'}})
+ assert.equal(result.data.user,'alice');assert.equal(result.data.session_token,undefined)
+ const token=result.data.reset_token;assert(token)
+ assert.equal((await h.call('/auth/me',{token})).status,401)
+ assert.equal((await h.call('/auth/password/reset',{method:'POST',body:{reset_token:old,new_password:'a-long-new-password'}})).status,401)
+ assert.equal((await h.call('/auth/password/reset',{method:'POST',body:{reset_token:token,new_password:'short'}})).status,400)
+ const claims=h.api.verify(token,'password-reset')
+ assert.equal((await h.call('/auth/password/reset',{method:'POST',body:{reset_token:h.api.sign(claims,-1),new_password:'a-long-new-password'}})).status,401)
+ const done=await h.call('/auth/password/reset',{method:'POST',body:{reset_token:token,new_password:'a-long-new-password',username:'bob'}})
+ assert.equal(done.status,200);assert.match(h.users[0].fields.密码,/^scrypt\$/)
+ assert.equal(h.users[1].fields.密码,'p')
+ assert.equal((await h.call('/auth/me',{token:old})).status,401)
+ assert.equal((await h.call('/auth/password/reset',{method:'POST',body:{reset_token:token,new_password:'another-long-password'}})).status,401)
+ const {verifyPassword}=createRequire(import.meta.url)('../api-deploy/passwords.cjs')
+ assert(await verifyPassword('a-long-new-password',h.users[0].fields.密码))
+})
+
+test('recovery refuses missing, ambiguous, disabled or changed Feishu bindings',async()=>{
+ for(const mode of ['missing','ambiguous','disabled','changed']){
+  const h=harness();h.users[0].fields.feishu_user_id='verified'
+  if(mode==='missing')h.users[0].fields.feishu_user_id='other'
+  if(mode==='ambiguous')h.users[1].fields.feishu_user_id='verified'
+  if(mode==='disabled')h.users[0].fields.停用=true
+  const state=h.api.sign({purpose:'oauth',action:'reset'})
+  const result=await h.call('/feishu-auth',{method:'POST',body:{state,code:'verified'},output:{ok:true,user:'alice',feishu_user_id:'verified'}})
+  if(mode!=='changed'){assert.equal(result.status,403);assert.equal(result.data.reset_token,undefined)}
+  else{
+   h.users[0].fields.feishu_user_id='other'
+   assert.equal((await h.call('/auth/password/reset',{method:'POST',body:{reset_token:result.data.reset_token,new_password:'a-long-new-password'}})).status,401)
+  }
+  assert.equal(h.writes.length,0)
+ }
 })
 test('reject missing or forged sessions; ignore forged browser role; recheck current role',async()=>{
  const h=harness();assert.equal((await h.call('/entries')).status,401)

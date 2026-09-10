@@ -393,6 +393,19 @@
   "已获得导入权限": "Import access granted",
   "申请已提交，等待管理员或团队管理员审批": "Request submitted. Awaiting approval from an administrator or team administrator.",
   "申请导入权限": "Request import access",
-  "新密码需为 12 至 256 位": "New password must be 12–256 characters",
-  "密码已更新，请重新登录": "Password updated. Please sign in again"
+  "新密码需为 12 至 256 位": "Your new password must contain 12 to 256 characters.",
+  "密码已更新，请重新登录": "Password updated. Please sign in again",
+  "重置密码": "Reset password",
+  "使用已绑定的飞书账号验证身份，无需原密码。未绑定飞书请联系管理员。": "Verify with your linked Feishu account. No old password is needed. If you have not linked Feishu, contact an administrator.",
+  "正在重置账号": "Account to reset",
+  "验证有效期为 5 分钟，新密码需为 12 至 256 位。": "Verification is valid for 5 minutes. Use a password of 12 to 256 characters.",
+  "设置新密码": "Set new password",
+  "通过飞书验证身份": "Verify with Feishu",
+  "忘记密码": "Forgot password",
+  "忘记原密码？通过飞书重置": "Forgot your password? Reset with Feishu",
+  "两次输入的密码不一致": "Passwords do not match.",
+  "密码已重置，请使用新密码登录": "Password reset. Sign in with your new password.",
+  "此飞书身份未绑定可用账号，请联系管理员协助找回": "This Feishu identity is not linked to an available account. Contact an administrator.",
+  "重置验证已失效，请重新验证飞书身份": "Reset verification has expired. Verify with Feishu again.",
+  "密码重置服务暂时不可用，请稍后重试": "Password reset is temporarily unavailable. Please try again later."
 }

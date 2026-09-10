@@ -60,6 +60,7 @@
     <div class="settings-section">
       <div class="section-title">{{ ui("修改密码") }}</div>
       <div class="section-body">
+        <button class="btn btn-secondary" @click="redirectToFeishuAuth('reset')">{{ ui('忘记原密码？通过飞书重置') }}</button>
         <div class="form-field">
           <label for="settings-field-3">{{ ui("原密码") }} <span class="required">*</span></label>
           <input name="settings-control-4" id="settings-field-3" type="password" autocomplete="current-password" v-model="passwordForm.oldPassword" :placeholder="ui(&quot;当前密码&quot;)" />

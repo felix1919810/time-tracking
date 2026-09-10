@@ -8,10 +8,24 @@
       <div class="auth-card">
         <LanguagePicker />
         <div class="auth-logo"><AppIcon name="clock" /></div>
-        <div class="auth-title">{{ showRegister ? ui("注册新账号") : ui("欢迎使用 Time Tracking") }}</div>
+        <div class="auth-title">{{ showReset ? ui('重置密码') : showRegister ? ui("注册新账号") : ui("欢迎使用 Time Tracking") }}</div>
+
+        <template v-if="showReset">
+          <p>{{ ui('使用已绑定的飞书账号验证身份，无需原密码。未绑定飞书请联系管理员。') }}</p>
+          <template v-if="resetToken">
+            <p>{{ ui('正在重置账号') }}：{{ resetUser }}</p>
+            <div class="auth-field"><label for="reset-password">{{ ui('新密码') }}</label><input id="reset-password" name="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="256" v-model="resetPassword" /></div>
+            <div class="auth-field"><label for="reset-confirm">{{ ui('确认新密码') }}</label><input id="reset-confirm" name="confirm-password" type="password" autocomplete="new-password" maxlength="256" v-model="resetConfirm" @keyup.enter="submitPasswordReset" /></div>
+            <p>{{ ui('验证有效期为 5 分钟，新密码需为 12 至 256 位。') }}</p>
+            <button class="auth-btn" :disabled="authLoading" @click="submitPasswordReset">{{ authLoading ? ui('保存中...') : ui('设置新密码') }}</button>
+          </template>
+          <button v-else class="auth-btn feishu-btn" :disabled="authLoading" @click="redirectToFeishuAuth('reset')">{{ ui('通过飞书验证身份') }}</button>
+          <p v-if="loginError" class="auth-err" role="alert">{{ ui(loginError) }}</p>
+          <button class="auth-btn" :disabled="authLoading" @click="cancelReset">{{ ui('返回登录') }}</button>
+        </template>
 
         <!-- 登录表单 -->
-        <template v-if="!showRegister">
+        <template v-else-if="!showRegister">
           <div class="auth-field">
             <label for="app-field-1">{{ ui("用户名") }}</label>
             <input name="app-control-1" id="app-field-1" autocomplete="username" v-model="loginUser" :placeholder="ui(&quot;您的用户名&quot;)" autofocus @keyup.enter="$refs.passInput.focus()" />
@@ -24,6 +38,7 @@
           <button class="auth-btn" @click="confirmLogin" :disabled="authLoading">
             {{ authLoading ? ui("登录中...") : ui("登录") }}
           </button>
+          <button class="auth-btn" :disabled="authLoading" @click="showReset = true; loginError = ''">{{ ui('忘记密码') }}</button>
           <div class="auth-divider"><span>{{ ui("或") }}</span></div>
           <button class="auth-btn feishu-btn" @click="redirectToFeishuAuth">
             <AppIcon name="link" />{{ ui("🚀 飞书一键登录") }}
@@ -240,6 +255,7 @@ async function redirectToFeishuAuth(action = 'login') {
   try {
     const res = await http('/auth/feishu/start', {method:'POST', body:{redirect_uri:window.location.origin + window.location.pathname, action:typeof action === 'string' ? action : 'login'}})
     sessionStorage.setItem('tt_oauth_state', res.state)
+    sessionStorage.setItem('tt_oauth_action', typeof action === 'string' ? action : 'login')
     window.location.assign(res.url)
     return true
   } catch(e) { loginError.value = e.message; alert(e.message); authLoading.value = false; return false }
@@ -259,6 +275,9 @@ async function tryFeishuAuth() {
   const code = url.searchParams.get('code'), state = url.searchParams.get('state')
   if (!code && !url.searchParams.has('error')) return false
   const expected = sessionStorage.getItem('tt_oauth_state')
+  const action = sessionStorage.getItem('tt_oauth_action')
+  sessionStorage.removeItem('tt_oauth_action')
+  if (action === 'reset') showReset.value = true
   sessionStorage.removeItem('tt_oauth_state')
   for(const key of ['code','state','error','error_description'])url.searchParams.delete(key)
   window.history.replaceState({},'',url.toString())
@@ -267,6 +286,13 @@ async function tryFeishuAuth() {
     if (!code || !state || state !== expected) throw Error(ui('飞书登录未完成，请重新点击登录'))
     const res = await http('/feishu-auth', {method:'POST', body:{code,state}})
     if (!res.ok) throw Error(res.error || ui('飞书账号未绑定，请先使用账号密码登录并在设置中绑定'))
+    if (res.reset_required && res.reset_token) {
+      resetToken.value = res.reset_token
+      resetUser.value = res.user
+      showReset.value = true
+      showLogin.value = true
+      return true
+    }
     applySession(res)
     return true
   } catch(e) { loginError.value = e.message; return false }
@@ -288,6 +314,35 @@ const roleLabel = computed(() => {
 const loginUser = ref('')
 const loginPass = ref('')
 const loginError = ref('')
+const showReset = ref(false)
+const resetToken = ref('')
+const resetUser = ref('')
+const resetPassword = ref('')
+const resetConfirm = ref('')
+function cancelReset() {
+  showReset.value = false
+  resetToken.value = resetPassword.value = resetConfirm.value = ''
+  loginError.value = ''
+}
+async function submitPasswordReset() {
+  if (authLoading.value) return
+  loginError.value = ''
+  if (resetPassword.value.length < 12 || resetPassword.value.length > 256) { loginError.value = '新密码需为 12 至 256 位'; return }
+  if (resetPassword.value !== resetConfirm.value) { loginError.value = '两次输入的密码不一致'; return }
+  authLoading.value = true
+  try {
+    await http('/auth/password/reset', {method:'POST',body:{reset_token:resetToken.value,new_password:resetPassword.value}})
+    localStorage.removeItem('tt_session')
+    http.clear()
+    loginUser.value = resetUser.value
+    loginPass.value = ''
+    cancelReset()
+    loginError.value = '密码已重置，请使用新密码登录'
+  } catch(e) {
+    loginError.value = e.message
+    if (e.status === 401 || e.status === 403) resetToken.value = ''
+  } finally { authLoading.value = false }
+}
 
 // 注册表单
 const showRegister = ref(false)

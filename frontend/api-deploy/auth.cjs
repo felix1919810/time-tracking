@@ -48,13 +48,35 @@ function installAuth(app, config) {
    u.hostname==='1473537498-ejcp1i6ib6.ap-shanghai.tencentscf.com' && ['/','/index.html'].includes(u.pathname))}catch{return false}
  }
  app.post('/auth/feishu/start',async(req,res)=>{
+  res.setHeader('Cache-Control','no-store')
   try {
    const {redirect_uri,action}=req.body||{};if(!allowedRedirect(redirect_uri))throw fail(400,'登录回调地址未配置')
    const auth=action==='bind'?await authenticate(req):null
-   const state=sign({purpose:'oauth',redirect_uri,sub:auth?.record_id||'',nonce:crypto.randomBytes(24).toString('hex')},600000)
+   const state=sign({purpose:'oauth',action:action==='reset'?'reset':auth?'bind':'login',redirect_uri,sub:auth?.record_id||'',nonce:crypto.randomBytes(24).toString('hex')},600000)
    const params=new URLSearchParams({client_id:config.appId(),response_type:'code',redirect_uri,state})
    res.json({state,url:'https://accounts.feishu.cn/open-apis/authen/v1/authorize?'+params})
   }catch(e){res.status(e.status||503).json({error:e.status?e.message:'登录服务暂时不可用'})}
+ })
+ const resetting = new Set()
+ let resetWindow={count:0,until:0}
+ app.post('/auth/password/reset',async(req,res)=>{
+  let locked=''
+  res.setHeader('Cache-Control','no-store')
+  try {
+   if(resetWindow.until<=Date.now())resetWindow={count:0,until:Date.now()+60000}
+   if(++resetWindow.count>30)throw fail(429,'操作过于频繁，请稍后重试')
+   const claims=verify(req.body?.reset_token,'password-reset')
+   const password=req.body?.new_password
+   if(typeof password!=='string'||password.length<12||password.length>256)throw fail(400,'新密码需为 12 至 256 位')
+   if(resetting.has(claims.sub))throw fail(429,'操作过于频繁，请稍后重试')
+   resetting.add(claims.sub);locked=claims.sub
+   const record=(await users()).find(r=>r.record_id===claims.sub)
+   if(!record || version(record)!==claims.version || !scalar(record.fields.feishu_user_id) || ['disabled','停用','禁用'].includes(scalar(record.fields['状态'])) || record.fields['停用']===true)throw fail(401,'重置验证已失效，请重新验证飞书身份')
+   const {hashPassword}=require('./passwords.cjs')
+   await lark(base(userTable)+'/'+encodeURIComponent(record.record_id),'PUT',{fields:{'密码':await hashPassword(password)}})
+   res.json({ok:true,reauthenticate:true})
+  }catch(e){res.status(e.status||503).json({error:e.status?e.message:'密码重置服务暂时不可用，请稍后重试'})}
+  finally{if(locked)resetting.delete(locked)}
  })
  app.use(async(req,res,next)=>{
   try {
@@ -111,6 +133,13 @@ function installAuth(app, config) {
     if(auth && path==='/teams/members' && Array.isArray(data.items))data.items=data.items.filter(u=>canUser(auth,u.username)).map(u=>({...u,can_import:auth.all.find(r=>r.record_id===u.record_id)?.fields.can_import===true,import_requested:auth.all.find(r=>r.record_id===u.record_id)?.fields.import_requested===true,feishu_user_id:u.record_id===auth.record_id||auth.role==='admin'?u.feishu_user_id:''}))
     if(['/login','/register','/feishu-auth'].includes(path) && (data.ok || path==='/feishu-auth' && data.feishu_user_id)) {
      ;(async()=>{
+      if(path==='/feishu-auth' && req.oauth?.action==='reset'){
+       // Identity comes exclusively from the provider code exchange, never the browser.
+       const matches=(await users()).filter(u=>scalar(u.fields.feishu_user_id)===data.feishu_user_id && data.feishu_user_id)
+       const record=matches.length===1?matches[0]:null
+       if(!record || ['disabled','停用','禁用'].includes(scalar(record.fields['状态'])) || record.fields['停用']===true)throw fail(403,'此飞书身份未绑定可用账号，请联系管理员协助找回')
+       return json({ok:true,reset_required:true,user:identity(record).user,reset_token:sign({purpose:'password-reset',sub:record.record_id,version:version(record)},300000)})
+      }
       if(path==='/feishu-auth' && req.oauth?.sub){
        const all=await users();if(all.some(u=>scalar(u.fields.feishu_user_id)===data.feishu_user_id && u.record_id!==req.auth.record_id))throw fail(409,'该飞书账号已绑定其他用户')
        await lark(base(userTable)+'/'+req.auth.record_id,'PUT',{fields:{feishu_user_id:data.feishu_user_id}})
