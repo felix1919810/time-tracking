@@ -6,6 +6,7 @@ export function createTimer({ http, user, displayName, emit, notify, message = t
   const starting = ref(false), stopping = ref(false), restoring = ref(false)
   let uncertain = false
   const tick = ref(now())
+  const stopRequestedAt = ref(null)
   let interval = null, startPromise = null, stopPromise = null, restorePromise = null
   let epoch = 0
   const key = () => 'tt_active_timer:' + encodeURIComponent(user())
@@ -20,7 +21,8 @@ export function createTimer({ http, user, displayName, emit, notify, message = t
     persist()
   }
   const timerElapsedText = computed(() => {
-    const seconds = Math.floor(Math.max(0, tick.value - (activeTimer.value?.startTime || tick.value)) / 1000)
+    const displayTime = stopRequestedAt.value ?? tick.value
+    const seconds = Math.floor(Math.max(0, displayTime - (activeTimer.value?.startTime || displayTime)) / 1000)
     const h = Math.floor(seconds / 3600), m = Math.floor(seconds / 60) % 60, s = seconds % 60
     return h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`
   })
@@ -59,6 +61,7 @@ export function createTimer({ http, user, displayName, emit, notify, message = t
     if (!activeTimer.value || restoring.value) return Promise.resolve(false)
     const version = epoch
     stopping.value = true
+    stopRequestedAt.value = now()
     const task = (async () => {
       try {
         if (startPromise) await startPromise
@@ -76,7 +79,7 @@ export function createTimer({ http, user, displayName, emit, notify, message = t
         if (version === epoch) notify(message("停止计时失败，记录仍保留，请重试：") + e.message)
         return false
       } finally {
-        if (version === epoch) { stopping.value = false; stopPromise = null }
+        if (version === epoch) { stopping.value = false; stopRequestedAt.value = null; tick.value = now(); stopPromise = null }
       }
     })()
     stopPromise = task
@@ -96,9 +99,12 @@ export function createTimer({ http, user, displayName, emit, notify, message = t
     const task = (async () => {
       try {
         // 新记录使用稳定用户名，兼容历史按姓名保存的记录。
-        for (const name of new Set([account, displayName()].filter(Boolean))) {
-          const res = await http('/timer/active?user=' + encodeURIComponent(name))
-          if (version !== epoch) return
+        const names = [...new Set([account, displayName()].filter(Boolean))]
+        const results = await Promise.allSettled(names.map(name => http('/timer/active?user=' + encodeURIComponent(name))))
+        if (version !== epoch) return
+        for (const [index, result] of results.entries()) {
+          if (result.status !== 'fulfilled') continue
+          const res = result.value, name = names[index]
           if (res.record_id && res.active !== false && Number(res.start_time) > 0) {
             const value = { ...res, user: account, startTime: Number(res.start_time), color: saved?.color || '#6366f1' }
             setActive(value)
@@ -107,6 +113,8 @@ export function createTimer({ http, user, displayName, emit, notify, message = t
             return
           }
         }
+        const failed = results.find(result => result.status === 'rejected')
+        if (failed) throw failed.reason
         setActive(null)
         uncertain = false
       } catch (e) {
@@ -126,6 +134,7 @@ export function createTimer({ http, user, displayName, emit, notify, message = t
     if (interval) clearInterval(interval)
     interval = null
     activeTimer.value = null
+    stopRequestedAt.value = null
     starting.value = stopping.value = restoring.value = false
     startPromise = stopPromise = restorePromise = null
   }

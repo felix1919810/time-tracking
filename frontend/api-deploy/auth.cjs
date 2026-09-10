@@ -24,10 +24,15 @@ function installAuth(app, config) {
  }
  const identity = record => ({record_id:record.record_id,user:scalar(record.fields['用户名']),display_name:scalar(record.fields['姓名']) || scalar(record.fields['用户名']),role:['admin','team_admin'].includes(scalar(record.fields['角色'])) ? scalar(record.fields['角色']) : 'member',team:scalar(record.fields['团队']),feishu_user_id:scalar(record.fields.feishu_user_id),import_requested:record.fields.import_requested===true,can_import:['admin','team_admin'].includes(scalar(record.fields['角色'])) || record.fields.can_import===true})
  const version = record => signature(JSON.stringify([record.fields['密码'],record.fields.feishu_user_id]))
+ const mutationEntryId = req => req.method==='GET' ? null : req.path==='/timer/stop' ? req.body?.record_id : req.path==='/entry' ? req.query.id : req.path!=='/entries/batch' && /^\/entries\/[^/]+$/.test(req.path) ? req.path.split('/')[2] : null
  async function authenticate(req) {
   const claims=verify(req.headers.authorization?.replace(/^Bearer /,''),'session')
-  const all=await users(), record=all.find(u=>u.record_id===claims.sub)
+  const entryId=mutationEntryId(req)
+  // Both reads are fresh; fetching concurrently does not weaken revocation checks.
+  const [all,entry]=await Promise.all([users(),entryId?lark(base(timeTable)+'/'+encodeURIComponent(entryId)):null])
+  const record=all.find(u=>u.record_id===claims.sub)
   if(!record || version(record)!==claims.version || ['disabled','停用','禁用'].includes(scalar(record.fields['状态'])) || record.fields['停用']===true)throw fail(401,'登录已失效，请重新登录')
+  if(entry)req.entrySnapshot={id:entryId,record:entry.data.record}
   return {record,all,...identity(record)}
  }
  const aliases=u=>[scalar(u.fields['用户名']),scalar(u.fields['姓名'])].filter(Boolean)
@@ -53,6 +58,7 @@ function installAuth(app, config) {
  })
  app.use(async(req,res,next)=>{
   try {
+   req.requestTime=Date.now()
    res.setHeader('Cache-Control','no-store')
    if(Object.keys(req.query).some(k=>/token|table_id/.test(k) && k!=='page_token'))throw fail(403,'不允许指定数据表')
    const path=req.path, method=req.method
@@ -85,11 +91,12 @@ function installAuth(app, config) {
     if(path==='/timer/start'){req.body.user=auth.user}
     if(path==='/timer/active' && !canUser(auth,req.query.user))throw fail(403,'无权查看该成员数据')
     if(path==='/entries' && method==='POST' && !canUser(auth,req.body.fields?.user))throw fail(403,'无权创建该成员记录')
-    const id=path==='/timer/stop'?req.body.record_id:path==='/entry'?req.query.id:path!=='/entries/batch' && /^\/entries\/[^/]+$/.test(path)?path.split('/')[2]:null
+    const id=mutationEntryId(req)
     if(id && method!=='GET') {
-     const data=await lark(base(timeTable)+'/'+encodeURIComponent(id))
-     if(!canUser(auth,data.data.record.fields.user))throw fail(403,'无权修改该记录')
-     if(req.body.fields && Object.hasOwn(req.body.fields,'user') && req.body.fields.user!==data.data.record.fields.user)throw fail(403,'不能更改记录所属成员')
+     const record=req.entrySnapshot.record
+     if(!canUser(auth,record.fields.user))throw fail(403,'无权修改该记录')
+     if(req.body.fields && Object.hasOwn(req.body.fields,'user') && req.body.fields.user!==record.fields.user)throw fail(403,'不能更改记录所属成员')
+     req.authorizedEntry=req.entrySnapshot
     }
     if(method!=='GET' && /^\/teams(?:\/|$)/.test(path) && auth.role!=='admin')throw fail(403,'仅管理员可管理团队和成员')
     if(method!=='GET' && /^\/categories(?:\/|$)/.test(path) && auth.role!=='admin') {

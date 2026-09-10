@@ -4,9 +4,10 @@ import { createRequire } from 'node:module'
 const {installAuth}=createRequire(import.meta.url)('../api-deploy/auth.cjs')
 function harness() {
  const users=[{record_id:'a',fields:{用户名:'alice',姓名:'Alice',密码:'p',角色:'member',团队:'one'}},{record_id:'b',fields:{用户名:'bob',密码:'p',角色:'member',团队:'two'}},{record_id:'c',fields:{用户名:'boss',密码:'p',角色:'admin',团队:'one'}}]
- let middleware;const routes={};const app={post:(p,f)=>routes[p]=f,use:f=>middleware=f};const writes=[]
+ let middleware;const routes={};const app={post:(p,f)=>routes[p]=f,use:f=>middleware=f};const writes=[],reads=[]
  const lark=async(path,method,body)=>{
   if(method){writes.push({path,method,body});return {data:{}}}
+  reads.push(path)
   if(path.includes('/users/'))return {data:{items:users}}
   return {data:{record:{fields:{user:'bob',团队:'two'}}}}
  }
@@ -20,8 +21,17 @@ function harness() {
   })
  }
  async function login(user='alice'){return (await call('/login',{method:'POST',output:{ok:true,user}})).data.session_token}
- return {api,call,login,users,writes}
+ return {api,call,login,users,writes,reads}
 }
+
+test('authorized writes fetch the entry once alongside fresh membership and expose only the checked snapshot',async()=>{
+ const h=harness(),token=await h.login('boss');h.reads.length=0
+ const response=await h.call('/timer/stop',{method:'POST',token,body:{record_id:'r'}})
+ assert.equal(response.status,200);assert.equal(response.req.authorizedEntry.id,'r')
+ assert.equal(h.reads.filter(p=>p.includes('/time/')).length,1)
+ h.users[2].fields.停用=true
+ assert.equal((await h.call('/timer/stop',{method:'POST',token,body:{record_id:'r'}})).status,401)
+})
 test('reject missing or forged sessions; ignore forged browser role; recheck current role',async()=>{
  const h=harness();assert.equal((await h.call('/entries')).status,401)
  const token=await h.login();assert(token)

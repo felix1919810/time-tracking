@@ -1,7 +1,10 @@
 <template>
   <div class="app">
+    <div v-if="authInitializing" class="auth-mask" role="status" aria-live="polite" aria-busy="true">
+      <div class="session-loading"><AppIcon name="clock" /><span>{{ ui('正在恢复会话…') }}</span></div>
+    </div>
     <!-- 登录/注册弹窗 -->
-    <div v-if="showLogin" class="auth-mask">
+    <div v-else-if="showLogin" class="auth-mask">
       <div class="auth-card">
         <LanguagePicker />
         <div class="auth-logo"><AppIcon name="clock" /></div>
@@ -64,7 +67,7 @@
     </div>
 
     <!-- 主布局 -->
-    <div v-if="userName && !showLogin" :key="userName" class="layout" :style="{ '--sidebar-width': sidebarCollapsed ? '60px' : '220px' }">
+    <div v-if="!authInitializing && userName && !showLogin" :key="userName" class="layout" :style="{ '--sidebar-width': sidebarCollapsed ? '60px' : '220px' }">
       <!-- 侧边栏 -->
       <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
         <div class="sidebar-header">
@@ -220,6 +223,7 @@ const displayName = ref(localStorage.getItem('tt_display_name') || '')
 const userTeam = ref(localStorage.getItem('tt_team') || '')
 const feishuUserId = ref(localStorage.getItem('tt_feishu_id') || '')
 const showLogin = ref(!userName.value)
+const authInitializing = ref(true)
 const authLoading = ref(false)
 
 // ───── 飞书 H5 免登 ─────
@@ -237,7 +241,8 @@ async function redirectToFeishuAuth(action = 'login') {
     const res = await http('/auth/feishu/start', {method:'POST', body:{redirect_uri:window.location.origin + window.location.pathname, action:typeof action === 'string' ? action : 'login'}})
     sessionStorage.setItem('tt_oauth_state', res.state)
     window.location.assign(res.url)
-  } catch(e) { loginError.value = e.message; alert(e.message); authLoading.value = false }
+    return true
+  } catch(e) { loginError.value = e.message; alert(e.message); authLoading.value = false; return false }
 }
 function applySession(res) {
   if (res.session_token) localStorage.setItem('tt_session', res.session_token)
@@ -565,20 +570,24 @@ const showUserName = ref(localStorage.getItem('tt_show_user_name') === 'true')
 watch(showUserName, (v) => localStorage.setItem('tt_show_user_name', String(v)))
 provide('showUserName', showUserName)
 
-// ───── onMounted: 自动恢复计时器 ─────
-// 刷新页面时, 如果 localStorage 有 tt_user, 会跳过登录直接进主界面
-// 但 restoreActiveTimer 只在 confirmLogin 里调用, 刷新时不会触发
-// 所以这里要在 onMounted 里主动恢复
+// Verify the saved session before showing either the login form or private content.
 onMounted(async () => {
-  // 飞书 H5 免登: 检测 URL 是否有 code 参数(飞书重定向回来)
-  const hasCallback = new URL(window.location.href).searchParams.has('code') || new URL(window.location.href).searchParams.has('error')
-  if (hasCallback) await tryFeishuAuth()
-  else if (localStorage.getItem('tt_session')) {
-    try { applySession(await http('/auth/me')) } catch(e) { loginError.value = e.message }
-  }
-  if (!userName.value && !hasCallback && !localStorage.getItem('tt_session') && /Lark|Feishu/i.test(navigator.userAgent) && !sessionStorage.getItem('tt_feishu_auto')) {
-    sessionStorage.setItem('tt_feishu_auto','1')
-    await redirectToFeishuAuth()
+  let redirecting = false
+  try {
+    // 飞书 H5 免登: 检测 URL 是否有 code 参数(飞书重定向回来)
+    const hasCallback = new URL(window.location.href).searchParams.has('code') || new URL(window.location.href).searchParams.has('error')
+    if (hasCallback) await tryFeishuAuth()
+    else if (localStorage.getItem('tt_session')) {
+      try { applySession(await http('/auth/me')) } catch(e) { loginError.value = e.message }
+    }
+    if (!userName.value && !hasCallback && !localStorage.getItem('tt_session') && /Lark|Feishu/i.test(navigator.userAgent) && !sessionStorage.getItem('tt_feishu_auto')) {
+      sessionStorage.setItem('tt_feishu_auto','1')
+      redirecting = await redirectToFeishuAuth()
+    }
+  } catch(e) {
+    loginError.value = e.message
+  } finally {
+    authInitializing.value = redirecting
   }
   // 如果已登录(从 localStorage 恢复), 但计时器没恢复, 主动调 restoreActiveTimer
   if (userName.value && !activeTimer.value) {
@@ -588,6 +597,8 @@ onMounted(async () => {
 </script>
 
 <style>
+.session-loading { display:flex; align-items:center; gap:12px; color:var(--text-secondary); font-size:14px; }
+.session-loading .app-icon { color:var(--primary); }
 /* ───── 全局样式 ───── */
 * {
   margin: 0;

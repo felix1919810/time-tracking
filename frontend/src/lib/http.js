@@ -3,6 +3,12 @@ export function createHttp({ base, fetchImpl = globalThis.fetch, now = Date.now,
   const pending = new Map()
   let generation = 0
   function clear() { generation++; cache.clear(); pending.clear() }
+  function clearEntryReads() {
+    generation++
+    for (const map of [cache, pending]) for (const key of map.keys()) {
+      if (new URL(key).pathname === '/entries') map.delete(key)
+    }
+  }
 
   async function request(url, options) {
     const session = globalThis.localStorage?.getItem('tt_session')
@@ -39,10 +45,11 @@ export function createHttp({ base, fetchImpl = globalThis.fetch, now = Date.now,
     const key = url.toString()
     const method = options.method || 'GET'
     const cacheable = method === 'GET' && ['/entries', '/teams', '/teams/members', '/categories', '/countries'].includes(url.pathname)
-    if (method !== 'GET') clear()
+    const invalidate = ['/timer/start', '/timer/stop', '/entry', '/entries'].includes(url.pathname) || url.pathname.startsWith('/entries/') ? clearEntryReads : clear
+    if (method !== 'GET') invalidate()
     if (!cacheable) {
       try { return await request(key, options) }
-      finally { if (method !== 'GET') clear() }
+      finally { if (method !== 'GET') invalidate() }
     }
     const ttl = url.pathname === '/entries' ? 5000 : 60000
     const saved = cache.get(key)

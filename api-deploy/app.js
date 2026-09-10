@@ -11,7 +11,7 @@ app.use(express.json())
 
 // 飞书凭证（从 SCF 环境变量读）
 const LARK_APP_ID = process.env.LARK_APP_ID || 'cli_aa0e40ef3fe19bcd'
-const LARK_APP_SECRET = process.env.LARK_APP_SECRET || 'dyBZhig4pWYsDuBlgnRsRdaqYMecCHw6'
+const LARK_APP_SECRET = process.env.LARK_APP_SECRET || ''
 const DEFAULT_APP_TOKEN = process.env.LARK_BITABLE_APP_TOKEN || 'VYF7btMbnaNkV1sTnYBc1ldjnqh'
 const DEFAULT_TIME_TABLE = process.env.LARK_TIME_ENTRIES_TABLE_ID || 'tbl4DQrLz56St8Uj'
 

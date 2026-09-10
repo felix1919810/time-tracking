@@ -120,6 +120,18 @@ test('停止失败保留计时，重试确认后才通知视图停止', async ()
     assert.equal(f.timer.activeTimer.value,null)
   } finally {f.timer.reset()}
 })
+
+test('pending stop freezes the display immediately and resumes safely on failure',async()=>{
+  const gate=defer();let time=100000
+  const timer=createTimer({http:async path=>path==='/timer/start'?{record_id:'r',start_time:90000}:gate.promise,user:()=> 'alice',displayName:()=> 'Alice',emit(){},notify(){},now:()=>time})
+  try {
+    await timer.startActiveTimer({});const stopping=timer.stopActiveTimer()
+    assert.equal(timer.stopping.value,true);assert.equal(timer.timerElapsedText.value,'0:10')
+    time=120000;assert.equal(timer.timerElapsedText.value,'0:10')
+    gate.reject(Error('offline'));assert.equal(await stopping,false)
+    assert.equal(timer.activeTimer.value.record_id,'r');assert.equal(timer.timerElapsedText.value,'0:30')
+  }finally{timer.reset()}
+})
 test('无本地缓存也能恢复，服务端ID覆盖旧缓存，旧账号响应被忽略', async () => {
   const f=timerFixture(async()=>({active:true,record_id:'server',start_time:50000,user:'alice'}))
   try {

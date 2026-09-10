@@ -1,10 +1,10 @@
 const clone = value => JSON.parse(JSON.stringify(value))
 function createReadTransport(send,{cacheable=()=>false,now=Date.now,wait=ms=>new Promise(r=>setTimeout(r,ms))}={}) {
  const pending=new Map(),cache=new Map();let generation=0
- function invalidate(){generation++;pending.clear();cache.clear()}
+ function invalidate(path){generation++;pending.clear();if(cacheable(path))cache.clear()}
  return async function request(path,method='GET',body=null) {
   const readOnly=method==='GET'||method==='POST'&&/\/records\/search(?:\?|$)/.test(path)
-  if(!readOnly) {invalidate();try{return await send(path,method,body)}finally{invalidate()}}
+  if(!readOnly) {invalidate(path);try{return await send(path,method,body)}finally{invalidate(path)}}
   const key=method+' '+path+' '+JSON.stringify(body)
   const hit=cache.get(key)
   if(hit&&hit.until>now())return clone(hit.data)

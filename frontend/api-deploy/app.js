@@ -12,10 +12,10 @@ app.use(express.json())
 // 飞书凭证（从 SCF 环境变量读）
 // 旧凭证: 多维表格 bot (cli_aa0e40ef3fe19bcd) - 用于读写 Bitable
 const LARK_APP_ID = process.env.LARK_APP_ID || 'cli_aa0e40ef3fe19bcd'
-const LARK_APP_SECRET = process.env.LARK_APP_SECRET || 'dyBZhig4pWYsDuBlgnRsRdaqYMecCHw6'
+const LARK_APP_SECRET = process.env.LARK_APP_SECRET || ''
 // 新凭证: 飞书企业自建应用 (cli_aa07f5b29ef89bd1) - 用于 H5 免登
 const FEISHU_H5_APP_ID = process.env.FEISHU_H5_APP_ID || 'cli_aa07f5b29ef89bd1'
-const FEISHU_H5_APP_SECRET = process.env.FEISHU_H5_APP_SECRET || 'iaNlh9dpp4dpKxkvJaOQOeXq00EpNUui'
+const FEISHU_H5_APP_SECRET = process.env.FEISHU_H5_APP_SECRET || ''
 const DEFAULT_APP_TOKEN = process.env.LARK_BITABLE_APP_TOKEN || 'VYF7btMbnaNkV1sTnYBc1ldjnqh'
 const DEFAULT_TIME_TABLE = process.env.LARK_TIME_ENTRIES_TABLE_ID || 'tbl4DQrLz56St8Uj'
 // 用户表（与工时表同一个 base，table_id 在控制台或 API 里查）

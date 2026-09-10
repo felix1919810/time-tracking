@@ -15,7 +15,8 @@
           <span class="timer-desc">{{ tr(activeTimer.description || '(无描述)') }}</span>
           <span class="timer-cat" :style="{ color: activeTimer.color }">{{ tr(activeTimer.category) }}</span>
           <span class="timer-elapsed">{{ timerElapsedText }}</span>
-          <button class="timer-stop" :disabled="timerStopping || timerRestoring" :aria-busy="timerStopping" @click="stopActiveTimer" :title="ui(&quot;完成计时&quot;)"><AppIcon name="stop" /></button>
+          <span v-if="timerStopping" class="timer-pending" role="status">{{ ui("正在停止…") }}</span>
+          <button class="timer-stop" :disabled="timerStopping || timerRestoring" :aria-busy="timerStopping" @click="stopActiveTimer" :title="ui(timerStopping ? '正在停止…' : '完成计时')" :aria-label="ui(timerStopping ? '正在停止…' : '完成计时')"><AppIcon name="stop" /></button>
         </template>
         <template v-else>
           <span class="timer-idle"><AppIcon name="clock" /></span>
@@ -178,7 +179,7 @@
         <div class="modal-footer">
           <button class="btn btn-danger" @click="deleteEntry">{{ ui("删除") }}</button>
           <button class="btn btn-secondary" @click="showEditModal = false">{{ ui("取消") }}</button>
-          <button class="btn btn-primary" @click="saveEdit" :disabled="savingEdit">{{ ui("保存") }}</button>
+          <button class="btn btn-primary" @click="saveEdit" :disabled="savingEdit" :aria-busy="savingEdit">{{ ui(savingEdit ? "正在保存…" : "保存") }}</button>
         </div>
       </div>
     </div>

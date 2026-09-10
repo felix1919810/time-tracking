@@ -34,6 +34,7 @@
             <span class="theme-label">{{ ui(option.label) }}</span>
           </label>
         </div>
+        <p class="section-hint" v-if="theme === 'auto'">{{ ui("按设备当地时间，07:00–19:00 使用浅色，其余时间使用深色；页面打开期间也会自动切换。") }}</p>
       </div>
     </section>
 
@@ -223,6 +224,7 @@ import { theme, setTheme } from '../lib/theme.js'
 const themeOptions = [
   { value: 'dark', label: '深色模式' },
   { value: 'light', label: '浅色模式' },
+  { value: 'auto', label: '自动昼夜' },
 ]
 
 const http = inject('http')
@@ -610,7 +612,7 @@ onMounted(() => {
 
 .theme-options {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
 }
 
@@ -653,6 +655,8 @@ onMounted(() => {
 .theme-preview span { width: 100%; border-radius: 3px; background: #131826; }
 .theme-preview.light { border-color: #c5d0df; background: linear-gradient(90deg, #e5edf5 20%, #f5f7fb 20%); }
 .theme-preview.light span { background: #ffffff; }
+.theme-preview.auto { background: linear-gradient(90deg, #e5edf5 50%, #1a2138 50%); }
+.theme-preview.auto span { background: linear-gradient(90deg, #ffffff 50%, #131826 50%); }
 
 .settings-section {
   background: var(--surface);

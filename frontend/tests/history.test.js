@@ -10,9 +10,17 @@ function harness(){let middleware;const entry={record_id:'e',fields:{user:'alice
   return {data:{record:structuredClone(entry)}}
  }
  installHistory({use:f=>middleware=f},{lark,appToken:'app',timeTable:'time',auditTable:'audit'})
- async function call(path,method='GET',body={},allowed=true){let status=200,data;await middleware({path,method,body,query:{id:'e'},auth:{user:'alice'},canAccessEntryUser:()=>allowed},{status(s){status=s;return this},json(d){data=d;return this}},()=>{throw Error('Unexpected route')});return {status,data}}
+ async function call(path,method='GET',body={},allowed=true,request={}){let status=200,data;await middleware({path,method,body,query:{id:'e'},auth:{user:'alice'},canAccessEntryUser:()=>allowed,...request},{status(s){status=s;return this},json(d){data=d;return this}},()=>{throw Error('Unexpected route')});return {status,data}}
  return {call,entry,logs,events,failPrepare:()=>failPrepare=true,failFinalize:()=>failFinalize=true}
 }
+
+test('queued history mutations refresh a snapshot taken before a preceding write',async()=>{
+ const h=harness(),request={authorizedEntry:{id:'e',record:structuredClone(h.entry)}}
+ const [deleted,restored]=await Promise.all([h.call('/entries/e','DELETE',{},true,request),h.call('/entries/e/restore','POST',{},true,request)])
+ assert.equal(deleted.status,200);assert.equal(restored.status,200)
+ assert.equal(h.entry.fields.deleted_at,null)
+ assert.deepEqual(h.logs.map(l=>l.fields.action),['delete','restore'])
+})
 test('soft deletion excludes data and restoration preserves original fields, logs both actions',async()=>{
  const h=harness();const original=structuredClone(h.entry.fields)
  assert.equal((await h.call('/entries/e','DELETE')).status,200);assert(h.entry.fields.deleted_at)

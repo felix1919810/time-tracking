@@ -18,6 +18,7 @@ const path = require('node:path')
     let rows = Array.from({length:500},(_,i)=>({record_id:'old-'+i,fields:{user:'alice',description:'历史记录'+i,category:'会议',start_time:today.getTime()-86400000*40,end_time:today.getTime()-86400000*40+60000}}))
     rows.push({record_id:'second-page',fields:{user:'alice',description:'第二页验证记录',category:'会议',start_time:today.getTime(),end_time:today.getTime()+3600000,country:'中国',notes:'备注验证'}})
     let running = null, failStop = false, failWrite = false, signedIn = 'alice'
+    let authGate = null, expiredSession = false
     await page.route('**/*', async route => {
       const url=new URL(route.request().url())
       if(url.hostname==='127.0.0.1') return route.continue()
@@ -25,7 +26,9 @@ const path = require('node:path')
       const request=route.request(), method=request.method(), body=request.postDataJSON()
       requests.push(method+' '+url.pathname+url.search)
       let data, status=200
+      if(url.pathname==='/auth/me' && authGate) await authGate
       if(method==='OPTIONS') data={}
+      else if(url.pathname==='/auth/me' && expiredSession) {status=401;data={error:'登录已失效，请重新登录'}}
       else if(url.pathname==='/login' || url.pathname==='/auth/me') { signedIn=body?.username || signedIn; data={ok:true,user:signedIn,display_name:signedIn==='alice'?'Alice':'Bob',role:'member',team:'测试团队',session_token:'mock-session'} }
       else if(url.pathname==='/entries' && method==='GET') data={items:url.searchParams.has('page_token')?rows.slice(500):rows.slice(0,500),has_more:!url.searchParams.has('page_token')&&rows.length>500,page_token:'page-2'}
       else if(url.pathname==='/categories') data={items:[{name:'会议',color:'#10b981',team:'测试团队'}]}
@@ -147,6 +150,26 @@ const path = require('node:path')
     })
     await page.reload()
     await page.locator('.week-view').waitFor()
+    let finishAuth
+    authGate=new Promise(resolve=>{finishAuth=resolve})
+    await page.reload({waitUntil:'domcontentloaded'})
+    await page.locator('.session-loading').waitFor()
+    assert.equal(await page.getByPlaceholder('您的用户名').count(),0)
+    assert.equal(await page.locator('.layout').count(),0)
+    finishAuth();authGate=null
+    await page.locator('.week-view').waitFor()
+    assert.equal(await page.getByPlaceholder('您的用户名').count(),0)
+    expiredSession=true
+    authGate=new Promise(resolve=>{finishAuth=resolve})
+    await page.reload({waitUntil:'domcontentloaded'})
+    await page.locator('.session-loading').waitFor()
+    assert.equal(await page.getByPlaceholder('您的用户名').count(),0)
+    finishAuth();authGate=null
+    await page.getByPlaceholder('您的用户名').waitFor()
+    assert.equal(await page.locator('.session-loading').count(),0)
+    assert.equal(await page.locator('.layout').count(),0)
+    assert.equal(await page.evaluate(()=>localStorage.getItem('tt_session')),null)
+    console.log('PASS: delayed session recovery hides login/private content; expired sessions return to login')
     console.log('Runtime errors:',JSON.stringify(errors))
     assert.deepEqual(errors,[])
     console.log('PASS: 501条分页、日视图计时、停止失败重试、删除回滚、六页面切换、侧栏对齐、账号隔离')

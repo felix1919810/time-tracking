@@ -56,3 +56,6 @@
 }
 
 @media(max-width:768px) { .app .reports-grid { grid-template-columns:minmax(0,1fr); } .app .reports-section { min-width:0; } .app .cat-col-name { min-width:0; overflow-wrap:anywhere; } }
+/* Pending writes are visible immediately, while the server remains authoritative. */
+.timer-pending { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+.timer-stop[aria-busy='true'] { opacity: .65; cursor: progress; }

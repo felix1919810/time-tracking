@@ -277,7 +277,7 @@
         <div class="modal-footer">
           <button class="btn btn-danger" @click="deleteReportEntry" :disabled="savingEdit">{{ ui('删除') }}</button>
           <button class="btn btn-secondary" @click="showEditModal = false">{{ ui("取消") }}</button>
-          <button class="btn btn-primary" @click="saveEdit" :disabled="savingEdit">{{ ui("保存") }}</button>
+          <button class="btn btn-primary" @click="saveEdit" :disabled="savingEdit" :aria-busy="savingEdit">{{ ui(savingEdit ? "正在保存…" : "保存") }}</button>
         </div>
       </div>
     </div>

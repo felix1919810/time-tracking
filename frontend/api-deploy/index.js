@@ -73,6 +73,7 @@ async function obtainTenantToken() {
   return cachedToken
 }
 
+const larkAgent = new (require('https').Agent)({ keepAlive: true, maxSockets: 32, maxFreeSockets: 8 })
 const lark = require('./read-transport.cjs').createReadTransport(larkRequest, {
   cacheable: path => [DEFAULT_TEAM_TABLE,DEFAULT_CATEGORY_TABLE,DEFAULT_COUNTRY_TABLE].some(table => path.includes('/tables/'+table+'/records')),
 })
@@ -99,6 +100,7 @@ async function larkRequest(path, method = 'GET', body = null) {
       'Content-Type': 'application/json; charset=utf-8',
     },
     timeout: 15000,
+    httpsAgent: larkAgent,
   }
   if (bodyStr) {
     // 转 UTF-8 Buffer, 避免 axios 把字符串按 latin-1 发送导致中文乱码
@@ -115,6 +117,8 @@ function getCtx(req) {
   const tableId = req.query.time_entries_table_id || DEFAULT_TIME_TABLE
   return { appToken, tableId }
 }
+const { listDirectory } = require('./directory.cjs')
+const { plainText, completedEntryFields } = require('./entry-record.cjs')
 
 // ───── 路由 ─────
 
@@ -232,10 +236,12 @@ app.post('/timer/stop', async (req, res) => {
     if (!record_id) return res.status(400).json({ error: 'record_id 必填' })
 
     // 先查这条记录，拿 start_time 算时长
-    const r = await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records/${record_id}`)
-    const startMs = r.data.record.fields.start_time
-    const existingEnd = r.data.record.fields.end_time
-    const endTime = existingEnd ? new Date(existingEnd).getTime() : Date.now()
+    const record = req.authorizedEntry?.id === record_id ? req.authorizedEntry.record
+      : (await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records/${encodeURIComponent(record_id)}`)).data.record
+    if (record.fields.deleted_at) return res.status(409).json({ error: '记录已删除，请先恢复' })
+    const startMs = record.fields.start_time
+    const existingEnd = record.fields.end_time
+    const endTime = existingEnd ? new Date(existingEnd).getTime() : Math.max(req.requestTime || Date.now(), Number(startMs))
     if (!Number.isFinite(Number(startMs)) || Number(startMs) <= 0 || !Number.isFinite(endTime) || endTime < Number(startMs)) {
       return res.status(400).json({ error: '计时记录的开始或结束时间无效' })
     }
@@ -246,7 +252,7 @@ app.post('/timer/stop', async (req, res) => {
     const durationHour = Math.round((durationMs / 3600000) * 10000) / 10000  // 保留4位小数
 
     // PUT 补全 end_time + 时长(秒) + 时长(小时)
-    await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records/${record_id}`, 'PUT', {
+    if (!existingEnd) await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records/${encodeURIComponent(record_id)}`, 'PUT', {
       fields: {
         'end_time': endTime,
         '时长(秒)': durationSec,
@@ -294,8 +300,9 @@ app.get('/timer/active', async (req, res) => {
 app.post('/entries', async (req, res) => {
   try {
     const { appToken, tableId } = getCtx(req)
-    const { fields } = req.body || {}
-    if (!fields) return res.status(400).json({ error: 'fields 必填' })
+    let fields
+    try { fields = completedEntryFields(req.body?.fields) }
+    catch (e) { return res.status(400).json({ error: e.message }) }
     const data = await lark(`/bitable/v1/apps/${appToken}/tables/${tableId}/records`, 'POST', { fields })
     res.json({ record: data.data.record })
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -383,12 +390,11 @@ app.delete('/entries/:id', async (req, res) => {
 app.get('/teams', async (req, res) => {
   try {
     const appToken = DEFAULT_APP_TOKEN
-    const params = new URLSearchParams({ page_size: '100' })
-    const data = await lark(`/bitable/v1/apps/${appToken}/tables/${DEFAULT_TEAM_TABLE}/records?${params}`)
-    const items = (data.data.items || []).map(i => ({
+    const records = await listDirectory(lark, `/bitable/v1/apps/${appToken}/tables/${DEFAULT_TEAM_TABLE}/records`)
+    const items = records.map(i => ({
       record_id: i.record_id,
-      name: i.fields['团队名'] || '',
-      description: i.fields['团队描述'] || '',
+      name: plainText(i.fields['团队名']),
+      description: plainText(i.fields['团队描述']),
     }))
     res.json({ items })
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -424,16 +430,16 @@ app.delete('/teams/:id', async (req, res) => {
 app.get('/teams/members', async (req, res) => {
   try {
     const { team } = req.query
-    const data = {data:{items:req.auth.all.filter(record => !team || record.fields['团队'] === team)}}
+    const data = {data:{items:req.auth.all.filter(record => !team || plainText(record.fields['团队']) === team)}}
     const items = (data.data.items || []).map(i => {
       const f = i.fields
       return {
         record_id: i.record_id,
-        username: f['用户名'] || '',
-        display_name: f['姓名'] || f['用户名'] || '',
-        role: f['角色'] || 'member',
-        team: f['团队'] || '',
-        feishu_user_id: f['feishu_user_id'] || '',
+        username: plainText(f['用户名']),
+        display_name: plainText(f['姓名']) || plainText(f['用户名']),
+        role: plainText(f['角色']) || 'member',
+        team: plainText(f['团队']),
+        feishu_user_id: plainText(f['feishu_user_id']),
       }
     })
     res.json({ items })
@@ -460,16 +466,12 @@ app.get('/categories', async (req, res) => {
   try {
     const appToken = DEFAULT_APP_TOKEN
     const { team } = req.query
-    const params = new URLSearchParams({ page_size: '200' })
-    if (team) {
-      params.set('filter', `CurrentValue.[团队]="${escapeFilter(team)}"`)
-    }
-    const data = await lark(`/bitable/v1/apps/${appToken}/tables/${DEFAULT_CATEGORY_TABLE}/records?${params}`)
-    const items = (data.data.items || []).map(i => ({
+    const records = await listDirectory(lark, `/bitable/v1/apps/${appToken}/tables/${DEFAULT_CATEGORY_TABLE}/records`, team ? `CurrentValue.[团队]="${escapeFilter(team)}"` : undefined)
+    const items = records.map(i => ({
       record_id: i.record_id,
-      team: i.fields['团队'] || '',
-      name: i.fields['分类名'] || '',
-      color: i.fields['颜色'] || '#6b7280',
+      team: plainText(i.fields['团队']),
+      name: plainText(i.fields['分类名']),
+      color: plainText(i.fields['颜色']) || '#6b7280',
     }))
     res.json({ items })
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -520,12 +522,11 @@ app.put('/categories/:id', async (req, res) => {
 app.get('/countries', async (req, res) => {
   try {
     const appToken = DEFAULT_APP_TOKEN
-    const params = new URLSearchParams({ page_size: '200' })
-    const data = await lark(`/bitable/v1/apps/${appToken}/tables/${DEFAULT_COUNTRY_TABLE}/records?${params}`)
-    const items = (data.data.items || []).map(i => ({
+    const records = await listDirectory(lark, `/bitable/v1/apps/${appToken}/tables/${DEFAULT_COUNTRY_TABLE}/records`)
+    const items = records.map(i => ({
       record_id: i.record_id,
-      name: i.fields['国家名'] || '',
-      code: i.fields['代码'] || '',
+      name: plainText(i.fields['国家名']),
+      code: plainText(i.fields['代码']),
     }))
     res.json({ items })
   } catch (e) { res.status(500).json({ error: e.message }) }

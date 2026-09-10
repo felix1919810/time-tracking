@@ -4,11 +4,11 @@ function installHistory(app,{lark,appToken,timeTable,auditTable}) {
  const base=table=>'/bitable/v1/apps/'+appToken+'/tables/'+table+'/records'
  const error=(status,message)=>Object.assign(new Error(message),{status})
  const queues=new Map()
- async function locked(id,fn){const prior=queues.get(id)||Promise.resolve();const task=prior.catch(()=>{}).then(fn);queues.set(id,task);try{return await task}finally{if(queues.get(id)===task)queues.delete(id)}}
+ async function locked(id,fn){const queued=queues.has(id),prior=queues.get(id)||Promise.resolve();const task=prior.catch(()=>{}).then(()=>fn(queued));queues.set(id,task);try{return await task}finally{if(queues.get(id)===task)queues.delete(id)}}
  async function list(table,filter){const items=[];let cursor='';do{const p=new URLSearchParams({page_size:'500'});if(filter)p.set('filter',filter);if(cursor)p.set('page_token',cursor);const d=(await lark(base(table)+'?'+p)).data;items.push(...(d.items||[]));cursor=d.has_more?d.page_token:'';if(d.has_more&&!cursor)throw error(503,'历史分页不完整，请重试')}while(cursor);return items}
- async function record(req,id){const r=(await lark(base(timeTable)+'/'+encodeURIComponent(id))).data.record;if(!req.canAccessEntryUser(r.fields.user))throw error(403,'无权访问该记录');return r}
- async function mutate(req,id,action){return locked(id,async()=>{
-  const old=await record(req,id),f=old.fields,now=Date.now();let fields
+ async function record(req,id,fresh=false){const r=!fresh&&req.authorizedEntry?.id===id?req.authorizedEntry.record:(await lark(base(timeTable)+'/'+encodeURIComponent(id))).data.record;if(!req.canAccessEntryUser(r.fields.user))throw error(403,'无权访问该记录');return r}
+ async function mutate(req,id,action){return locked(id,async(queued)=>{
+  const old=await record(req,id,queued),f=old.fields,now=Date.now();let fields
   if(action==='restore'){
    if(!f.deleted_at)return {ok:true,record:old}
    if(now-Number(f.deleted_at)>=RETENTION)throw error(410,'记录已超过 30 天恢复期限')

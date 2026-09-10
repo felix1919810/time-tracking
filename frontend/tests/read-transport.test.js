@@ -2,7 +2,20 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createRequire} from 'node:module'
 import {createEntryStore} from '../src/lib/entries.js'
+import {createHttp} from '../src/lib/http.js'
 const {createReadTransport}=createRequire(import.meta.url)('../api-deploy/read-transport.cjs')
+
+test('timer writes retain reference caches; reference writes still invalidate them on both tiers',async()=>{
+ let upstream=0
+ const read=createReadTransport(async()=>({value:++upstream}),{cacheable:p=>p.startsWith('/countries')})
+ await read('/countries');await read('/entries','PUT',{});await read('/countries');assert.equal(upstream,2)
+ await read('/countries/r','PUT',{});await read('/countries');assert.equal(upstream,4)
+ let calls=0
+ const http=createHttp({base:'https://test.invalid',fetchImpl:async()=>({ok:true,status:200,json:async()=>({value:++calls})})})
+ await http('/countries');await http('/timer/stop',{method:'POST',body:{record_id:'r'}});await http('/countries');assert.equal(calls,2)
+ await http('/countries',{method:'POST',body:{}});await http('/countries');assert.equal(calls,4)
+ http.clear();await http('/countries');assert.equal(calls,5)
+})
 test('concurrent reads share a request but independent results; auth reads are never cached',async()=>{
  let calls=0
  const read=createReadTransport(async()=>{calls++;await Promise.resolve();return {data:{items:[1]}}})
